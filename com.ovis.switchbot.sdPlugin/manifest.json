@@ -73,7 +73,6 @@
   "Version": "0.1.0.0",
   "URL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin",
   "SupportURL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin/issues",
-  "Category": "$Localization:Category",
-  "CategoryIcon": "imgs/action",
-  "LocalizationPath": "."
+  "Category": "$Localization:Name",
+  "CategoryIcon": "imgs/action"
 }
