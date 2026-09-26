@@ -6,7 +6,7 @@
     const host = document.getElementById("switchbot-authentication");
     if (!host) return;
     host.innerHTML = `
-      <div id="switchbot-auth-heading" class="auth-heading">${t("Authentication", "認証")}</div>
+      <div id="switchbot-auth-heading" class="section-heading">${t("Authentication", "認証")}</div>
       <sdpi-item id="switchbot-token-item" label="${t("Token", "トークン")}">
         <sdpi-password id="switchbot-token"></sdpi-password>
       </sdpi-item>
