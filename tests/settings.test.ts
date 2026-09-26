@@ -18,7 +18,7 @@ describe("settings normalization", () => {
     expect(normalizeGetStatusSettings({})).toEqual({
       version: 1,
       deviceId: "",
-      output: { prettyPrint: true }
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
 
@@ -71,7 +71,7 @@ describe("settings normalization", () => {
     })).toEqual({
       version: 1,
       deviceId: "device",
-      output: { prettyPrint: true }
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
 });
