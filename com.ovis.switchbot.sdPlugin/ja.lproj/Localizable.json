@@ -1,0 +1,19 @@
+{
+  "Description": "SwitchBot OpenAPI v1.1を利用する高度なStream Deckクライアント。",
+  "Name": "SwitchBot API呼び出し",
+  "Category": "SwitchBot API呼び出し",
+  "Actions": {
+    "GetDevices": {
+      "Name": "デバイス取得",
+      "Tooltip": "SwitchBotの保存済みデバイス一覧を最新化します。"
+    },
+    "GetStatus": {
+      "Name": "状態取得",
+      "Tooltip": "選択したSwitchBotデバイスの状態を取得します。"
+    },
+    "ApiRequest": {
+      "Name": "APIリクエスト",
+      "Tooltip": "SwitchBot OpenAPIへ設定したリクエストを送信します。"
+    }
+  }
+}
