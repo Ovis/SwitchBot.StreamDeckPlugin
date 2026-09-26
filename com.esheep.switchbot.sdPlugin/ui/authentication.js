@@ -25,8 +25,8 @@
     const secretItem = document.getElementById("switchbot-secret-item");
     const button = document.getElementById("switchbot-test-connection");
     if (heading) heading.textContent = t("Authentication", "認証");
-    if (tokenItem) tokenItem.label = t("Token", "トークン");
-    if (secretItem) secretItem.label = t("Secret", "シークレット");
+    if (tokenItem) tokenItem.setAttribute("label", t("Token", "トークン"));
+    if (secretItem) secretItem.setAttribute("label", t("Secret", "シークレット"));
     if (button) button.textContent = t("Test Connection", "接続テスト");
   }
 
