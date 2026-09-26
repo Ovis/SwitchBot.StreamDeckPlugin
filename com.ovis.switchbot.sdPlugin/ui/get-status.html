@@ -4,11 +4,12 @@
   <meta charset="utf-8" />
   <title>SwitchBot Get Status</title>
   <script src="sdpi-components.js"></script>
+  <script src="localization.js"></script>
   <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item label="Device">
+  <sdpi-item id="device-item" label="Device">
     <sdpi-select
       setting="deviceId"
       label-setting="deviceLabel"
@@ -19,16 +20,26 @@
       hot-reload>
     </sdpi-select>
   </sdpi-item>
-  <sdpi-heading>Output</sdpi-heading>
-  <sdpi-item label="Show on key">
+  <sdpi-heading id="output-heading">Output</sdpi-heading>
+  <sdpi-item id="show-key-item" label="Show on key">
     <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item label="Copy JSON">
+  <sdpi-item id="copy-json-item" label="Copy JSON">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item label="Pretty print">
+  <sdpi-item id="pretty-item" label="Pretty print">
     <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
   </sdpi-item>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const { t } = SwitchBotI18n;
+      document.getElementById("device-item").label = t("Device", "デバイス");
+      document.getElementById("output-heading").textContent = t("Output", "出力");
+      document.getElementById("show-key-item").label = t("Show on key", "キーに表示");
+      document.getElementById("copy-json-item").label = t("Copy JSON", "JSONをコピー");
+      document.getElementById("pretty-item").label = t("Pretty print", "整形");
+    });
+  </script>
   <script src="authentication.js"></script>
 </body>
 </html>
