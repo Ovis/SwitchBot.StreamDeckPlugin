@@ -7,6 +7,7 @@ import { StreamDeckFeedback } from "./streamdeck-feedback.js";
 export interface OutputOptions {
   copyResponseToClipboard: boolean;
   prettyPrint: boolean;
+  showSuccessFeedback?: boolean;
 }
 
 export class OutputProcessor {
@@ -25,7 +26,9 @@ export class OutputProcessor {
       if (options.copyResponseToClipboard) {
         await this.clipboardOutput.write(result, options.prettyPrint);
       }
-      await this.feedback.success(action);
+      if (options.showSuccessFeedback !== false) {
+        await this.feedback.success(action);
+      }
       return true;
     } catch (error) {
       streamDeck.logger.error("Output processing failed", {
