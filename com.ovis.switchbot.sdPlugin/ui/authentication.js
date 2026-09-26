@@ -7,10 +7,10 @@
     host.innerHTML = `
       <sdpi-heading>Authentication</sdpi-heading>
       <sdpi-item label="Token">
-        <sdpi-textfield id="switchbot-token" type="password"></sdpi-textfield>
+        <sdpi-password id="switchbot-token"></sdpi-password>
       </sdpi-item>
       <sdpi-item label="Secret">
-        <sdpi-textfield id="switchbot-secret" type="password"></sdpi-textfield>
+        <sdpi-password id="switchbot-secret"></sdpi-password>
       </sdpi-item>
       <sdpi-item>
         <sdpi-button id="switchbot-test-connection">Test Connection</sdpi-button>
@@ -42,7 +42,7 @@
     status.textContent = "Testing...";
     status.className = "auth-status";
     await save();
-    streamDeckClient.sendToPlugin({ type: "testConnection" });
+    await streamDeckClient.send("sendToPlugin", { type: "testConnection" });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -51,7 +51,7 @@
     document.getElementById("switchbot-secret")?.addEventListener("change", save);
     document.getElementById("switchbot-test-connection")?.addEventListener("click", testConnection);
 
-    streamDeckClient.on("sendToPropertyInspector", ev => {
+    streamDeckClient.sendToPropertyInspector.subscribe(ev => {
       const payload = ev?.payload;
       if (payload?.type !== "testConnectionResult") return;
       const status = document.getElementById("switchbot-auth-status");
