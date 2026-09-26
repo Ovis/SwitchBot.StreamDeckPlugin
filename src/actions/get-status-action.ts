@@ -1,15 +1,16 @@
-import streamDeck, { action, type KeyDownEvent, SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 
 @action({ UUID: "com.ovis.switchbot.get-status" })
-export class GetStatusAction extends SingletonAction<GetStatusSettingsV1> {
+export class GetStatusAction extends AuthenticatedAction<GetStatusSettingsV1> {
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor
   ) {
-    super();
+    super(executor);
   }
 
   override async onKeyDown(ev: KeyDownEvent<GetStatusSettingsV1>): Promise<void> {
