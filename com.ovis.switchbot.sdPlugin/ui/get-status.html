@@ -4,13 +4,16 @@
   <meta charset="utf-8" />
   <title>SwitchBot Get Status</title>
   <script src="sdpi-components.js"></script>
+  <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
+  <div id="switchbot-authentication"></div>
   <sdpi-item label="Device ID">
     <sdpi-textfield setting="deviceId" required></sdpi-textfield>
   </sdpi-item>
   <sdpi-item label="Pretty print">
     <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
   </sdpi-item>
+  <script src="authentication.js"></script>
 </body>
 </html>
