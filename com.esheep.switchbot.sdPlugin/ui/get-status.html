@@ -33,11 +33,11 @@
   <script>
     function localizeUi() {
       const { t } = SwitchBotI18n;
-      document.getElementById("device-item").label = t("Device", "デバイス");
+      document.getElementById("device-item").setAttribute("label", t("Device", "デバイス"));
       document.getElementById("output-heading").textContent = t("Output", "出力");
-      document.getElementById("show-key-item").label = t("Show on key", "キーに表示");
-      document.getElementById("copy-json-item").label = t("Copy JSON", "JSONをコピー");
-      document.getElementById("pretty-item").label = t("Pretty print", "整形");
+      document.getElementById("show-key-item").setAttribute("label", t("Show on key", "キーに表示"));
+      document.getElementById("copy-json-item").setAttribute("label", t("Copy JSON", "JSONをコピー"));
+      document.getElementById("pretty-item").setAttribute("label", t("Pretty print", "整形"));
     }
     document.addEventListener("DOMContentLoaded", localizeUi);
     document.addEventListener("switchbot-locale-changed", localizeUi);
