@@ -1,15 +1,12 @@
-import streamDeck, { SingletonAction, type SendToPluginEvent } from "@elgato/streamdeck";
+import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 
-type AuthMessage = { type?: unknown };
-
-export abstract class AuthenticatedAction<TSettings extends Record<string, unknown> = Record<string, never>>
-  extends SingletonAction<TSettings> {
+export abstract class AuthenticatedAction extends SingletonAction<any> {
   protected constructor(private readonly authExecutor: RequestExecutor) {
     super();
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent<AuthMessage, TSettings>): Promise<void> {
+  override async onSendToPlugin(ev: any): Promise<void> {
     if (ev.payload?.type !== "testConnection") return;
 
     const result = await this.authExecutor.execute({
