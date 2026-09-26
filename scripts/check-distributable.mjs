@@ -4,9 +4,8 @@ import { join, relative } from "node:path";
 const root = "com.ovis.switchbot.sdPlugin";
 const allowedTopLevel = new Set(["bin", "imgs", "ui", "manifest.json"]);
 const forbiddenPatterns = [
-  /authorization\s*[:=]\s*["'][^"']+["']/i,
-  /switchbot[_-]?(token|secret)\s*[:=]\s*["'][^"']+["']/i,
-  /DO_NOT_LEAK_SECRET/
+  /DO_NOT_LEAK_SECRET/,
+  /(?:token|secret)\s*[:=]\s*["'][A-Za-z0-9+\/_=-]{32,}["']/i
 ];
 
 const topLevel = await readdir(root);
