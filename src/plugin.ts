@@ -1,4 +1,5 @@
 import streamDeck from "@elgato/streamdeck";
+import { ApiRequestAction } from "./actions/api-request-action.js";
 import { GetDevicesAction } from "./actions/get-devices-action.js";
 import { GetStatusAction } from "./actions/get-status-action.js";
 import { SwitchBotClient } from "./api/switchbot-client.js";
@@ -16,6 +17,7 @@ const output = new OutputProcessor(
   new ClipboardOutput(new SystemClipboardService())
 );
 
+streamDeck.actions.registerAction(new ApiRequestAction(executor, output));
 streamDeck.actions.registerAction(new GetDevicesAction(executor, output));
 streamDeck.actions.registerAction(new GetStatusAction(executor, output));
 
