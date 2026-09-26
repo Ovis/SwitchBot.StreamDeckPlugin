@@ -21,7 +21,13 @@ export function clipboardCommand(platform: NodeJS.Platform): { file: string; arg
     case "win32":
       return {
         file: "powershell.exe",
-        args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "$input | Set-Clipboard"]
+        args: [
+          "-NoLogo",
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "$reader = [System.IO.StreamReader]::new([Console]::OpenStandardInput(), [System.Text.UTF8Encoding]::new($false)); try { Set-Clipboard -Value $reader.ReadToEnd() } finally { $reader.Dispose() }"
+        ]
       };
     case "darwin":
       return { file: "pbcopy", args: [] };
