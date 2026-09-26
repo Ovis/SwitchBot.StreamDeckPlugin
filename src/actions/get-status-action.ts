@@ -4,16 +4,19 @@ import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
-import { formatStatusForKey } from "../output/status-title-formatter.js";
+import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 
 @action({ UUID: "com.ovis.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
+  private readonly locale: DisplayLocale;
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor,
     private readonly catalogStore: DeviceCatalogStore
+    locale?: string
   ) {
     super(executor);
+    this.locale = displayLocale(locale);
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
@@ -26,7 +29,7 @@ export class GetStatusAction extends AuthenticatedAction {
       await streamDeck.ui.sendToPropertyInspector({
         event: "getDevices",
         items: selectableDevices(catalog?.devices ?? [], settings.deviceId).map(device => ({
-          label: deviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted),
+          label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
           value: device.deviceId
         }))
       });
@@ -62,7 +65,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }
 
     if (result.success && settings.output.showStatusOnKey) {
-      const title = formatStatusForKey(result.response?.body);
+      const title = formatStatusForKey(result.response?.body, this.locale);
       if (title) await ev.action.setTitle(title);
     }
 
@@ -76,13 +79,6 @@ export class GetStatusAction extends AuthenticatedAction {
     );
   }
 }
-
-function deviceLabel(name: string, type: string, id: string, deleted: boolean): string {
-  const displayName = name.trim() || "Unnamed device";
-  const displayType = type.trim() || "Unknown type";
-  return `${deleted ? "[Deleted] " : ""}${displayName} — ${displayType} (${id})`;
-}
-
 
 export interface SelectableDevice {
   deviceId: string;
