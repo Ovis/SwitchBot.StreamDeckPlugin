@@ -6,11 +6,20 @@ import { SWITCHBOT_API_ORIGIN, validateExecutionRequest } from "../utils/validat
 
 export type FetchLike = typeof fetch;
 
+export interface SwitchBotClientOptions {
+  timeoutMs?: number;
+}
+
 export class SwitchBotClient {
+  readonly #timeoutMs: number;
+
   constructor(
     private readonly auth = new SwitchBotAuth(),
-    private readonly fetchImpl: FetchLike = fetch
-  ) {}
+    private readonly fetchImpl: FetchLike = fetch,
+    options: SwitchBotClientOptions = {}
+  ) {
+    this.#timeoutMs = options.timeoutMs ?? 10_000;
+  }
 
   async request(request: ExecutionRequest, credentials: SwitchBotCredentials): Promise<SwitchBotRawResponse> {
     const validationError = validateExecutionRequest(request);
@@ -27,7 +36,8 @@ export class SwitchBotClient {
 
     const init: RequestInit = {
       method: request.method,
-      headers
+      headers,
+      signal: AbortSignal.timeout(this.#timeoutMs)
     };
 
     if ((request.method === "POST" || request.method === "PUT") && request.body !== undefined) {
