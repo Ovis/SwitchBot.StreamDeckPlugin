@@ -1,19 +1,20 @@
 (() => {
   const { streamDeckClient } = SDPIComponents;
+  const t = (en, ja) => window.SwitchBotI18n?.t(en, ja) ?? en;
 
   function render() {
     const host = document.getElementById("switchbot-authentication");
     if (!host) return;
     host.innerHTML = `
-      <sdpi-heading>Authentication</sdpi-heading>
-      <sdpi-item label="Token">
+      <sdpi-heading>${t("Authentication", "認証")}</sdpi-heading>
+      <sdpi-item label="${t("Token", "トークン")}">
         <sdpi-password id="switchbot-token"></sdpi-password>
       </sdpi-item>
-      <sdpi-item label="Secret">
+      <sdpi-item label="${t("Secret", "シークレット")}">
         <sdpi-password id="switchbot-secret"></sdpi-password>
       </sdpi-item>
       <sdpi-item>
-        <sdpi-button id="switchbot-test-connection">Test Connection</sdpi-button>
+        <sdpi-button id="switchbot-test-connection">${t("Test Connection", "接続テスト")}</sdpi-button>
       </sdpi-item>
       <div id="switchbot-auth-status" class="auth-status" aria-live="polite"></div>`;
   }
@@ -39,7 +40,7 @@
 
   async function testConnection() {
     const status = document.getElementById("switchbot-auth-status");
-    status.textContent = "Testing...";
+    status.textContent = t("Testing...", "テスト中...");
     status.className = "auth-status";
     await save();
     await streamDeckClient.send("sendToPlugin", { type: "testConnection" });
@@ -55,7 +56,7 @@
       const payload = ev?.payload;
       if (payload?.type !== "testConnectionResult") return;
       const status = document.getElementById("switchbot-auth-status");
-      status.textContent = payload.message ?? (payload.success ? "Connection successful." : "Connection failed.");
+      status.textContent = payload.message ?? (payload.success ? t("Connection successful.", "接続に成功しました。") : t("Connection failed.", "接続に失敗しました。"));
       status.className = payload.success ? "auth-status auth-success" : "auth-status auth-error";
     });
 
