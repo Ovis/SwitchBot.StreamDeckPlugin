@@ -29,7 +29,8 @@
           "Image": "imgs/key"
         }
       ],
-      "PropertyInspectorPath": "ui/get-status.html"
+      "PropertyInspectorPath": "ui/get-status.html",
+      "UserTitleEnabled": false
     },
     {
       "Name": "API Request",
