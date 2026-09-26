@@ -25,8 +25,6 @@
     const secretItem = document.getElementById("switchbot-secret-item");
     const button = document.getElementById("switchbot-test-connection");
     if (heading) heading.textContent = t("Authentication", "認証");
-    if (tokenItem) tokenItem.setAttribute("label", t("Token", "トークン"));
-    if (secretItem) secretItem.setAttribute("label", t("Secret", "シークレット"));
     if (button) button.textContent = t("Test Connection", "接続テスト");
   }
 
@@ -70,6 +68,18 @@
     console.info("[SwitchBot PI] sendToPlugin complete");
   }
 
+  function connectionFailureText(category) {
+    switch (category) {
+      case "configuration": return t("Token and Secret are required.", "トークンとシークレットを入力してください。");
+      case "authentication": return t("Authentication failed. Check Token and Secret.", "認証に失敗しました。トークンとシークレットを確認してください。");
+      case "network": return t("Network request failed.", "ネットワーク通信に失敗しました。");
+      case "http": return t("SwitchBot returned an HTTP error.", "SwitchBot APIからHTTPエラーが返されました。");
+      case "switchbot": return t("SwitchBot rejected the request.", "SwitchBot APIにリクエストを拒否されました。");
+      case "response": return t("SwitchBot returned an unexpected response.", "SwitchBot APIから予期しないレスポンスが返されました。");
+      default: return t("Connection test failed.", "接続テストに失敗しました。");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     console.info("[SwitchBot PI] authentication DOMContentLoaded");
     render();
@@ -83,7 +93,9 @@
       const payload = ev?.payload;
       if (payload?.type !== "testConnectionResult") return;
       const status = document.getElementById("switchbot-auth-status");
-      status.textContent = payload.message ?? (payload.success ? t("Connection successful.", "接続に成功しました。") : t("Connection failed.", "接続に失敗しました。"));
+      status.textContent = payload.success
+        ? t("Connection successful.", "接続に成功しました。")
+        : connectionFailureText(payload.errorCategory);
       status.className = payload.success ? "auth-status auth-success" : "auth-status auth-error";
     });
 
