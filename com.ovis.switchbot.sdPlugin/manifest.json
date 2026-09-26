@@ -3,7 +3,7 @@
   "Actions": [
     {
       "Name": "Get Devices",
-      "Tooltip": "Get the SwitchBot device list and copy the JSON response.",
+      "Tooltip": "Refresh the saved SwitchBot device catalog.",
       "UUID": "com.ovis.switchbot.get-devices",
       "Icon": "imgs/action",
       "Controllers": [
@@ -18,7 +18,7 @@
     },
     {
       "Name": "Get Status",
-      "Tooltip": "Get a SwitchBot device status and copy the JSON response.",
+      "Tooltip": "Get the selected SwitchBot device status and copy the JSON response.",
       "UUID": "com.ovis.switchbot.get-status",
       "Icon": "imgs/action",
       "Controllers": [
