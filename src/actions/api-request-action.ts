@@ -6,7 +6,7 @@ import type { OutputProcessor } from "../output/output-processor.js";
 import { normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 
 @action({ UUID: "com.ovis.switchbot.api-request" })
-export class ApiRequestAction extends AuthenticatedAction<ApiRequestSettingsV1> {
+export class ApiRequestAction extends AuthenticatedAction {
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor
