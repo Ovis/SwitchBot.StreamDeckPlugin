@@ -23,6 +23,8 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm test
+      - name: Test release version mapping
+        run: npm run test:release-version
       - name: Build
         run: npm run build
       - name: Inspect distributable
