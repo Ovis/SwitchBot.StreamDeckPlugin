@@ -73,7 +73,8 @@ export class GetStatusAction extends AuthenticatedAction {
       result,
       {
         copyResponseToClipboard: settings.output.copyResponseToClipboard,
-        prettyPrint: settings.output.prettyPrint
+        prettyPrint: settings.output.prettyPrint,
+        showSuccessFeedback: false
       },
       ev.action
     );
