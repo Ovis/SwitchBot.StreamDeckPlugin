@@ -5,7 +5,13 @@ describe("clipboardCommand", () => {
   it("uses PowerShell on Windows", () => {
     expect(clipboardCommand("win32")).toEqual({
       file: "powershell.exe",
-      args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "$input | Set-Clipboard"]
+      args: [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "$reader = [System.IO.StreamReader]::new([Console]::OpenStandardInput(), [System.Text.UTF8Encoding]::new($false)); try { Set-Clipboard -Value $reader.ReadToEnd() } finally { $reader.Dispose() }"
+      ]
     });
   });
 
