@@ -1,4 +1,4 @@
-import type { JsonObject } from "@elgato/streamdeck";
+import type JsonObject from "@elgato/streamdeck";
 import { z } from "zod";
 
 export const DEFAULT_API_REQUEST_BODY = `{
