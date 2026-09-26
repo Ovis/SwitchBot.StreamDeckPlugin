@@ -2,8 +2,8 @@
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "Actions": [
     {
-      "Name": "Get Devices",
-      "Tooltip": "Refresh the saved SwitchBot device catalog.",
+      "Name": "$Localization:Actions.GetDevices.Name",
+      "Tooltip": "$Localization:Actions.GetDevices.Tooltip",
       "UUID": "com.ovis.switchbot.get-devices",
       "Icon": "imgs/action",
       "Controllers": [
@@ -17,8 +17,8 @@
       "PropertyInspectorPath": "ui/get-devices.html"
     },
     {
-      "Name": "Get Status",
-      "Tooltip": "Get the selected SwitchBot device status and copy the JSON response.",
+      "Name": "$Localization:Actions.GetStatus.Name",
+      "Tooltip": "$Localization:Actions.GetStatus.Tooltip",
       "UUID": "com.ovis.switchbot.get-status",
       "Icon": "imgs/action",
       "Controllers": [
@@ -32,8 +32,8 @@
       "PropertyInspectorPath": "ui/get-status.html"
     },
     {
-      "Name": "API Request",
-      "Tooltip": "Send a configured request to SwitchBot OpenAPI.",
+      "Name": "$Localization:Actions.ApiRequest.Name",
+      "Tooltip": "$Localization:Actions.ApiRequest.Tooltip",
       "UUID": "com.ovis.switchbot.api-request",
       "Icon": "imgs/action",
       "Controllers": [
@@ -49,9 +49,9 @@
   ],
   "Author": "Ovis",
   "CodePath": "bin/plugin.js",
-  "Description": "Advanced Stream Deck client for SwitchBot OpenAPI v1.1.",
+  "Description": "$Localization:Description",
   "Icon": "imgs/plugin",
-  "Name": "SwitchBot API",
+  "Name": "$Localization:Name",
   "Nodejs": {
     "Version": "24"
   },
@@ -73,6 +73,7 @@
   "Version": "0.1.0.0",
   "URL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin",
   "SupportURL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin/issues",
-  "Category": "SwitchBot API Call",
-  "CategoryIcon": "imgs/action"
+  "Category": "$Localization:Category",
+  "CategoryIcon": "imgs/action",
+  "LocalizationPath": "."
 }
