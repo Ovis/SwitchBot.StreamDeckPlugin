@@ -1,12 +1,14 @@
 import { z } from "zod";
 import type { SwitchBotCredentials } from "../api/switchbot-auth.js";
+import { DeviceCatalogSchema } from "./device-catalog.js";
 
 const GlobalSettingsSchema = z.object({
   version: z.literal(1).default(1),
   credentials: z.object({
     token: z.string().default(""),
     secret: z.string().default("")
-  }).optional()
+  }).optional(),
+  deviceCatalog: DeviceCatalogSchema.optional()
 });
 
 export type GlobalSettingsV1 = z.infer<typeof GlobalSettingsSchema>;
