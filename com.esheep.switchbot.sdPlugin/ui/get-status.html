@@ -9,7 +9,7 @@
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item id="device-item" label="Device">
+  <sdpi-item id="device-item" label="Device" data-ja-label="デバイス">
     <sdpi-select
       setting="deviceId"
       label-setting="deviceLabel"
@@ -20,24 +20,20 @@
       hot-reload>
     </sdpi-select>
   </sdpi-item>
-  <div id="output-heading" class="section-heading">Output</div>
-  <sdpi-item id="show-key-item" label="Show on key">
+  <div id="output-heading" class="section-heading" data-ja-text="出力">Output</div>
+  <sdpi-item id="show-key-item" label="Show on key" data-ja-label="キーに表示">
     <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="copy-json-item" label="Copy JSON">
+  <sdpi-item id="copy-json-item" label="Copy JSON" data-ja-label="JSONをコピー">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="pretty-item" label="Pretty print">
+  <sdpi-item id="pretty-item" label="Pretty print" data-ja-label="整形">
     <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
   </sdpi-item>
   <script>
     function localizeUi() {
       const { t } = SwitchBotI18n;
-      document.getElementById("device-item").setAttribute("label", t("Device", "デバイス"));
       document.getElementById("output-heading").textContent = t("Output", "出力");
-      document.getElementById("show-key-item").setAttribute("label", t("Show on key", "キーに表示"));
-      document.getElementById("copy-json-item").setAttribute("label", t("Copy JSON", "JSONをコピー"));
-      document.getElementById("pretty-item").setAttribute("label", t("Pretty print", "整形"));
     }
     document.addEventListener("DOMContentLoaded", localizeUi);
     document.addEventListener("switchbot-locale-changed", localizeUi);
