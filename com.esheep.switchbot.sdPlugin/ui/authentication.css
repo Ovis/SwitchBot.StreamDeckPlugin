@@ -6,12 +6,6 @@
   --switchbot-pi-error: #e57373;
 }
 
-.auth-heading {
-  margin: 12px 8px 6px;
-  color: #d8d8d8;
-  font-size: 13px;
-  font-weight: 600;
-}
 
 .auth-status {
   margin: 4px 8px 8px 116px;
@@ -29,7 +23,13 @@
 #json-status.valid { color: var(--switchbot-pi-success); }
 #json-status.invalid { color: var(--switchbot-pi-error); }
 
-.switchbot-heading,
-sdpi-heading {
-  color: #d8d8d8 !important;
+
+.section-heading {
+  box-sizing: border-box;
+  margin: 12px 8px 6px 116px;
+  color: #d8d8d8;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
 }
