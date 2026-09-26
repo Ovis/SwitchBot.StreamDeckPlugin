@@ -1,3 +1,30 @@
-.auth-status { margin: 4px 8px 8px 116px; font-size: 11px; }
-.auth-success { color: #69c779; }
-.auth-error { color: #e57373; }
+:root {
+  color-scheme: dark light;
+  --switchbot-pi-text: CanvasText;
+  --switchbot-pi-muted-text: GrayText;
+  --switchbot-pi-success: #69c779;
+  --switchbot-pi-error: #e57373;
+}
+
+.auth-heading {
+  margin: 12px 8px 6px;
+  color: var(--switchbot-pi-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-status {
+  margin: 4px 8px 8px 116px;
+  color: var(--switchbot-pi-text);
+  font-size: 11px;
+}
+
+.auth-success { color: var(--switchbot-pi-success); }
+.auth-error { color: var(--switchbot-pi-error); }
+
+#json-status {
+  color: var(--switchbot-pi-text);
+}
+
+#json-status.valid { color: var(--switchbot-pi-success); }
+#json-status.invalid { color: var(--switchbot-pi-error); }
