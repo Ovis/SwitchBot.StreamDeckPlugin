@@ -8,18 +8,19 @@
   <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
+  <div id="catalog-heading" class="section-heading">Device catalog</div>
+  <div id="catalog-description" class="section-description">
+    Pressing the action refreshes the saved device catalog used by other actions.
+  </div>
   <div id="switchbot-authentication"></div>
   <sdpi-item id="copy-json-item" label="__MSG_copyJson__">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="catalog-item" label="__MSG_deviceCatalog__">
-    Pressing the action refreshes the saved device catalog used by other actions.
-  </sdpi-item>
   <script>
     function localizeUi() {
       const { t } = SwitchBotI18n;
-      const catalog = document.getElementById("catalog-item");
-      catalog.textContent = t("Pressing the action refreshes the saved device catalog used by other actions.", "アクションを押すと、他のアクションで使用する保存済みデバイス一覧を最新化します。");
+      document.getElementById("catalog-heading").textContent = t("Device catalog", "デバイス一覧");
+      document.getElementById("catalog-description").textContent = t("Pressing the action refreshes the saved device catalog used by other actions.", "アクションを押すと、他のアクションで使用する保存済みデバイス一覧を最新化します。");
     }
     document.addEventListener("DOMContentLoaded", localizeUi);
     document.addEventListener("switchbot-locale-changed", localizeUi);
