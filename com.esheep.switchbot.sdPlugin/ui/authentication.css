@@ -8,14 +8,14 @@
 
 .auth-heading {
   margin: 12px 8px 6px;
-  color: var(--switchbot-pi-text);
+  color: #d8d8d8;
   font-size: 13px;
   font-weight: 600;
 }
 
 .auth-status {
   margin: 4px 8px 8px 116px;
-  color: var(--switchbot-pi-text);
+  color: #d8d8d8;
   font-size: 11px;
 }
 
@@ -23,8 +23,13 @@
 .auth-error { color: var(--switchbot-pi-error); }
 
 #json-status {
-  color: var(--switchbot-pi-text);
+  color: #d8d8d8;
 }
 
 #json-status.valid { color: var(--switchbot-pi-success); }
 #json-status.invalid { color: var(--switchbot-pi-error); }
+
+.switchbot-heading,
+sdpi-heading {
+  color: #d8d8d8 !important;
+}
