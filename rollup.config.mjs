@@ -5,7 +5,7 @@ import typescript from "@rollup/plugin-typescript";
 export default {
   input: "src/plugin.ts",
   output: {
-    file: "com.ovis.switchbot.sdPlugin/bin/plugin.js",
+    file: "com.esheep.switchbot.sdPlugin/bin/plugin.js",
     format: "esm",
     sourcemap: false
   },
