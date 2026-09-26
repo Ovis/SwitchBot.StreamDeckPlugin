@@ -7,12 +7,19 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
+    streamDeck.logger.info("Property Inspector message received", {
+      type: typeof ev.payload?.type === "string" ? ev.payload.type : "(missing)"
+    });
     if (ev.payload?.type !== "testConnection") return;
+
+    streamDeck.logger.info("Test Connection request started");
 
     const result = await this.authExecutor.execute({
       method: "GET",
       path: "/v1.1/devices"
     });
+
+    streamDeck.logger.info("Test Connection request completed", { success: result.success });
 
     if (!result.success) {
       streamDeck.logger.error("Test Connection failed", {
