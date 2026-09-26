@@ -8,7 +8,7 @@ const GlobalSettingsSchema = z.object({
     token: z.string().default(""),
     secret: z.string().default("")
   }).optional(),
-  deviceCatalog: DeviceCatalogSchema.optional()
+  deviceCatalog: DeviceCatalogSchema.optional().catch(undefined)
 });
 
 export type GlobalSettingsV1 = z.infer<typeof GlobalSettingsSchema>;
