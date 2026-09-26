@@ -19,8 +19,8 @@ const output = new OutputProcessor(
 );
 const catalogStore = new DeviceCatalogStore();
 
+await streamDeck.connect();
+
 streamDeck.actions.registerAction(new ApiRequestAction(executor, output));
 streamDeck.actions.registerAction(new GetDevicesAction(executor, output, catalogStore));
 streamDeck.actions.registerAction(new GetStatusAction(executor, output, catalogStore, streamDeck.info.application.language));
-
-await streamDeck.connect();
