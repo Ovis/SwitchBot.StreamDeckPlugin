@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 
-const root = "com.ovis.switchbot.sdPlugin";
+const root = "com.esheep.switchbot.sdPlugin";
 const allowedTopLevel = new Set(["bin", "imgs", "ui", "manifest.json", "en.json", "ja.json"]);
 const forbiddenPatterns = [
   /DO_NOT_LEAK_SECRET/,
