@@ -2,7 +2,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 const root = "com.ovis.switchbot.sdPlugin";
-const allowedTopLevel = new Set(["bin", "imgs", "ui", "manifest.json", "en.json", "ja.json"]);
+const allowedTopLevel = new Set(["bin", "imgs", "ui", "manifest.json", "en.lproj", "ja.lproj"]);
 const forbiddenPatterns = [
   /DO_NOT_LEAK_SECRET/,
   /(?:token|secret)\s*[:=]\s*["'][A-Za-z0-9+\/_=-]{32,}["']/i
