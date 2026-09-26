@@ -12,7 +12,7 @@ export class GetStatusAction extends AuthenticatedAction {
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor,
-    private readonly catalogStore: DeviceCatalogStore
+    private readonly catalogStore: DeviceCatalogStore,
     locale?: string
   ) {
     super(executor);
