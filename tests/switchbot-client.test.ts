@@ -45,6 +45,25 @@ describe("SwitchBotClient", () => {
     expect((init.headers as Headers).get("Content-Type")).toBe("application/json");
   });
 
+  it("applies the configured request timeout", async () => {
+    const fetchImpl = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      expect(init?.signal?.aborted).toBe(false);
+      return new Response(JSON.stringify({ statusCode: 100 }), { status: 200 });
+    }) as unknown as FetchLike;
+    const client = new SwitchBotClient(
+      new SwitchBotAuth({ now: () => 1, nonce: () => "n" }),
+      fetchImpl,
+      { timeoutMs: 50 }
+    );
+
+    await client.request(
+      { method: "GET", path: "/v1.1/devices" },
+      { token: "t", secret: "s" }
+    );
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
   it("rejects an alternate origin before fetch", async () => {
     const fetchImpl = vi.fn() as unknown as FetchLike;
     const client = new SwitchBotClient(undefined, fetchImpl);
