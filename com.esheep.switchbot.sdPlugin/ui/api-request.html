@@ -88,11 +88,11 @@
       if (event.target?.getAttribute?.("setting") === "body") validateJson();
     });
     function localizeUi() {
-      document.getElementById("method-item").label = t("Method", "メソッド");
-      document.getElementById("path-item").label = t("Path", "パス");
-      document.getElementById("body-label-item").label = t("Request Body", "リクエスト本文");
-      document.getElementById("copy-item").label = t("Copy response", "レスポンスをコピー");
-      document.getElementById("pretty-item").label = t("Pretty print", "整形");
+      document.getElementById("method-item").setAttribute("label", t("Method", "メソッド"));
+      document.getElementById("path-item").setAttribute("label", t("Path", "パス"));
+      document.getElementById("body-label-item").setAttribute("label", t("Request Body", "リクエスト本文"));
+      document.getElementById("copy-item").setAttribute("label", t("Copy response", "レスポンスをコピー"));
+      document.getElementById("pretty-item").setAttribute("label", t("Pretty print", "整形"));
       updateBodyVisibility();
       setTimeout(updateBodyVisibility, 100);
     }
