@@ -4,8 +4,11 @@ const GetStatusSettingsSchema = z.object({
   version: z.literal(1).default(1),
   deviceId: z.string().catch("").default(""),
   output: z.object({
+    showStatusOnKey: z.boolean().catch(true).default(true),
+    copyResponseToClipboard: z.boolean().catch(false).default(false),
     prettyPrint: z.boolean().catch(true).default(true)
-  }).catch({ prettyPrint: true }).default({ prettyPrint: true })
+  }).catch({ showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true })
+    .default({ showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true })
 });
 
 export type GetStatusSettingsV1 = z.infer<typeof GetStatusSettingsSchema>;
