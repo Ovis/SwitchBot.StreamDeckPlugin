@@ -7,7 +7,7 @@ export default {
   output: {
     file: "com.ovis.switchbot.sdPlugin/bin/plugin.js",
     format: "esm",
-    sourcemap: true
+    sourcemap: false
   },
   plugins: [
     nodeResolve({ preferBuiltins: true }),
