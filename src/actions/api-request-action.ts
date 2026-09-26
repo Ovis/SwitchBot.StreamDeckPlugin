@@ -5,7 +5,7 @@ import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import { normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 
-@action({ UUID: "com.ovis.switchbot.api-request" })
+@action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {
   constructor(
     private readonly executor: RequestExecutor,
