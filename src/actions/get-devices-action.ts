@@ -6,7 +6,7 @@ import { deviceCatalogFromResponse, mergeDeviceCatalog } from "../settings/devic
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import { normalizeGetDevicesSettings, type GetDevicesSettingsV1 } from "../settings/get-devices-settings.js";
 
-@action({ UUID: "com.ovis.switchbot.get-devices" })
+@action({ UUID: "com.esheep.switchbot.get-devices" })
 export class GetDevicesAction extends AuthenticatedAction {
   constructor(
     private readonly executor: RequestExecutor,
