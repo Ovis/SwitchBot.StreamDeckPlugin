@@ -46,7 +46,7 @@ describe("SwitchBotClient", () => {
   });
 
   it("applies the configured request timeout", async () => {
-    const fetchImpl = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => {
+    const fetchImpl = vi.fn(async (_input: any, init?: RequestInit) => {
       expect(init?.signal).toBeInstanceOf(AbortSignal);
       expect(init?.signal?.aborted).toBe(false);
       return new Response(JSON.stringify({ statusCode: 100 }), { status: 200 });
