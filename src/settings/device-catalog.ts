@@ -4,7 +4,7 @@ const DeviceSchema = z.object({
   deviceId: z.string(),
   deviceName: z.string().catch(""),
   deviceType: z.string().catch(""),
-  lastSeenAt: z.string().optional(),
+  lastSeenAt: z.string().optional().default(""),
   deleted: z.boolean().catch(false).default(false)
 });
 
@@ -12,7 +12,7 @@ const InfraredRemoteSchema = z.object({
   deviceId: z.string(),
   deviceName: z.string().catch(""),
   remoteType: z.string().catch(""),
-  lastSeenAt: z.string().optional(),
+  lastSeenAt: z.string().optional().default(""),
   deleted: z.boolean().catch(false).default(false)
 });
 
@@ -46,7 +46,7 @@ export function mergeDeviceCatalog(previous: DeviceCatalog | undefined, latest: 
   };
 }
 
-function mergeEntries<T extends { deviceId: string; lastSeenAt?: string; deleted: boolean }>(
+function mergeEntries<T extends { deviceId: string; lastSeenAt: string; deleted: boolean }>(
   previous: readonly T[],
   latest: readonly T[]
 ): T[] {
