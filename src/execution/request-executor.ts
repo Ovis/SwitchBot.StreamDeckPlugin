@@ -98,7 +98,7 @@ export class RequestExecutor {
         success: false,
         error: {
           category: "network",
-          message: error instanceof Error ? error.message : "SwitchBot network request failed."
+          message: "SwitchBot network request failed."
         }
       };
     }
