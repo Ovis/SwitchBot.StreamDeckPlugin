@@ -1,0 +1,51 @@
+import { describe, expect, it } from "vitest";
+import { deviceCatalogFromResponse } from "../src/settings/device-catalog.js";
+import { normalizeGetDevicesSettings } from "../src/settings/get-devices-settings.js";
+import { normalizeGlobalSettings } from "../src/settings/global-settings.js";
+
+describe("device catalog", () => {
+  it("extracts physical and infrared devices from a SwitchBot response", () => {
+    const catalog = deviceCatalogFromResponse({
+      statusCode: 100,
+      body: {
+        deviceList: [{ deviceId: "A", deviceName: "温湿度計", deviceType: "MeterPlus", extra: true }],
+        infraredRemoteList: [{ deviceId: "B", deviceName: "エアコン", remoteType: "Air Conditioner" }]
+      },
+      message: "success"
+    }, "2026-09-26T12:00:00.000Z");
+
+    expect(catalog).toEqual({
+      fetchedAt: "2026-09-26T12:00:00.000Z",
+      devices: [{ deviceId: "A", deviceName: "温湿度計", deviceType: "MeterPlus" }],
+      infraredRemotes: [{ deviceId: "B", deviceName: "エアコン", remoteType: "Air Conditioner" }]
+    });
+  });
+
+  it("rejects an incomplete device-list response", () => {
+    expect(deviceCatalogFromResponse({ statusCode: 100, body: {} }, "now")).toBeUndefined();
+  });
+
+  it("does not let a malformed catalog invalidate credentials", () => {
+    expect(normalizeGlobalSettings({
+      version: 1,
+      credentials: { token: "token", secret: "secret" },
+      deviceCatalog: { fetchedAt: 42 }
+    })).toEqual({
+      version: 1,
+      credentials: { token: "token", secret: "secret" }
+    });
+  });
+});
+
+describe("Get Devices settings", () => {
+  it("does not copy JSON by default", () => {
+    expect(normalizeGetDevicesSettings({}).output.copyResponseToClipboard).toBe(false);
+  });
+
+  it("preserves the clipboard option", () => {
+    expect(normalizeGetDevicesSettings({
+      version: 1,
+      output: { copyResponseToClipboard: true }
+    }).output.copyResponseToClipboard).toBe(true);
+  });
+});
