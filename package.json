@@ -6,8 +6,9 @@
   "scripts": {
     "build": "rollup -c",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "validate": "streamdeck validate com.ovis.switchbot.sdPlugin --no-update-check"
+    "test": "vitest run --passWithNoTests",
+    "validate": "streamdeck validate com.ovis.switchbot.sdPlugin --no-update-check",
+    "prebuild": "node scripts/generate-assets.mjs"
   },
   "dependencies": {
     "@elgato/streamdeck": "3.0.0",
