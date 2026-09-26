@@ -26,7 +26,8 @@
 
 .section-heading {
   box-sizing: border-box;
-  margin: 12px 8px 6px 116px;
+  margin: 12px 8px 6px;
+  text-align: center;
   color: #d8d8d8;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 12px;
