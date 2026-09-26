@@ -6,20 +6,31 @@ export const DEFAULT_API_REQUEST_BODY = `{
   "commandType": "command"
 }`;
 
-const ApiRequestSettingsSchema = z.object({
-  version: z.literal(1).default(1),
-  method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("POST"),
-  path: z.string().default(""),
-  body: z.string().default(DEFAULT_API_REQUEST_BODY),
-  output: z.object({
-    copyResponseToClipboard: z.boolean().default(false),
-    prettyPrint: z.boolean().default(true)
-  }).default({ copyResponseToClipboard: false, prettyPrint: true })
-});
+const MethodSchema = z.enum(["GET", "POST", "PUT", "DELETE"]);
+const OutputSchema = z.object({
+  copyResponseToClipboard: z.boolean().catch(false),
+  prettyPrint: z.boolean().catch(true)
+}).catch({ copyResponseToClipboard: false, prettyPrint: true });
 
-export type ApiRequestSettingsV1 = z.infer<typeof ApiRequestSettingsSchema>;
+export interface ApiRequestSettingsV1 {
+  version: 1;
+  method: "GET" | "POST" | "PUT" | "DELETE";
+  path: string;
+  body: string;
+  output: { copyResponseToClipboard: boolean; prettyPrint: boolean };
+}
 
 export function normalizeApiRequestSettings(value: unknown): ApiRequestSettingsV1 {
-  const parsed = ApiRequestSettingsSchema.safeParse(value);
-  return parsed.success ? parsed.data : ApiRequestSettingsSchema.parse({});
+  const record = isRecord(value) && (value.version === undefined || value.version === 1) ? value : {};
+  return {
+    version: 1,
+    method: MethodSchema.catch("POST").parse(record.method),
+    path: z.string().catch("").parse(record.path),
+    body: z.string().catch(DEFAULT_API_REQUEST_BODY).parse(record.body),
+    output: OutputSchema.parse(record.output)
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
