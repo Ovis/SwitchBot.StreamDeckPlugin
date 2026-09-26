@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "validate": "streamdeck validate com.ovis.switchbot.sdPlugin --no-update-check",
-    "prebuild": "node scripts/generate-assets.mjs"
+    "prebuild": "node scripts/generate-assets.mjs",
+    "pack:check": "streamdeck pack com.ovis.switchbot.sdPlugin --dry-run --no-update-check",
+    "security:dist": "node scripts/check-distributable.mjs"
   },
   "dependencies": {
     "@elgato/streamdeck": "3.0.0",
