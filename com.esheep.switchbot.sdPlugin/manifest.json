@@ -4,7 +4,7 @@
     {
       "Name": "Get Devices",
       "Tooltip": "Refresh the saved SwitchBot device catalog.",
-      "UUID": "com.ovis.switchbot.get-devices",
+      "UUID": "com.esheep.switchbot.get-devices",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
@@ -19,7 +19,7 @@
     {
       "Name": "Get Status",
       "Tooltip": "Get the selected SwitchBot device status.",
-      "UUID": "com.ovis.switchbot.get-status",
+      "UUID": "com.esheep.switchbot.get-status",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
@@ -34,7 +34,7 @@
     {
       "Name": "API Request",
       "Tooltip": "Send a configured request to SwitchBot OpenAPI.",
-      "UUID": "com.ovis.switchbot.api-request",
+      "UUID": "com.esheep.switchbot.api-request",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
@@ -51,7 +51,7 @@
   "CodePath": "bin/plugin.js",
   "Description": "Advanced Stream Deck client for SwitchBot OpenAPI v1.1.",
   "Icon": "imgs/plugin",
-  "Name": "SwitchBot API",
+  "Name": "SwitchBot API Call",
   "Nodejs": {
     "Version": "24"
   },
@@ -69,10 +69,10 @@
   "Software": {
     "MinimumVersion": "7.1"
   },
-  "UUID": "com.ovis.switchbot",
+  "UUID": "com.esheep.switchbot",
   "Version": "0.1.0.0",
   "URL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin",
   "SupportURL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin/issues",
-  "Category": "SwitchBot API",
+  "Category": "SwitchBot API Call",
   "CategoryIcon": "imgs/action"
 }
