@@ -1,4 +1,4 @@
-import type { JsonObject } from "@elgato/streamdeck";
+import type JsonObject from "@elgato/streamdeck";
 import { z } from "zod";
 
 export interface GetStatusSettingsV1 extends JsonObject {
