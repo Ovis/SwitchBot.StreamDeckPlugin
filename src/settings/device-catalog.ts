@@ -47,15 +47,15 @@ export function mergeDeviceCatalog(previous: DeviceCatalog | undefined, latest: 
 }
 
 function mergeEntries<T extends { deviceId: string; lastSeenAt?: string; deleted: boolean }>(
-  previous: T[],
-  latest: T[]
+  previous: readonly T[],
+  latest: readonly T[]
 ): T[] {
   const latestById = new Map(latest.map(entry => [entry.deviceId, entry]));
-  const merged = latest.map(entry => ({ ...entry, deleted: false }));
+  const merged: T[] = latest.map(entry => ({ ...entry, deleted: false } as T));
 
   for (const old of previous) {
     if (!latestById.has(old.deviceId)) {
-      merged.push({ ...old, deleted: true });
+      merged.push({ ...old, deleted: true } as T);
     }
   }
 
