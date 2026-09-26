@@ -1,3 +1,4 @@
+import type { JsonObject } from "@elgato/streamdeck";
 import { z } from "zod";
 
 export const DEFAULT_API_REQUEST_BODY = `{
@@ -12,7 +13,7 @@ const OutputSchema = z.object({
   prettyPrint: z.boolean().catch(true)
 }).catch({ copyResponseToClipboard: false, prettyPrint: true });
 
-export interface ApiRequestSettingsV1 {
+export interface ApiRequestSettingsV1 extends JsonObject {
   version: 1;
   method: "GET" | "POST" | "PUT" | "DELETE";
   path: string;
