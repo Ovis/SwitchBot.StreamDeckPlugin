@@ -1,6 +1,23 @@
 (() => {
   const { streamDeckClient } = SDPIComponents;
 
+  function render() {
+    const host = document.getElementById("switchbot-authentication");
+    if (!host) return;
+    host.innerHTML = `
+      <sdpi-heading>Authentication</sdpi-heading>
+      <sdpi-item label="Token">
+        <sdpi-textfield id="switchbot-token" type="password"></sdpi-textfield>
+      </sdpi-item>
+      <sdpi-item label="Secret">
+        <sdpi-textfield id="switchbot-secret" type="password"></sdpi-textfield>
+      </sdpi-item>
+      <sdpi-item>
+        <sdpi-button id="switchbot-test-connection">Test Connection</sdpi-button>
+      </sdpi-item>
+      <div id="switchbot-auth-status" class="auth-status" aria-live="polite"></div>`;
+  }
+
   async function load() {
     const settings = await streamDeckClient.getGlobalSettings();
     const credentials = settings?.credentials ?? {};
@@ -23,12 +40,13 @@
   async function testConnection() {
     const status = document.getElementById("switchbot-auth-status");
     status.textContent = "Testing...";
-    status.className = "";
+    status.className = "auth-status";
     await save();
     streamDeckClient.sendToPlugin({ type: "testConnection" });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    render();
     document.getElementById("switchbot-token")?.addEventListener("change", save);
     document.getElementById("switchbot-secret")?.addEventListener("change", save);
     document.getElementById("switchbot-test-connection")?.addEventListener("click", testConnection);
@@ -38,7 +56,7 @@
       if (payload?.type !== "testConnectionResult") return;
       const status = document.getElementById("switchbot-auth-status");
       status.textContent = payload.message ?? (payload.success ? "Connection successful." : "Connection failed.");
-      status.className = payload.success ? "auth-success" : "auth-error";
+      status.className = payload.success ? "auth-status auth-success" : "auth-status auth-error";
     });
 
     void load();
