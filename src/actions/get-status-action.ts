@@ -21,7 +21,7 @@ export class GetStatusAction extends AuthenticatedAction {
       await streamDeck.ui.sendToPropertyInspector({
         event: "getDevices",
         items: (catalog?.devices ?? []).map(device => ({
-          label: deviceLabel(device.deviceName, device.deviceType, device.deviceId),
+          label: deviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted),
           value: device.deviceId
         }))
       });
@@ -64,8 +64,8 @@ export class GetStatusAction extends AuthenticatedAction {
   }
 }
 
-function deviceLabel(name: string, type: string, id: string): string {
+function deviceLabel(name: string, type: string, id: string, deleted: boolean): string {
   const displayName = name.trim() || "Unnamed device";
   const displayType = type.trim() || "Unknown type";
-  return `${displayName} — ${displayType} (${id})`;
+  return `${deleted ? "[Deleted] " : ""}${displayName} — ${displayType} (${id})`;
 }
