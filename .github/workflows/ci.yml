@@ -21,6 +21,9 @@ jobs:
         run: npm ci
       - name: Type check
         run: npm run typecheck
+
+      - name: Check Property Inspector JavaScript
+        run: npm run check:pi-js
       - name: Test
         run: npm test
       - name: Test release version mapping
