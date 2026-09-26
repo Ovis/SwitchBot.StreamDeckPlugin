@@ -1,16 +1,17 @@
-import streamDeck, { action, type KeyDownEvent, SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import { normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 
 @action({ UUID: "com.ovis.switchbot.api-request" })
-export class ApiRequestAction extends SingletonAction<ApiRequestSettingsV1> {
+export class ApiRequestAction extends AuthenticatedAction<ApiRequestSettingsV1> {
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor
   ) {
-    super();
+    super(executor);
   }
 
   override async onKeyDown(ev: KeyDownEvent<ApiRequestSettingsV1>): Promise<void> {
