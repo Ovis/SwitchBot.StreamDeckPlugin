@@ -8,6 +8,7 @@ import { ClipboardOutput } from "./output/clipboard-output.js";
 import { OutputProcessor } from "./output/output-processor.js";
 import { StreamDeckCredentialProvider } from "./settings/streamdeck-credential-provider.js";
 import { SystemClipboardService } from "./services/system-clipboard-service.js";
+import { DeviceCatalogStore } from "./settings/device-catalog-store.js";
 
 const executor = new RequestExecutor(
   new SwitchBotClient(),
@@ -16,9 +17,10 @@ const executor = new RequestExecutor(
 const output = new OutputProcessor(
   new ClipboardOutput(new SystemClipboardService())
 );
+const catalogStore = new DeviceCatalogStore();
 
 streamDeck.actions.registerAction(new ApiRequestAction(executor, output));
-streamDeck.actions.registerAction(new GetDevicesAction(executor, output));
-streamDeck.actions.registerAction(new GetStatusAction(executor, output));
+streamDeck.actions.registerAction(new GetDevicesAction(executor, output, catalogStore));
+streamDeck.actions.registerAction(new GetStatusAction(executor, output, catalogStore));
 
 await streamDeck.connect();
