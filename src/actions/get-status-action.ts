@@ -18,9 +18,13 @@ export class GetStatusAction extends AuthenticatedAction {
   override async onSendToPlugin(ev: any): Promise<void> {
     if (ev.payload?.event === "getDevices") {
       const catalog = await this.catalogStore.get();
+      const actionInstance = streamDeck.actions.getActionById(ev.context);
+      const settings = actionInstance
+        ? normalizeGetStatusSettings(await actionInstance.getSettings())
+        : normalizeGetStatusSettings({});
       await streamDeck.ui.sendToPropertyInspector({
         event: "getDevices",
-        items: (catalog?.devices ?? []).map(device => ({
+        items: selectableDevices(catalog?.devices ?? [], settings.deviceId).map(device => ({
           label: deviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted),
           value: device.deviceId
         }))
@@ -68,4 +72,17 @@ function deviceLabel(name: string, type: string, id: string, deleted: boolean): 
   const displayName = name.trim() || "Unnamed device";
   const displayType = type.trim() || "Unknown type";
   return `${deleted ? "[Deleted] " : ""}${displayName} — ${displayType} (${id})`;
+}
+
+
+export interface SelectableDevice {
+  deviceId: string;
+  deviceName: string;
+  deviceType: string;
+  deleted: boolean;
+}
+
+export function selectableDevices<T extends SelectableDevice>(devices: readonly T[], selectedDeviceId: string): T[] {
+  const selected = selectedDeviceId.trim();
+  return devices.filter(device => !device.deleted || device.deviceId === selected);
 }
