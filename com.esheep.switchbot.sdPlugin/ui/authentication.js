@@ -7,10 +7,10 @@
     if (!host) return;
     host.innerHTML = `
       <div id="switchbot-auth-heading" class="section-heading">${t("Authentication", "認証")}</div>
-      <sdpi-item id="switchbot-token-item" label="${t("Token", "トークン")}">
+      <sdpi-item id="switchbot-token-item" label="__MSG_token__">
         <sdpi-password id="switchbot-token"></sdpi-password>
       </sdpi-item>
-      <sdpi-item id="switchbot-secret-item" label="${t("Secret", "シークレット")}">
+      <sdpi-item id="switchbot-secret-item" label="__MSG_secret__">
         <sdpi-password id="switchbot-secret"></sdpi-password>
       </sdpi-item>
       <sdpi-item>
