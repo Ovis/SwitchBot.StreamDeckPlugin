@@ -9,18 +9,16 @@
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item id="copy-json-item" label="Copy JSON">
+  <sdpi-item id="copy-json-item" label="Copy JSON" data-ja-label="JSONをコピー">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="catalog-item" label="Device catalog">
+  <sdpi-item id="catalog-item" label="Device catalog" data-ja-label="デバイス一覧">
     Pressing the action refreshes the saved device catalog used by other actions.
   </sdpi-item>
   <script>
     function localizeUi() {
       const { t } = SwitchBotI18n;
-      document.getElementById("copy-json-item").setAttribute("label", t("Copy JSON", "JSONをコピー"));
       const catalog = document.getElementById("catalog-item");
-      catalog.setAttribute("label", t("Device catalog", "デバイス一覧"));
       catalog.textContent = t("Pressing the action refreshes the saved device catalog used by other actions.", "アクションを押すと、他のアクションで使用する保存済みデバイス一覧を最新化します。");
     }
     document.addEventListener("DOMContentLoaded", localizeUi);
