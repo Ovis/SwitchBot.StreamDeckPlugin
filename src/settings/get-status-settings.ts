@@ -1,23 +1,22 @@
-import type JsonObject from "@elgato/streamdeck";
 import { z } from "zod";
 
-export interface GetStatusSettingsV1 extends JsonObject {
-  version: 1;
-  deviceId: string;
-  output: { prettyPrint: boolean };
-}
+const GetStatusSettingsSchema = z.object({
+  version: z.literal(1).default(1),
+  deviceId: z.string().catch("").default(""),
+  output: z.object({
+    prettyPrint: z.boolean().catch(true).default(true)
+  }).catch({ prettyPrint: true }).default({ prettyPrint: true })
+});
 
-const OutputSchema = z.object({
-  prettyPrint: z.boolean().catch(true)
-}).catch({ prettyPrint: true });
+export type GetStatusSettingsV1 = z.infer<typeof GetStatusSettingsSchema>;
 
 export function normalizeGetStatusSettings(value: unknown): GetStatusSettingsV1 {
-  const record = isRecord(value) && (value.version === undefined || value.version === 1) ? value : {};
-  return {
-    version: 1,
-    deviceId: z.string().catch("").parse(record.deviceId),
-    output: OutputSchema.parse(record.output)
-  };
+  if (isFutureVersion(value)) return GetStatusSettingsSchema.parse({});
+  return GetStatusSettingsSchema.parse(isRecord(value) ? value : {});
+}
+
+function isFutureVersion(value: unknown): boolean {
+  return isRecord(value) && value.version !== undefined && value.version !== 1;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
