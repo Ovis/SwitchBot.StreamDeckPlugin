@@ -1,4 +1,3 @@
-import type JsonObject from "@elgato/streamdeck";
 import { z } from "zod";
 
 export const DEFAULT_API_REQUEST_BODY = `{
@@ -7,29 +6,27 @@ export const DEFAULT_API_REQUEST_BODY = `{
   "commandType": "command"
 }`;
 
-const MethodSchema = z.enum(["GET", "POST", "PUT", "DELETE"]);
-const OutputSchema = z.object({
-  copyResponseToClipboard: z.boolean().catch(false),
-  prettyPrint: z.boolean().catch(true)
-}).catch({ copyResponseToClipboard: false, prettyPrint: true });
+const ApiRequestSettingsSchema = z.object({
+  version: z.literal(1).default(1),
+  method: z.enum(["GET", "POST", "PUT", "DELETE"]).catch("POST").default("POST"),
+  path: z.string().catch("").default(""),
+  body: z.string().catch(DEFAULT_API_REQUEST_BODY).default(DEFAULT_API_REQUEST_BODY),
+  output: z.object({
+    copyResponseToClipboard: z.boolean().catch(false).default(false),
+    prettyPrint: z.boolean().catch(true).default(true)
+  }).catch({ copyResponseToClipboard: false, prettyPrint: true })
+    .default({ copyResponseToClipboard: false, prettyPrint: true })
+});
 
-export interface ApiRequestSettingsV1 extends JsonObject {
-  version: 1;
-  method: "GET" | "POST" | "PUT" | "DELETE";
-  path: string;
-  body: string;
-  output: { copyResponseToClipboard: boolean; prettyPrint: boolean };
-}
+export type ApiRequestSettingsV1 = z.infer<typeof ApiRequestSettingsSchema>;
 
 export function normalizeApiRequestSettings(value: unknown): ApiRequestSettingsV1 {
-  const record = isRecord(value) && (value.version === undefined || value.version === 1) ? value : {};
-  return {
-    version: 1,
-    method: MethodSchema.catch("POST").parse(record.method),
-    path: z.string().catch("").parse(record.path),
-    body: z.string().catch(DEFAULT_API_REQUEST_BODY).parse(record.body),
-    output: OutputSchema.parse(record.output)
-  };
+  if (isFutureVersion(value)) return ApiRequestSettingsSchema.parse({});
+  return ApiRequestSettingsSchema.parse(isRecord(value) ? value : {});
+}
+
+function isFutureVersion(value: unknown): boolean {
+  return isRecord(value) && value.version !== undefined && value.version !== 1;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
