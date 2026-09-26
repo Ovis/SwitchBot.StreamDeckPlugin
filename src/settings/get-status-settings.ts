@@ -1,16 +1,24 @@
 import { z } from "zod";
 
-const GetStatusSettingsSchema = z.object({
-  version: z.literal(1).default(1),
-  deviceId: z.string().default(""),
-  output: z.object({
-    prettyPrint: z.boolean().default(true)
-  }).default({ prettyPrint: true })
-});
+export interface GetStatusSettingsV1 {
+  version: 1;
+  deviceId: string;
+  output: { prettyPrint: boolean };
+}
 
-export type GetStatusSettingsV1 = z.infer<typeof GetStatusSettingsSchema>;
+const OutputSchema = z.object({
+  prettyPrint: z.boolean().catch(true)
+}).catch({ prettyPrint: true });
 
 export function normalizeGetStatusSettings(value: unknown): GetStatusSettingsV1 {
-  const parsed = GetStatusSettingsSchema.safeParse(value);
-  return parsed.success ? parsed.data : GetStatusSettingsSchema.parse({});
+  const record = isRecord(value) && (value.version === undefined || value.version === 1) ? value : {};
+  return {
+    version: 1,
+    deviceId: z.string().catch("").parse(record.deviceId),
+    output: OutputSchema.parse(record.output)
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
