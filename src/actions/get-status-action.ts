@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
@@ -9,6 +9,7 @@ import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLoc
 @action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
+  private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor,
@@ -17,6 +18,21 @@ export class GetStatusAction extends AuthenticatedAction {
   ) {
     super(executor);
     this.locale = displayLocale(locale);
+  }
+
+  override async onWillAppear(ev: WillAppearEvent<GetStatusSettingsV1>): Promise<void> {
+    const settings = normalizeGetStatusSettings(ev.payload.settings);
+    await ev.action.setTitle(settings.buttonName);
+  }
+
+  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GetStatusSettingsV1>): Promise<void> {
+    this.clearRestoreTimer(ev.action.id);
+    const settings = normalizeGetStatusSettings(ev.payload.settings);
+    await ev.action.setTitle(settings.buttonName);
+  }
+
+  override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
+    this.clearRestoreTimer(ev.action.id);
   }
 
   override async onSendToPlugin(ev: any): Promise<void> {
@@ -66,7 +82,17 @@ export class GetStatusAction extends AuthenticatedAction {
 
     if (result.success && settings.output.showStatusOnKey) {
       const title = formatStatusForKey(result.response?.body, this.locale);
-      if (title) await ev.action.setTitle(title);
+      if (title) {
+        this.clearRestoreTimer(ev.action.id);
+        await ev.action.setTitle(title);
+        this.restoreTimers.set(ev.action.id, setTimeout(() => {
+          this.restoreTimers.delete(ev.action.id);
+          void ev.action.setTitle(settings.buttonName);
+        }, 15_000));
+      }
+    } else if (result.success) {
+      this.clearRestoreTimer(ev.action.id);
+      await ev.action.setTitle(settings.buttonName);
     }
 
     await this.output.process(
@@ -78,6 +104,13 @@ export class GetStatusAction extends AuthenticatedAction {
       },
       ev.action
     );
+  }
+  private clearRestoreTimer(actionId: string): void {
+    const timer = this.restoreTimers.get(actionId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.restoreTimers.delete(actionId);
+    }
   }
 }
 
