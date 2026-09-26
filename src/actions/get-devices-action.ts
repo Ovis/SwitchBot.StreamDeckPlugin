@@ -1,14 +1,15 @@
-import streamDeck, { action, type KeyDownEvent, SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 
 @action({ UUID: "com.ovis.switchbot.get-devices" })
-export class GetDevicesAction extends SingletonAction {
+export class GetDevicesAction extends AuthenticatedAction {
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor
   ) {
-    super();
+    super(executor);
   }
 
   override async onKeyDown(ev: KeyDownEvent): Promise<void> {
