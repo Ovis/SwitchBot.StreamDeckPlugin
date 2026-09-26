@@ -34,3 +34,11 @@
   font-weight: 600;
   line-height: 18px;
 }
+
+.section-description {
+  margin: 0 24px 12px;
+  color: #d8d8d8;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
