@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head lang="en">
+  <meta charset="utf-8" />
+  <title>SwitchBot API Request</title>
+  <script src="sdpi-components.js"></script>
+  <style>
+    #body-item[hidden] { display: none; }
+    #json-status { margin: 4px 0 0 116px; font-size: 11px; }
+    .valid { color: #69c779; }
+    .invalid { color: #e57373; }
+  </style>
+</head>
+<body>
+  <sdpi-item label="Method">
+    <sdpi-select setting="method" default="POST" id="method">
+      <option value="GET">GET</option>
+      <option value="POST">POST</option>
+      <option value="PUT">PUT</option>
+      <option value="DELETE">DELETE</option>
+    </sdpi-select>
+  </sdpi-item>
+
+  <sdpi-item label="Path">
+    <sdpi-textfield setting="path" placeholder="/v1.1/devices/{deviceId}/commands" required></sdpi-textfield>
+  </sdpi-item>
+
+  <div id="body-item">
+    <sdpi-item label="Request Body">
+      <sdpi-textarea setting="body" rows="8"></sdpi-textarea>
+    </sdpi-item>
+    <div id="json-status" aria-live="polite"></div>
+  </div>
+
+  <sdpi-item label="Copy response">
+    <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
+  </sdpi-item>
+
+  <sdpi-item label="Pretty print">
+    <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
+  </sdpi-item>
+
+  <script>
+    const method = document.getElementById("method");
+    const bodyItem = document.getElementById("body-item");
+    const status = document.getElementById("json-status");
+
+    function currentMethod() {
+      return method.value || method.getAttribute("value") || "POST";
+    }
+
+    function updateBodyVisibility() {
+      const visible = currentMethod() === "POST" || currentMethod() === "PUT";
+      bodyItem.hidden = !visible;
+      if (visible) validateJson();
+      else status.textContent = "";
+    }
+
+    function findBodyInput() {
+      return document.querySelector('sdpi-textarea[setting="body"]');
+    }
+
+    function validateJson() {
+      if (bodyItem.hidden) return;
+      const body = findBodyInput();
+      const value = body?.value ?? body?.getAttribute("value") ?? "";
+      if (!value.trim()) {
+        status.textContent = "Empty body";
+        status.className = "";
+        return;
+      }
+      try {
+        JSON.parse(value);
+        status.textContent = "Valid JSON";
+        status.className = "valid";
+      } catch {
+        status.textContent = "Invalid JSON";
+        status.className = "invalid";
+      }
+    }
+
+    method.addEventListener("change", updateBodyVisibility);
+    document.addEventListener("input", event => {
+      if (event.target?.getAttribute?.("setting") === "body") validateJson();
+    });
+    document.addEventListener("DOMContentLoaded", () => {
+      updateBodyVisibility();
+      setTimeout(updateBodyVisibility, 100);
+    });
+  </script>
+</body>
+</html>
