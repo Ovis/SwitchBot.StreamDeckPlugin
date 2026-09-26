@@ -31,13 +31,23 @@
   }
 
   async function load() {
+    console.info("[SwitchBot PI] global settings load start");
     const settings = await streamDeckClient.getGlobalSettings();
+    console.info("[SwitchBot PI] global settings load complete", {
+      credentialsPresent: Boolean(settings?.credentials),
+      tokenPresent: Boolean(settings?.credentials?.token),
+      secretPresent: Boolean(settings?.credentials?.secret)
+    });
     const credentials = settings?.credentials ?? {};
     document.getElementById("switchbot-token").value = credentials.token ?? "";
     document.getElementById("switchbot-secret").value = credentials.secret ?? "";
   }
 
   async function save() {
+    console.info("[SwitchBot PI] global settings save start", {
+      tokenPresent: Boolean(document.getElementById("switchbot-token")?.value),
+      secretPresent: Boolean(document.getElementById("switchbot-secret")?.value)
+    });
     const current = await streamDeckClient.getGlobalSettings();
     await streamDeckClient.setGlobalSettings({
       ...current,
@@ -47,17 +57,21 @@
         secret: document.getElementById("switchbot-secret").value ?? ""
       }
     });
+    console.info("[SwitchBot PI] global settings save complete");
   }
 
   async function testConnection() {
+    console.info("[SwitchBot PI] test connection clicked");
     const status = document.getElementById("switchbot-auth-status");
     status.textContent = t("Testing...", "テスト中...");
     status.className = "auth-status";
     await save();
     await streamDeckClient.send("sendToPlugin", { type: "testConnection" });
+    console.info("[SwitchBot PI] sendToPlugin complete");
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    console.info("[SwitchBot PI] authentication DOMContentLoaded");
     render();
     localizeAuthentication();
     document.addEventListener("switchbot-locale-changed", localizeAuthentication);
@@ -73,6 +87,6 @@
       status.className = payload.success ? "auth-status auth-success" : "auth-status auth-error";
     });
 
-    void load();
+    void load().catch(error => console.error("[SwitchBot PI] global settings load failed", error?.name ?? "Error"));
   });
 })();
