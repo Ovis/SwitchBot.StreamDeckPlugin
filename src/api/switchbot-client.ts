@@ -17,10 +17,13 @@ export class SwitchBotClient {
     if (validationError) throw new TypeError(validationError);
 
     const authHeaders = this.auth.createHeaders(credentials);
-    const headers = new Headers({
-      ...request.headers,
-      ...authHeaders
-    });
+    const headers = new Headers(request.headers);
+    for (const name of ["authorization", "sign", "t", "nonce", "host", "content-length"]) {
+      headers.delete(name);
+    }
+    for (const [name, value] of Object.entries(authHeaders)) {
+      headers.set(name, value);
+    }
 
     const init: RequestInit = {
       method: request.method,
