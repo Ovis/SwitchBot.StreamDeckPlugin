@@ -16,13 +16,15 @@
     Pressing the action refreshes the saved device catalog used by other actions.
   </sdpi-item>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    function localizeUi() {
       const { t } = SwitchBotI18n;
       document.getElementById("copy-json-item").label = t("Copy JSON", "JSONをコピー");
       const catalog = document.getElementById("catalog-item");
       catalog.label = t("Device catalog", "デバイス一覧");
       catalog.textContent = t("Pressing the action refreshes the saved device catalog used by other actions.", "アクションを押すと、他のアクションで使用する保存済みデバイス一覧を最新化します。");
-    });
+    }
+    document.addEventListener("DOMContentLoaded", localizeUi);
+    document.addEventListener("switchbot-locale-changed", localizeUi);
   </script>
   <script src="authentication.js"></script>
 </body>
