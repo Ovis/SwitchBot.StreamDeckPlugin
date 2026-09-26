@@ -32,21 +32,8 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     await streamDeck.ui.sendToPropertyInspector({
       type: "testConnectionResult",
       success: result.success,
-      message: result.success
-        ? "Connection successful."
-        : connectionFailureMessage(result.error?.category)
+      errorCategory: result.success ? undefined : result.error?.category
     });
   }
 }
 
-function connectionFailureMessage(category: string | undefined): string {
-  switch (category) {
-    case "configuration": return "Token and Secret are required.";
-    case "authentication": return "Authentication failed. Check Token and Secret.";
-    case "network": return "Network request failed.";
-    case "http": return "SwitchBot returned an HTTP error.";
-    case "switchbot": return "SwitchBot rejected the request.";
-    case "response": return "SwitchBot returned an unexpected response.";
-    default: return "Connection test failed.";
-  }
-}
