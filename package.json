@@ -7,9 +7,9 @@
     "build": "rollup -c",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "validate": "streamdeck validate com.ovis.switchbot.sdPlugin --no-update-check",
+    "validate": "streamdeck validate com.esheep.switchbot.sdPlugin --no-update-check",
     "prebuild": "node scripts/generate-assets.mjs",
-    "pack:check": "streamdeck pack com.ovis.switchbot.sdPlugin --dry-run --no-update-check",
+    "pack:check": "streamdeck pack com.esheep.switchbot.sdPlugin --dry-run --no-update-check",
     "security:dist": "node scripts/check-distributable.mjs",
     "test:release-version": "node scripts/release-version.mjs v0.0.1-alpha1 && node scripts/release-version.mjs v0.0.1-beta1 && node scripts/release-version.mjs v0.0.1-rc1 && node scripts/release-version.mjs v0.0.1"
   },
