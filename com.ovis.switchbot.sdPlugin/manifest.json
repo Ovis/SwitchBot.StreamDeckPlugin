@@ -43,7 +43,8 @@
         {
           "Image": "imgs/key"
         }
-      ]
+      ],
+      "PropertyInspectorPath": "ui/api-request.html"
     }
   ],
   "Author": "Ovis",
