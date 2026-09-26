@@ -21,12 +21,14 @@ export class GetStatusAction extends AuthenticatedAction {
   }
 
   override async onWillAppear(ev: WillAppearEvent<GetStatusSettingsV1>): Promise<void> {
+    if (!ev.action.isKey()) return;
     const settings = normalizeGetStatusSettings(ev.payload.settings);
     await ev.action.setTitle(settings.buttonName);
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GetStatusSettingsV1>): Promise<void> {
     this.clearRestoreTimer(ev.action.id);
+    if (!ev.action.isKey()) return;
     const settings = normalizeGetStatusSettings(ev.payload.settings);
     await ev.action.setTitle(settings.buttonName);
   }
