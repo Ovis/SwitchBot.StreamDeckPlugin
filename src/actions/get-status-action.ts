@@ -5,7 +5,7 @@ import type { OutputProcessor } from "../output/output-processor.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 
 @action({ UUID: "com.ovis.switchbot.get-status" })
-export class GetStatusAction extends AuthenticatedAction<GetStatusSettingsV1> {
+export class GetStatusAction extends AuthenticatedAction {
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor
