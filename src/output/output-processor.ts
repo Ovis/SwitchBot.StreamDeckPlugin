@@ -1,3 +1,4 @@
+import streamDeck from "@elgato/streamdeck";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ClipboardOutput } from "./clipboard-output.js";
 import type { FeedbackAction } from "./streamdeck-feedback.js";
@@ -26,7 +27,11 @@ export class OutputProcessor {
       }
       await this.feedback.success(action);
       return true;
-    } catch {
+    } catch (error) {
+      streamDeck.logger.error("Output processing failed", {
+        operation: options.copyResponseToClipboard ? "clipboard-write" : "feedback",
+        errorName: error instanceof Error ? error.name : "UnknownError"
+      });
       await this.feedback.failure(action);
       return false;
     }
