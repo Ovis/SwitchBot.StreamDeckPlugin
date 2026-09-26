@@ -3,6 +3,7 @@ import { z } from "zod";
 const GetStatusSettingsSchema = z.object({
   version: z.literal(1).default(1),
   deviceId: z.string().catch("").default(""),
+  buttonName: z.string().catch("").default(""),
   output: z.object({
     showStatusOnKey: z.boolean().catch(true).default(true),
     copyResponseToClipboard: z.boolean().catch(false).default(false),
