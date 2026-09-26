@@ -64,7 +64,7 @@ describe("RequestExecutor", () => {
     const executor = new RequestExecutor(client, credentials);
     const result = await executor.execute(request);
     expect(result.error?.category).toBe("network");
-    expect(result.error?.message).toBe("socket failed");
+    expect(result.error?.message).toBe("SwitchBot network request failed.");
   });
 
   it("rejects invalid requests before loading credentials", async () => {
