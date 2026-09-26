@@ -10,8 +10,10 @@
     .valid { color: #69c779; }
     .invalid { color: #e57373; }
   </style>
+  <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
+  <div id="switchbot-authentication"></div>
   <sdpi-item label="Method">
     <sdpi-select setting="method" default="POST" id="method">
       <option value="GET">GET</option>
@@ -88,5 +90,6 @@
       setTimeout(updateBodyVisibility, 100);
     });
   </script>
+  <script src="authentication.js"></script>
 </body>
 </html>
