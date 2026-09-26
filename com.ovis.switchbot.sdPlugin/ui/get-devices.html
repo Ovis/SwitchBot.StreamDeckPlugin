@@ -4,16 +4,26 @@
   <meta charset="utf-8" />
   <title>SwitchBot Get Devices</title>
   <script src="sdpi-components.js"></script>
+  <script src="localization.js"></script>
   <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item label="Copy JSON">
+  <sdpi-item id="copy-json-item" label="Copy JSON">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item label="Device catalog">
+  <sdpi-item id="catalog-item" label="Device catalog">
     Pressing the action refreshes the saved device catalog used by other actions.
   </sdpi-item>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const { t } = SwitchBotI18n;
+      document.getElementById("copy-json-item").label = t("Copy JSON", "JSONをコピー");
+      const catalog = document.getElementById("catalog-item");
+      catalog.label = t("Device catalog", "デバイス一覧");
+      catalog.textContent = t("Pressing the action refreshes the saved device catalog used by other actions.", "アクションを押すと、他のアクションで使用する保存済みデバイス一覧を最新化します。");
+    });
+  </script>
   <script src="authentication.js"></script>
 </body>
 </html>
