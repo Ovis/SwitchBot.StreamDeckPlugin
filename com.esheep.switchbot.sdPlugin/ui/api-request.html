@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>SwitchBot API Request</title>
   <script src="localization.js"></script>
-  <script src="sdpi-components.js"></script>
+  <script src="sdpi-components.js"></script>\n  <script>SwitchBotI18n.configureSdpi();</script>
   <style>
     #body-item[hidden] { display: none; }
     #json-status { margin: 4px 0 0 116px; font-size: 11px; }
@@ -15,7 +15,7 @@
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item id="method-item" label="Method" data-ja-label="メソッド">
+  <sdpi-item id="method-item" label="__MSG_method__">
     <sdpi-select setting="method" default="POST" id="method">
       <option value="GET">GET</option>
       <option value="POST">POST</option>
@@ -24,22 +24,22 @@
     </sdpi-select>
   </sdpi-item>
 
-  <sdpi-item id="path-item" label="Path" data-ja-label="パス">
+  <sdpi-item id="path-item" label="__MSG_path__">
     <sdpi-textfield setting="path" placeholder="/v1.1/devices/{deviceId}/commands" required></sdpi-textfield>
   </sdpi-item>
 
   <div id="body-item">
-    <sdpi-item id="body-label-item" label="Request Body" data-ja-label="リクエスト本文">
+    <sdpi-item id="body-label-item" label="__MSG_requestBody__">
       <sdpi-textarea setting="body" rows="8"></sdpi-textarea>
     </sdpi-item>
     <div id="json-status" aria-live="polite"></div>
   </div>
 
-  <sdpi-item id="copy-item" label="Copy response" data-ja-label="レスポンスをコピー">
+  <sdpi-item id="copy-item" label="__MSG_copyResponse__">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
 
-  <sdpi-item id="pretty-item" label="Pretty print" data-ja-label="整形">
+  <sdpi-item id="pretty-item" label="__MSG_prettyPrint__">
     <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
   </sdpi-item>
 
