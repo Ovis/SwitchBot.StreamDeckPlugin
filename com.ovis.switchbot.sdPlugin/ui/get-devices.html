@@ -8,8 +8,11 @@
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item label="Output">
-    The complete device-list response is copied to the clipboard as formatted JSON.
+  <sdpi-item label="Copy JSON">
+    <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
+  </sdpi-item>
+  <sdpi-item label="Device catalog">
+    Pressing the action refreshes the saved device catalog used by other actions.
   </sdpi-item>
   <script src="authentication.js"></script>
 </body>
