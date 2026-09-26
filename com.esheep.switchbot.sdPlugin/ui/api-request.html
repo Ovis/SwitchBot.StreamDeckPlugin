@@ -87,7 +87,7 @@
     document.addEventListener("input", event => {
       if (event.target?.getAttribute?.("setting") === "body") validateJson();
     });
-    document.addEventListener("DOMContentLoaded", () => {
+    function localizeUi() {
       document.getElementById("method-item").label = t("Method", "メソッド");
       document.getElementById("path-item").label = t("Path", "パス");
       document.getElementById("body-label-item").label = t("Request Body", "リクエスト本文");
@@ -95,7 +95,9 @@
       document.getElementById("pretty-item").label = t("Pretty print", "整形");
       updateBodyVisibility();
       setTimeout(updateBodyVisibility, 100);
-    });
+    }
+    document.addEventListener("DOMContentLoaded", localizeUi);
+    document.addEventListener("switchbot-locale-changed", localizeUi);
   </script>
   <script src="authentication.js"></script>
 </body>
