@@ -1,0 +1,16 @@
+{
+  "Name": "SwitchBot API",
+  "Description": "Advanced Stream Deck client for SwitchBot OpenAPI v1.1.",
+  "com.ovis.switchbot.get-devices": {
+    "Name": "Get Devices",
+    "Tooltip": "Refresh the saved SwitchBot device catalog."
+  },
+  "com.ovis.switchbot.get-status": {
+    "Name": "Get Status",
+    "Tooltip": "Get the selected SwitchBot device status."
+  },
+  "com.ovis.switchbot.api-request": {
+    "Name": "API Request",
+    "Tooltip": "Send a configured request to SwitchBot OpenAPI."
+  }
+}
