@@ -16,7 +16,7 @@ function clientReturning(httpStatus: number, body: unknown): SwitchBotClient {
       rawBody: JSON.stringify(body),
       body
     })
-  } as SwitchBotClient;
+  } as unknown as SwitchBotClient;
 }
 
 describe("RequestExecutor", () => {
