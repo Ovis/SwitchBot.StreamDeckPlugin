@@ -26,10 +26,22 @@ async function walk(dir) {
 }
 await walk(root);
 
+const forbiddenPiApiPatterns = [
+  /streamDeckClient\.sendToPlugin\s*\(/,
+  /streamDeckClient\.on\s*\(\s*["']sendToPropertyInspector["']/
+];
+
 for (const path of files) {
   if (path.endsWith(".map")) throw new Error(`Source map must not be distributed: ${path}`);
   if (!/\.(?:js|html|json|css)$/i.test(path)) continue;
   const content = await readFile(path, "utf8");
+  if (path.includes(`${root}/ui/`) || path.includes(`${root}\\ui\\`)) {
+    for (const pattern of forbiddenPiApiPatterns) {
+      if (pattern.test(content)) {
+        throw new Error(`Unsupported sdpi-components client API found in ${relative(root, path)}`);
+      }
+    }
+  }
   for (const pattern of forbiddenPatterns) {
     if (pattern.test(content)) {
       throw new Error(`Potential credential material found in ${relative(root, path)}`);
