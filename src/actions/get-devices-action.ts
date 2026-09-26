@@ -2,7 +2,7 @@ import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
-import { deviceCatalogFromResponse } from "../settings/device-catalog.js";
+import { deviceCatalogFromResponse, mergeDeviceCatalog } from "../settings/device-catalog.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import { normalizeGetDevicesSettings, type GetDevicesSettingsV1 } from "../settings/get-devices-settings.js";
 
@@ -43,7 +43,8 @@ export class GetDevicesAction extends AuthenticatedAction {
     }
 
     try {
-      await this.catalogStore.set(catalog);
+      const previousCatalog = await this.catalogStore.get();
+      await this.catalogStore.set(mergeDeviceCatalog(previousCatalog, catalog));
     } catch {
       streamDeck.logger.error("Get Devices failed", { category: "internal", reason: "catalog-save-failed" });
       await ev.action.showAlert();
