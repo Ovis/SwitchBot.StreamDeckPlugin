@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <title>SwitchBot Get Status</title>
   <script src="localization.js"></script>
-  <script src="sdpi-components.js"></script>
+  <script src="sdpi-components.js"></script>\n  <script>SwitchBotI18n.configureSdpi();</script>
   <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
   <div id="switchbot-authentication"></div>
-  <sdpi-item id="device-item" label="Device" data-ja-label="デバイス">
+  <sdpi-item id="device-item" label="__MSG_device__">
     <sdpi-select
       setting="deviceId"
       label-setting="deviceLabel"
@@ -21,13 +21,13 @@
     </sdpi-select>
   </sdpi-item>
   <div id="output-heading" class="section-heading" data-ja-text="出力">Output</div>
-  <sdpi-item id="show-key-item" label="Show on key" data-ja-label="キーに表示">
+  <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
     <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="copy-json-item" label="Copy JSON" data-ja-label="JSONをコピー">
+  <sdpi-item id="copy-json-item" label="__MSG_copyJson__">
     <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="pretty-item" label="Pretty print" data-ja-label="整形">
+  <sdpi-item id="pretty-item" label="__MSG_prettyPrint__">
     <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
   </sdpi-item>
   <script>
