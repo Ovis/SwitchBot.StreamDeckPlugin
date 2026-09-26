@@ -25,5 +25,9 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Inspect distributable
+        run: npm run security:dist
       - name: Validate Stream Deck plugin
         run: npm run validate
+      - name: Verify package contents
+        run: npm run pack:check
