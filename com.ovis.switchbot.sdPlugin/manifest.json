@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Actions": [
+    {
+      "Name": "Get Devices",
+      "Tooltip": "Get the SwitchBot device list and copy the JSON response.",
+      "UUID": "com.ovis.switchbot.get-devices",
+      "Icon": "imgs/action",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key" }]
+    },
+    {
+      "Name": "Get Status",
+      "Tooltip": "Get a SwitchBot device status and copy the JSON response.",
+      "UUID": "com.ovis.switchbot.get-status",
+      "Icon": "imgs/action",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key" }]
+    },
+    {
+      "Name": "API Request",
+      "Tooltip": "Send a configured request to SwitchBot OpenAPI.",
+      "UUID": "com.ovis.switchbot.api-request",
+      "Icon": "imgs/action",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key" }]
+    }
+  ],
+  "Author": "Ovis",
+  "CodePath": "bin/plugin.js",
+  "Description": "Advanced Stream Deck client for SwitchBot OpenAPI v1.1.",
+  "Icon": "imgs/plugin",
+  "Name": "SwitchBot API",
+  "Nodejs": { "Version": "24" },
+  "OS": [
+    { "Platform": "mac", "MinimumVersion": "13" },
+    { "Platform": "windows", "MinimumVersion": "10" }
+  ],
+  "SDKVersion": 3,
+  "Software": { "MinimumVersion": "7.1" },
+  "UUID": "com.ovis.switchbot",
+  "Version": "0.1.0.0",
+  "URL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin",
+  "SupportURL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin/issues"
+}
