@@ -29,7 +29,7 @@ function png(width, height) {
   const raw = Buffer.concat(Array.from({length:height},()=>row));
   return Buffer.concat([signature,chunk("IHDR",ihdr),chunk("IDAT",deflateSync(raw)),chunk("IEND",Buffer.alloc(0))]);
 }
-const dir="com.ovis.switchbot.sdPlugin/imgs";
+const dir="com.esheep.switchbot.sdPlugin/imgs";
 await mkdir(dir,{recursive:true});
 for (const [name,w,h] of [
   ["plugin.png",256,256],["plugin@2x.png",512,512],
