@@ -25,7 +25,7 @@
     const secretItem = document.getElementById("switchbot-secret-item");
     const button = document.getElementById("switchbot-test-connection");
     if (heading) heading.textContent = t("Authentication", "認証");
-    if (button) button.textContent = t("Test Connection", "接続テスト");
+    if (button) button.textContent = t("Test Connection", "接続テスト");\n    window.SwitchBotI18n?.refreshSdpiLocalization();
   }
 
   async function load() {
