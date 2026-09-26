@@ -6,7 +6,7 @@ import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 
-@action({ UUID: "com.ovis.switchbot.get-status" })
+@action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   constructor(
