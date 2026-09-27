@@ -23,6 +23,7 @@
   <sdpi-item id="button-name-item" label="__MSG_buttonName__">
     <sdpi-textfield setting="buttonName"></sdpi-textfield>
   </sdpi-item>
+  <div id="catalog-status" aria-live="polite"></div>
   <div id="output-heading" class="section-heading" data-ja-text="出力">Output</div>
   <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
     <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
@@ -34,6 +35,8 @@
     <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
   </sdpi-item>
   <script>
+    const { streamDeckClient } = SDPIComponents;
+
     function localizeUi() {
       const { t } = SwitchBotI18n;
       document.getElementById("output-heading").textContent = t("Output", "出力");
