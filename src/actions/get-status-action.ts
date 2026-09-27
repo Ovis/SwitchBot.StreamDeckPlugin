@@ -41,7 +41,7 @@ export class GetStatusAction extends AuthenticatedAction {
 
   override async onSendToPlugin(ev: any): Promise<void> {
     if (ev.payload?.event === "getDevices") {
-      const catalog = await this.catalogRefresh.refreshDevices() ?? await this.catalogStore.get();
+      const catalog = ev.payload?.isRefresh\n        ? await this.catalogRefresh.refreshDevices() ?? await this.catalogStore.get()\n        : await this.catalogStore.get();
       const actionInstance = streamDeck.actions.getActionById(ev.context);
       const settings = actionInstance
         ? normalizeGetStatusSettings(await actionInstance.getSettings())
