@@ -1,10 +1,6 @@
 {
   "Name": "SwitchBot API Call",
   "Description": "Advanced Stream Deck client for SwitchBot OpenAPI v1.1.",
-  "com.esheep.switchbot.get-devices": {
-    "Name": "Get Devices",
-    "Tooltip": "Refresh the saved SwitchBot device catalog."
-  },
   "com.esheep.switchbot.get-status": {
     "Name": "Get Status",
     "Tooltip": "Get the selected SwitchBot device status."
@@ -12,9 +8,5 @@
   "com.esheep.switchbot.api-request": {
     "Name": "API Request",
     "Tooltip": "Send a configured request to SwitchBot OpenAPI."
-  },
-  "com.esheep.switchbot.get-scenes": {
-    "Name": "Get Scenes",
-    "Tooltip": "Refresh the saved SwitchBot scene catalog."
   }
 }
