@@ -12,5 +12,9 @@
   "com.esheep.switchbot.api-request": {
     "Name": "API Request",
     "Tooltip": "Send a configured request to SwitchBot OpenAPI."
+  },
+  "com.esheep.switchbot.get-scenes": {
+    "Name": "Get Scenes",
+    "Tooltip": "Refresh the saved SwitchBot scene catalog."
   }
 }
