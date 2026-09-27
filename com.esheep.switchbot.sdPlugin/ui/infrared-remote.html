@@ -150,12 +150,14 @@
       updateUi();
     }
 
-    function setOperationOptions(remoteInfo, preserve) {
-      const previous = preserve ? valueOf(operation) : "";
+    function setOperationOptions(remoteInfo, selectedOperation = "") {
       const items = remoteInfo?.commands ?? [];
       operation.innerHTML = '<option value=""></option>' + items.map(item =>
         '<option value="' + escapeHtml(item.value) + '">' + escapeHtml(item.label) + '</option>').join("");
-      operation.value = items.some(item => item.value === previous) ? previous : "";
+
+      // option の再構築時に一度空値を代入すると sdpi-select がその値を設定として保存してしまう。
+      // 保存済みの operation を先に確定し、選択肢構築後はその値を直接復元する。
+      operation.value = items.some(item => item.value === selectedOperation) ? selectedOperation : "";
     }
 
     function generatedBody() {
@@ -273,11 +275,12 @@
       const settings = payload?.settings ?? payload ?? {};
       const sameType = !!next && settings.remoteType === next.remoteType;
       suppressBodyChange = true;
-      setOperationOptions(next, sameType);
+      const preservedOperation = sameType ? (settings.operation ?? "") : "";
+      setOperationOptions(next, preservedOperation);
       await patchSettings(current => {
         current.deviceId = valueOf(remote);
         current.remoteType = next?.remoteType ?? "";
-        if (!sameType) current.operation = "";
+        current.operation = preservedOperation;
         emptyOverrides(current);
       });
       suppressBodyChange = false;
@@ -313,8 +316,9 @@
       const payload = await streamDeckClient.getSettings();
       const settings = payload?.settings ?? payload ?? {};
       const info = remotes.get(settings.deviceId);
-      setOperationOptions(info, true);
-      if (settings.operation) operation.value = settings.operation;
+      suppressBodyChange = true;
+      setOperationOptions(info, settings.operation ?? "");
+      suppressBodyChange = false;
       catalogStatus.textContent = ev.payload.refreshFailed
         ? SwitchBotI18n.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
         : "";
