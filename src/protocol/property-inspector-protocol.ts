@@ -3,7 +3,7 @@
  *
  * PR0-B では既存通信との互換性を維持するため、フィールド名やイベント名は変更しない。
  */
-export interface PropertyInspectorSelectItem {
+export interface PropertyInspectorSelectItem extends Record<string, unknown> {
   label: string;
   value: string;
 }
@@ -81,7 +81,7 @@ export type PropertyInspectorErrorCategory =
   | "response"
   | "internal";
 
-export interface TestConnectionResultMessage {
+export interface TestConnectionResultMessage extends Record<string, unknown> {
   type: "testConnectionResult";
   success: boolean;
   errorCategory?: PropertyInspectorErrorCategory;
@@ -90,7 +90,7 @@ export interface TestConnectionResultMessage {
 /**
  * API Request PI が表示に使用するエンドポイント定義の wire 形式を表す。
  */
-export interface ApiEndpointPropertyInspectorDefinition {
+export interface ApiEndpointPropertyInspectorDefinition extends Record<string, unknown> {
   id: string;
   method: string;
   path: string;
@@ -102,7 +102,7 @@ export interface ApiEndpointPropertyInspectorDefinition {
 /**
  * API Request PI にエンドポイント候補と定義を返す既存メッセージを表す。
  */
-export interface ApiEndpointsResultMessage {
+export interface ApiEndpointsResultMessage extends Record<string, unknown> {
   event: "getApiEndpoints";
   items: PropertyInspectorSelectItem[];
   definitions: ApiEndpointPropertyInspectorDefinition[];
@@ -113,7 +113,7 @@ export interface ApiEndpointsResultMessage {
  *
  * commandTemplates は API Request の制御コマンド用サンプルだけで利用するため任意とする。
  */
-export interface DevicesResultMessage {
+export interface DevicesResultMessage extends Record<string, unknown> {
   event: "getDevices";
   items: PropertyInspectorSelectItem[];
   commandTemplates?: Record<string, string>;
@@ -123,7 +123,7 @@ export interface DevicesResultMessage {
 /**
  * シーン一覧を返す既存メッセージを表す。
  */
-export interface ScenesResultMessage {
+export interface ScenesResultMessage extends Record<string, unknown> {
   event: "getScenes";
   items: PropertyInspectorSelectItem[];
   refreshFailed?: boolean;
@@ -150,7 +150,7 @@ export interface InfraredRemotePropertyInspectorItem extends PropertyInspectorSe
 /**
  * 赤外線リモコン一覧を返す既存メッセージを表す。
  */
-export interface InfraredRemotesResultMessage {
+export interface InfraredRemotesResultMessage extends Record<string, unknown> {
   event: "getInfraredRemotes";
   items: PropertyInspectorSelectItem[];
   remotes: InfraredRemotePropertyInspectorItem[];
