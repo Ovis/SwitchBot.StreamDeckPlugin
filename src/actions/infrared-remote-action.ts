@@ -41,8 +41,16 @@ export class InfraredRemoteAction extends AuthenticatedAction {
   ) {
     super(executor, globalSettings);
     this.locale = displayLocale(locale);
-    this.commandQueue = new ActionInstanceFifo(MAX_QUEUED_COMMANDS, (actionId, item, isDisposed) =>
-      this.executeQueuedCommand(actionId, item, isDisposed));
+    this.commandQueue = new ActionInstanceFifo(
+      MAX_QUEUED_COMMANDS,
+      (actionId, item, isDisposed) => this.executeQueuedCommand(actionId, item, isDisposed),
+      (actionId, error) => {
+        streamDeck.logger.error("Infrared Remote queue item failed unexpectedly", {
+          actionId,
+          errorName: error instanceof Error ? error.name : "UnknownError"
+        });
+      }
+    );
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {

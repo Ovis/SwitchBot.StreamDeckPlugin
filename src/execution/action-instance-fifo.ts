@@ -17,7 +17,8 @@ export class ActionInstanceFifo<T> {
 
   constructor(
     private readonly maxInFlightAndQueued: number,
-    private readonly execute: (actionId: string, item: T, isDisposed: () => boolean) => Promise<void>
+    private readonly execute: (actionId: string, item: T, isDisposed: () => boolean) => Promise<void>,
+    private readonly onUnhandledError?: (actionId: string, error: unknown) => void
   ) {
     if (!Number.isInteger(maxInFlightAndQueued) || maxInFlightAndQueued < 1) {
       throw new Error("Queue limit must be a positive integer.");
@@ -70,13 +71,18 @@ export class ActionInstanceFifo<T> {
         // 個々の処理失敗で後続コマンドを失わないよう、例外はこの項目だけで閉じる。
         try {
           await this.execute(actionId, item, () => queue.disposed);
-        } catch {
-          // 呼び出し側の処理が例外を投げてもFIFO自体は次の項目を継続する。
+        } catch (error) {
+          // 予期しない例外でも後続コマンドは失わない。一方で例外自体を黙殺しないよう通知する。
+          this.onUnhandledError?.(actionId, error);
         }
       }
     } finally {
       queue.running = false;
-      if (queue.disposed || queue.items.length === 0) this.queues.delete(actionId);
+      // dispose後に同じAction IDが再生成される場合がある。
+      // 古い実行のfinallyで新しいキューを削除しないよう、Map上の同一性も確認する。
+      if ((queue.disposed || queue.items.length === 0) && this.queues.get(actionId) === queue) {
+        this.queues.delete(actionId);
+      }
     }
   }
 }

@@ -57,17 +57,51 @@ describe("ActionInstanceFifo", () => {
     expect(completed).toEqual([]);
   });
 
-  it("1件の例外で後続処理を停止しない", async () => {
+  it("1件の例外を通知しつつ後続処理を停止しない", async () => {
     const completed: number[] = [];
-    const queue = new ActionInstanceFifo<number>(5, async (_id, item) => {
-      if (item === 1) throw new Error("failed");
-      completed.push(item);
-    });
+    const errors: unknown[] = [];
+    const queue = new ActionInstanceFifo<number>(
+      5,
+      async (_id, item) => {
+        if (item === 1) throw new Error("failed");
+        completed.push(item);
+      },
+      (_id, error) => errors.push(error)
+    );
 
     queue.enqueue("a", 1);
     queue.enqueue("a", 2);
     await flush();
+
     expect(completed).toEqual([2]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(Error);
+  });
+
+  it("dispose直後に同じAction IDを再利用しても新しいキューを削除しない", async () => {
+    const completed: number[] = [];
+    let releaseOld: (() => void) | undefined;
+    let releaseNew: (() => void) | undefined;
+    const oldGate = new Promise<void>(resolve => { releaseOld = resolve; });
+    const newGate = new Promise<void>(resolve => { releaseNew = resolve; });
+    const queue = new ActionInstanceFifo<number>(2, async (_id, item) => {
+      if (item === 1) await oldGate;
+      if (item === 2) await newGate;
+      completed.push(item);
+    });
+
+    queue.enqueue("a", 1);
+    await flush();
+    queue.dispose("a");
+    expect(queue.enqueue("a", 2)).toBe("accepted");
+    expect(queue.enqueue("a", 3)).toBe("accepted");
+
+    releaseOld?.();
+    await flush();
+    releaseNew?.();
+    await flush();
+
+    expect(completed).toEqual([1, 2, 3]);
   });
 
   it("異なるAction instanceは互いにブロックしない", async () => {
