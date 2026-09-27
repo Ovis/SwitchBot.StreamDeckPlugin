@@ -1,5 +1,3 @@
-import type { ExecutionErrorCategory } from "../execution/execution-result.js";
-
 /**
  * Property Inspector とプラグイン間で共有する選択肢の wire 形式を表す。
  *
@@ -74,10 +72,19 @@ export interface PropertyInspectorMessageEnvelope {
 /**
  * 接続テスト結果として返す既存メッセージを表す。
  */
+export type PropertyInspectorErrorCategory =
+  | "configuration"
+  | "authentication"
+  | "network"
+  | "http"
+  | "switchbot"
+  | "response"
+  | "internal";
+
 export interface TestConnectionResultMessage {
   type: "testConnectionResult";
   success: boolean;
-  errorCategory?: ExecutionErrorCategory;
+  errorCategory?: PropertyInspectorErrorCategory;
 }
 
 /**

@@ -3,9 +3,9 @@ import type {
   PropertyInspectorCredentials,
   SaveCredentialsMessage,
   TestConnectionMessage,
-  TestConnectionResultMessage
+  TestConnectionResultMessage,
+  PropertyInspectorErrorCategory
 } from "../../protocol/property-inspector-protocol.js";
-import type { ExecutionErrorCategory } from "../../execution/execution-result.js";
 
 const { streamDeckClient } = SDPIComponents;
 
@@ -84,13 +84,13 @@ async function testConnection(): Promise<void> {
   await streamDeckClient.send("sendToPlugin", message);
 }
 
-function executionErrorCategory(value: unknown): ExecutionErrorCategory | undefined {
+function executionErrorCategory(value: unknown): PropertyInspectorErrorCategory | undefined {
   return typeof value === "string" && [
     "configuration", "authentication", "network", "http", "switchbot", "response", "internal"
-  ].includes(value) ? value as ExecutionErrorCategory : undefined;
+  ].includes(value) ? value as PropertyInspectorErrorCategory : undefined;
 }
 
-function connectionFailureText(category: ExecutionErrorCategory | undefined): string {
+function connectionFailureText(category: PropertyInspectorErrorCategory | undefined): string {
   switch (category) {
     case "configuration": return t("Token and Secret are required.", "トークンとシークレットを入力してください。");
     case "authentication": return t("Authentication failed. Check Token and Secret.", "認証に失敗しました。トークンとシークレットを確認してください。");
