@@ -62,7 +62,7 @@ export class CatalogRefreshService {
 
   private logFailure(operation: string, result: ExecutionResult): void {
     streamDeck.logger.error(`${operation} failed`, {
-      category: result.error?.category,
+      category: result.success ? undefined : result.error.category,
       method: result.request.method,
       path: result.request.path,
       httpStatus: result.response?.httpStatus,
