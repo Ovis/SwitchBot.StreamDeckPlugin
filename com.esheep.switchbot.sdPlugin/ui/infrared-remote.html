@@ -102,6 +102,7 @@
     let remotes = new Map();
     let suppressBodyChange = false;
     let typeModeInitialized = false;
+    let savedOperation = "";
 
     function valueOf(element, fallback = "") { return element?.value ?? element?.getAttribute?.("value") ?? fallback; }
     function checked(element) {
@@ -155,8 +156,9 @@
       operation.innerHTML = '<option value=""></option>' + items.map(item =>
         '<option value="' + escapeHtml(item.value) + '">' + escapeHtml(item.label) + '</option>').join("");
 
-      // option の再構築時に一度空値を代入すると sdpi-select がその値を設定として保存してしまう。
-      // 保存済みの operation を先に確定し、選択肢構築後はその値を直接復元する。
+      // operation は API 応答後に選択肢を動的生成するため、sdpi-select の初期化時に
+      // 一時的な空値が valuechange として通知される。復元処理中はそのイベントを無視し、
+      // 保存済みの値だけを選択状態へ反映する。
       operation.value = items.some(item => item.value === selectedOperation) ? selectedOperation : "";
     }
 
@@ -270,12 +272,15 @@
     }
 
     remote.addEventListener("valuechange", async () => {
+      if (suppressBodyChange) return;
+
       const next = selectedRemote();
       const payload = await streamDeckClient.getSettings();
       const settings = payload?.settings ?? payload ?? {};
       const sameType = !!next && settings.remoteType === next.remoteType;
       suppressBodyChange = true;
-      const preservedOperation = sameType ? (settings.operation ?? "") : "";
+      const preservedOperation = sameType ? (savedOperation || settings.operation || "") : "";
+      savedOperation = preservedOperation;
       setOperationOptions(next, preservedOperation);
       await patchSettings(current => {
         current.deviceId = valueOf(remote);
@@ -291,10 +296,9 @@
       if (suppressBodyChange) return;
 
       const selectedOperation = valueOf(operation);
+      savedOperation = selectedOperation;
 
-      // operation の選択肢は API 取得後に動的生成するため、sdpi-select の自動保存だけに依存すると
-      // PI の再生成タイミングによって選択値が保存されない場合がある。
-      // ユーザー操作時には operation を明示的に保存し、再表示時の復元元を確実に残す。
+      // 動的 select の自動保存と競合しないよう、ユーザーが選択した値を明示的に保存する。
       await patchSettings(settings => {
         settings.operation = selectedOperation;
         emptyOverrides(settings);
@@ -332,7 +336,8 @@
       const settings = payload?.settings ?? payload ?? {};
       const info = remotes.get(settings.deviceId);
       suppressBodyChange = true;
-      setOperationOptions(info, settings.operation ?? "");
+      savedOperation = settings.operation ?? "";
+      setOperationOptions(info, savedOperation);
       suppressBodyChange = false;
       catalogStatus.textContent = ev.payload.refreshFailed
         ? SwitchBotI18n.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
