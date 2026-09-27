@@ -18,8 +18,7 @@ const ApiRequestSettingsSchema = z.object({
   output: z.object({
     copyResponseToClipboard: z.boolean().catch(false).default(false),
     prettyPrint: z.boolean().catch(true).default(true)
-  }).catch({ copyResponseToClipboard: false, prettyPrint: true })
-    .default({ copyResponseToClipboard: false, prettyPrint: true })
+  }).catch({}).default({})
 });
 
 export type ApiRequestSettingsV1 = z.infer<typeof ApiRequestSettingsSchema>;
