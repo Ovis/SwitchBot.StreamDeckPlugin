@@ -73,7 +73,11 @@ export class ActionInstanceFifo<T> {
           await this.execute(actionId, item, () => queue.disposed);
         } catch (error) {
           // 予期しない例外でも後続コマンドは失わない。一方で例外自体を黙殺しないよう通知する。
-          this.onUnhandledError?.(actionId, error);
+          try {
+            this.onUnhandledError?.(actionId, error);
+          } catch {
+            // エラー通知処理自体の失敗でFIFOを停止させると、後続コマンド継続の保証が崩れるため伝播させない。
+          }
         }
       }
     } finally {

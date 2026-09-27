@@ -104,6 +104,24 @@ describe("ActionInstanceFifo", () => {
     expect(completed).toEqual([1, 2, 3]);
   });
 
+  it("例外通知処理が例外を投げても後続処理を停止しない", async () => {
+    const completed: number[] = [];
+    const queue = new ActionInstanceFifo<number>(
+      5,
+      async (_id, item) => {
+        if (item === 1) throw new Error("item failed");
+        completed.push(item);
+      },
+      () => { throw new Error("error handler failed"); }
+    );
+
+    queue.enqueue("a", 1);
+    queue.enqueue("a", 2);
+    await flush();
+
+    expect(completed).toEqual([2]);
+  });
+
   it("異なるAction instanceは互いにブロックしない", async () => {
     const started: string[] = [];
     let release: (() => void) | undefined;
