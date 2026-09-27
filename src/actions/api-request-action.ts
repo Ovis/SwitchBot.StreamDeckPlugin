@@ -11,6 +11,7 @@ import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { getDeviceCommandTemplate } from "../api/device-command-templates.js";
 
 @action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {
@@ -47,13 +48,19 @@ export class ApiRequestAction extends AuthenticatedAction {
     if (event === "getDevices") {
       const refresh = ev.payload?.isRefresh === true;
       const result = refresh ? await this.catalogRefresh.refreshDevices() : { catalog: await this.deviceCatalogStore.get(), refreshed: true };
-      const items = (result.catalog?.devices ?? [])
-        .filter(device => !device.deleted || device.deviceId === settings.deviceId)
-        .map(device => ({
-          label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
-          value: device.deviceId
-        }));
-      await streamDeck.ui.sendToPropertyInspector({ event, items, refreshFailed: refresh && !result.refreshed });
+      const selectable = (result.catalog?.devices ?? [])
+        .filter(device => !device.deleted || device.deviceId === settings.deviceId);
+      const items = selectable.map(device => ({
+        label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
+        value: device.deviceId
+      }));
+      const commandTemplates = Object.fromEntries(
+        selectable.flatMap(device => {
+          const template = getDeviceCommandTemplate(device.deviceType);
+          return template ? [[device.deviceId, template.body]] : [];
+        })
+      );
+      await streamDeck.ui.sendToPropertyInspector({ event, items, commandTemplates, refreshFailed: refresh && !result.refreshed });
       return;
     }
 
