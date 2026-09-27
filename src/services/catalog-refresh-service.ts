@@ -7,7 +7,7 @@ import { mergeSceneCatalog, sceneCatalogFromResponse, type SceneCatalog } from "
 import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
 
 export interface CatalogRefreshResult<T> {
-  catalog?: T;
+  catalog: T | undefined;
   refreshed: boolean;
 }
 
