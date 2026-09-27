@@ -27,6 +27,13 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   "Smart Lock Pro": command("lock"),
   "Lock Lite": command("lock"),
   "Smart Lock Ultra": command("lock"),
+  "Keypad Touch": command("createKey", {
+    name: "example",
+    type: "permanent",
+    password: "123456",
+    startTime: 0,
+    endTime: 0
+  }),
   "Battery Circulator Fan": command("turnOn"),
   "Robot Vacuum Cleaner S1": command("start"),
   "Robot Vacuum Cleaner S1 Plus": command("start"),
