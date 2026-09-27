@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const files = [
   "com.esheep.switchbot.sdPlugin/ui/api-request.html",
-  "com.esheep.switchbot.sdPlugin/ui/get-status.html"
+  "com.esheep.switchbot.sdPlugin/ui/get-status.html",
+  "com.esheep.switchbot.sdPlugin/ui/infrared-remote.html"
 ];
 
 describe("Property Inspector checkbox defaults", () => {
