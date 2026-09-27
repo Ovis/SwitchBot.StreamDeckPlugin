@@ -287,7 +287,22 @@
       updateUi();
     });
 
-    operation.addEventListener("valuechange", () => { clearOverridesAfterBodyChange(); updateUi(); });
+    operation.addEventListener("valuechange", async () => {
+      if (suppressBodyChange) return;
+
+      const selectedOperation = valueOf(operation);
+
+      // operation の選択肢は API 取得後に動的生成するため、sdpi-select の自動保存だけに依存すると
+      // PI の再生成タイミングによって選択値が保存されない場合がある。
+      // ユーザー操作時には operation を明示的に保存し、再表示時の復元元を確実に残す。
+      await patchSettings(settings => {
+        settings.operation = selectedOperation;
+        emptyOverrides(settings);
+      });
+
+      clearOverridesAfterBodyChange();
+      updateUi();
+    });
     for (const id of ["custom-button", "channel", "ac-temperature", "ac-mode", "ac-fan", "ac-power"]) {
       document.getElementById(id).addEventListener("valuechange", () => { clearOverridesAfterBodyChange(); updateUi(); });
       document.getElementById(id).addEventListener("input", updateUi);
