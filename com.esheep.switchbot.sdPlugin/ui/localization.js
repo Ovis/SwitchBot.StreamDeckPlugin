@@ -78,13 +78,10 @@
   };
 
   window.connectElgatoStreamDeckSocket = (port, uuid, event, info, actionInfo) => {
-    console.info("[SwitchBot PI] registration callback received");
     try {
       const language = JSON.parse(info)?.application?.language;
-      console.info("[SwitchBot PI] Stream Deck language", language ?? "(missing)");
       applyLocale(language);
-    } catch (error) {
-      console.error("[SwitchBot PI] registration info parse failed", error?.name ?? "Error");
+    } catch {
       applyLocale("en");
     }
     originalConnect?.(port, uuid, event, info, actionInfo);
