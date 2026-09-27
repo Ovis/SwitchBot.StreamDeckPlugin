@@ -7,7 +7,7 @@
   <script src="localization.js"></script>
   <style>
     [hidden] { display: none !important; }
-    #json-status, #catalog-status { margin: 4px 8px 8px 116px; font-size: 11px; }
+    #json-status, #catalog-status { margin: 4px 8px 8px 116px; font-size: 11px; }\n    #sample-body-item { margin-top: 4px; }
     .valid { color: #69c779; }
     .invalid { color: #e57373; }
     .endpoint-preview { margin: 4px 8px 10px; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; overflow-wrap: anywhere; color: #d8d8d8; }
@@ -53,7 +53,7 @@
     const methodItem = document.getElementById("method-item"), pathItem = document.getElementById("path-item"), path = document.getElementById("path");
     const deviceItem = document.getElementById("device-item"), device = document.getElementById("device"), sceneItem = document.getElementById("scene-item");
     const preview = document.getElementById("preset-preview"), bodyItem = document.getElementById("body-item");
-    const body = document.getElementById("request-body"), status = document.getElementById("json-status"), catalogStatus = document.getElementById("catalog-status");
+    const body = document.getElementById("request-body"), status = document.getElementById("json-status"), catalogStatus = document.getElementById("catalog-status");\n    const sampleBodyItem = document.getElementById("sample-body-item"), sampleBodyButton = document.getElementById("sample-body-button");
     let definitions = new Map();
     let commandTemplates = new Map();
     let lastAutoTemplate = "";
@@ -71,7 +71,7 @@
       sceneItem.hidden = preset?.parameter !== "scene";
       if (preset) preview.textContent = preset.method + " " + preset.path;
       bodyItem.hidden = preset ? preset.bodyMode === "none" : effectiveMethod() !== "POST" && effectiveMethod() !== "PUT";
-      if (bodyItem.hidden) status.textContent = ""; else validateJson();
+      const hasSample = selectedEndpoint() === "send-device-command" && commandTemplates.has(valueOf(device, ""));\n      sampleBodyItem.hidden = bodyItem.hidden || !hasSample;\n      if (bodyItem.hidden) status.textContent = ""; else validateJson();
     }
 
     function applyPresetBody() {
@@ -95,7 +95,7 @@
       }
     }
 
-    function validateJson() {
+    function setDeviceCommandSample() {\n      const template = commandTemplates.get(valueOf(device, ""));\n      if (!template || selectedEndpoint() !== "send-device-command") return;\n      body.value = template;\n      lastAutoTemplate = template;\n      validateJson();\n    }\n\n    function validateJson() {
       if (bodyItem.hidden) return;
       const value = valueOf(body, "");
       if (!value.trim()) { status.textContent = SwitchBotI18n.t("Empty body", "本文が空です"); status.className = ""; return; }
@@ -111,7 +111,7 @@
 
     endpoint.addEventListener("valuechange", onEndpointChanged);
     method.addEventListener("valuechange", updateUi);
-    device.addEventListener("valuechange", applyDeviceCommandTemplate);
+    device.addEventListener("valuechange", () => { applyDeviceCommandTemplate(); updateUi(); });\n    sampleBodyButton.addEventListener("click", setDeviceCommandSample);
     document.addEventListener("input", event => { if (event.target?.getAttribute?.("setting") === "body") validateJson(); });
 
     streamDeckClient.sendToPropertyInspector.subscribe(ev => {
@@ -139,7 +139,7 @@
       endpoint.updateComplete?.then(updateUi);
       method.updateComplete?.then(updateUi);
     });
-    document.addEventListener("switchbot-locale-changed", updateUi);
+    document.addEventListener("switchbot-locale-changed", () => {\n      sampleBodyButton.textContent = SwitchBotI18n.t("Set sample JSON", "サンプルJSONを設定");\n      updateUi();\n    });
   </script>
   <script src="authentication.js"></script>
 </body>
