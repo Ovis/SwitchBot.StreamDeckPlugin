@@ -1,7 +1,5 @@
 import streamDeck from "@elgato/streamdeck";
 import { ApiRequestAction } from "./actions/api-request-action.js";
-import { GetDevicesAction } from "./actions/get-devices-action.js";
-import { GetScenesAction } from "./actions/get-scenes-action.js";
 import { GetStatusAction } from "./actions/get-status-action.js";
 import { SwitchBotClient } from "./api/switchbot-client.js";
 import { RequestExecutor } from "./execution/request-executor.js";
@@ -20,8 +18,6 @@ const sceneCatalogStore = new SceneCatalogStore();
 const catalogRefresh = new CatalogRefreshService(executor, deviceCatalogStore, sceneCatalogStore);
 
 streamDeck.actions.registerAction(new ApiRequestAction(executor, output, deviceCatalogStore, sceneCatalogStore, catalogRefresh, streamDeck.info.application.language));
-streamDeck.actions.registerAction(new GetDevicesAction(executor, output, deviceCatalogStore));
-streamDeck.actions.registerAction(new GetScenesAction(executor, output, sceneCatalogStore));
 streamDeck.actions.registerAction(new GetStatusAction(executor, output, deviceCatalogStore, catalogRefresh, streamDeck.info.application.language));
 
 await streamDeck.connect();
