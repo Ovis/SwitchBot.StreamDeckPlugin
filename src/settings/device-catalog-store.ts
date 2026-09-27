@@ -1,19 +1,14 @@
-import streamDeck from "@elgato/streamdeck";
 import type { DeviceCatalog } from "./device-catalog.js";
-import { normalizeGlobalSettings } from "./global-settings.js";
+import type { GlobalSettingsStore } from "./global-settings-store.js";
 
 export class DeviceCatalogStore {
+  constructor(private readonly globalSettings: GlobalSettingsStore) {}
+
   async get(): Promise<DeviceCatalog | undefined> {
-    const settings = normalizeGlobalSettings(await streamDeck.settings.getGlobalSettings());
-    return settings.deviceCatalog;
+    return (await this.globalSettings.get()).deviceCatalog;
   }
 
   async set(deviceCatalog: DeviceCatalog): Promise<void> {
-    const current = await streamDeck.settings.getGlobalSettings();
-    await streamDeck.settings.setGlobalSettings({
-      ...current,
-      version: 1,
-      deviceCatalog
-    });
+    await this.globalSettings.update(current => ({ ...current, version: 1, deviceCatalog }));
   }
 }
