@@ -292,15 +292,13 @@
     commandOverride.addEventListener("valuechange", () => enableOverride("command", checked(commandOverride)));
     parameterOverride.addEventListener("valuechange", () => enableOverride("parameter", checked(parameterOverride)));
     typeOverride.addEventListener("valuechange", () => enableOverride("type", checked(typeOverride)));
-    typeMode.addEventListener("valuechange", async () => {
+    typeMode.addEventListener("valuechange", () => {
       if (!checked(typeOverride)) return;
       const mode = valueOf(typeMode);
       if (mode !== "custom") {
+        // commandType の実値は hidden な補助状態ではなく、setting を持つ
+        // textfield に集約して sdpi-components の通常保存経路を利用する。
         typeValue.value = mode;
-        await patchSettings(settings => {
-          settings.overrides ??= {};
-          settings.overrides.commandType = { enabled: true, value: mode };
-        });
       }
       updateUi();
     });
