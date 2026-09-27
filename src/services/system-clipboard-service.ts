@@ -42,14 +42,24 @@ function writeToProcess(file: string, args: string[], value: string, spawnProces
       windowsHide: true,
       stdio: ["pipe", "ignore", "ignore"]
     });
+    let settled = false;
+    const succeed = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
 
-    child.once("error", reject);
+    child.once("error", fail);
     child.once("close", code => {
-      if (code === 0) resolve();
-      else reject(new Error(`Clipboard command exited with code ${code ?? "unknown"}.`));
+      if (code === 0) succeed();
+      else fail(new Error(`Clipboard command exited with code ${code ?? "unknown"}.`));
     });
-
-    child.stdin.once("error", reject);
+    child.stdin.once("error", fail);
     child.stdin.end(value, "utf8");
   });
 }
