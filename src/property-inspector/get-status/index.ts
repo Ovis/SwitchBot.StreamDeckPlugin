@@ -3,13 +3,12 @@ import "../shared/authentication.js";
 import { queryRequired } from "../shared/dom.js";
 import type { DevicesResultMessage } from "../../protocol/property-inspector-protocol.js";
 
-function deviceCatalogPayload(value: unknown): DevicesResultMessage | undefined {
+function deviceCatalogPayload(value: unknown): Pick<DevicesResultMessage, "event" | "refreshFailed"> | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const record = value as Record<string, unknown>;
   if (record.event !== "getDevices") return undefined;
   return {
     event: "getDevices",
-    items: [],
     ...(typeof record.refreshFailed === "boolean" ? { refreshFailed: record.refreshFailed } : {})
   };
 }

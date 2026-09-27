@@ -9,8 +9,10 @@ import type {
 } from "../../protocol/property-inspector-protocol.js";
 
 type EndpointDefinition = ApiEndpointPropertyInspectorDefinition;
-type ApiEndpointsPayload = ApiEndpointsResultMessage;
-type CatalogPayload = DevicesResultMessage | ScenesResultMessage;
+type ApiEndpointsPayload = Pick<ApiEndpointsResultMessage, "event" | "definitions">;
+type CatalogPayload =
+  | Pick<DevicesResultMessage, "event" | "commandTemplates" | "refreshFailed">
+  | Pick<ScenesResultMessage, "event" | "refreshFailed">;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -27,7 +29,7 @@ function endpointPayload(value: unknown): ApiEndpointsPayload | undefined {
     && (item.bodyMode === "none" || item.bodyMode === "json")
     && (item.defaultBody === undefined || typeof item.defaultBody === "string")
   );
-  return { event: "getApiEndpoints", items: [], definitions };
+  return { event: "getApiEndpoints", definitions };
 }
 
 function catalogPayload(value: unknown): CatalogPayload | undefined {
@@ -37,7 +39,6 @@ function catalogPayload(value: unknown): CatalogPayload | undefined {
     : undefined;
   return {
     event: value.event,
-    items: [],
     ...(value.event === "getDevices" && commandTemplates ? { commandTemplates } : {}),
     ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
   };

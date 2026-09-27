@@ -9,7 +9,7 @@ import type {
 
 type InfraredCommand = InfraredCommandPropertyInspectorItem;
 type InfraredRemote = InfraredRemotePropertyInspectorItem;
-type InfraredPayload = InfraredRemotesResultMessage;
+type InfraredPayload = Pick<InfraredRemotesResultMessage, "event" | "remotes" | "refreshFailed">;
 
 interface GeneratedBody {
   error?: string;
@@ -49,7 +49,6 @@ function parsePayload(value: unknown): InfraredPayload | undefined {
   if (!isRecord(value) || value.event !== "getInfraredRemotes" || !Array.isArray(value.remotes)) return undefined;
   return {
     event: "getInfraredRemotes",
-    items: [],
     remotes: value.remotes.map(parseRemote).filter((item): item is InfraredRemote => item !== undefined),
     ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
   };
