@@ -11,6 +11,7 @@ import { normalizeInfraredRemoteSettings, type InfraredRemoteSettingsV1 } from "
 import { buildInfraredRequest, truncateInfraredDisplayText } from "../api/infrared-request-builder.js";
 import { displayLocale, type DisplayLocale } from "../output/status-title-formatter.js";
 import { infraredCommandPropertyInspectorData } from "../api/infrared-remote-commands.js";
+import type { InfraredRemotesResultMessage } from "../protocol/property-inspector-protocol.js";
 
 interface QueuedCommand {
   request: ExecutionRequest;
@@ -79,12 +80,13 @@ export class InfraredRemoteAction extends AuthenticatedAction {
         commands: infraredCommandPropertyInspectorData(remote.remoteType, this.locale)
       }));
 
-    await streamDeck.ui.sendToPropertyInspector({
+    const message: InfraredRemotesResultMessage = {
       event: "getInfraredRemotes",
       items: remotes.map(({ label, value }) => ({ label, value })),
       remotes,
       refreshFailed: refresh && !result.refreshed
-    });
+    };
+    await streamDeck.ui.sendToPropertyInspector(message);
   }
 
   override async onKeyDown(ev: KeyDownEvent<InfraredRemoteSettingsV1>): Promise<void> {

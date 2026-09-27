@@ -13,6 +13,11 @@ import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestS
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { getDeviceCommandTemplate } from "../api/device-command-templates.js";
 import { supportsControlCommands } from "../api/device-command-support.js";
+import type {
+  ApiEndpointsResultMessage,
+  DevicesResultMessage,
+  ScenesResultMessage
+} from "../protocol/property-inspector-protocol.js";
 
 @action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {
@@ -37,7 +42,8 @@ export class ApiRequestAction extends AuthenticatedAction {
 
     if (event === "getApiEndpoints") {
       const data = apiEndpointPropertyInspectorData(this.locale);
-      await streamDeck.ui.sendToPropertyInspector({ event, ...data });
+      const message: ApiEndpointsResultMessage = { event: "getApiEndpoints", ...data };
+      await streamDeck.ui.sendToPropertyInspector(message);
       return;
     }
 
@@ -62,7 +68,8 @@ export class ApiRequestAction extends AuthenticatedAction {
           return template ? [[device.deviceId, template.body]] : [];
         })
       );
-      await streamDeck.ui.sendToPropertyInspector({ event, items, commandTemplates, refreshFailed: refresh && !result.refreshed });
+      const message: DevicesResultMessage = { event: "getDevices", items, commandTemplates, refreshFailed: refresh && !result.refreshed };
+      await streamDeck.ui.sendToPropertyInspector(message);
       return;
     }
 
@@ -75,7 +82,8 @@ export class ApiRequestAction extends AuthenticatedAction {
           label: sceneLabel(scene.sceneName, scene.sceneId, scene.deleted, this.locale),
           value: scene.sceneId
         }));
-      await streamDeck.ui.sendToPropertyInspector({ event, items, refreshFailed: refresh && !result.refreshed });
+      const message: ScenesResultMessage = { event: "getScenes", items, refreshFailed: refresh && !result.refreshed };
+      await streamDeck.ui.sendToPropertyInspector(message);
       return;
     }
 
