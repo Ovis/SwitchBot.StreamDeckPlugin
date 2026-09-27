@@ -1,18 +1,15 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired } from "../shared/dom.js";
+import type { DevicesResultMessage } from "../../protocol/property-inspector-protocol.js";
 
-interface DeviceCatalogPayload {
-  event: "getDevices";
-  refreshFailed?: boolean;
-}
-
-function deviceCatalogPayload(value: unknown): DeviceCatalogPayload | undefined {
+function deviceCatalogPayload(value: unknown): DevicesResultMessage | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const record = value as Record<string, unknown>;
   if (record.event !== "getDevices") return undefined;
   return {
     event: "getDevices",
+    items: [],
     ...(typeof record.refreshFailed === "boolean" ? { refreshFailed: record.refreshFailed } : {})
   };
 }

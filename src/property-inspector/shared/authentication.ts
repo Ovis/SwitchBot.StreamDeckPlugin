@@ -1,20 +1,16 @@
 import { queryRequired, valueOf } from "./dom.js";
+import type {
+  PropertyInspectorCredentials,
+  SaveCredentialsMessage,
+  TestConnectionMessage,
+  TestConnectionResultMessage
+} from "../../protocol/property-inspector-protocol.js";
+import type { ExecutionErrorCategory } from "../../execution/execution-result.js";
 
 const { streamDeckClient } = SDPIComponents;
 
-interface Credentials {
-  token: string;
-  secret: string;
-}
-
 interface GlobalSettingsPayload {
   credentials?: Partial<Credentials>;
-}
-
-interface TestConnectionResult {
-  type: "testConnectionResult";
-  success: boolean;
-  errorCategory?: string;
 }
 
 function t(en: string, ja: string): string {
@@ -29,12 +25,13 @@ function globalSettings(value: unknown): GlobalSettingsPayload {
   return isRecord(value) ? value as GlobalSettingsPayload : {};
 }
 
-function testConnectionResult(value: unknown): TestConnectionResult | undefined {
+function testConnectionResult(value: unknown): TestConnectionResultMessage | undefined {
   if (!isRecord(value) || value.type !== "testConnectionResult" || typeof value.success !== "boolean") return undefined;
+  const errorCategory = executionErrorCategory(value.errorCategory);
   return {
     type: "testConnectionResult",
     success: value.success,
-    ...(typeof value.errorCategory === "string" ? { errorCategory: value.errorCategory } : {})
+    ...(errorCategory ? { errorCategory } : {})
   };
 }
 
@@ -67,7 +64,7 @@ async function load(): Promise<void> {
   queryRequired<SdpiValueElement>("#switchbot-secret").value = credentials.secret ?? "";
 }
 
-function currentCredentials(): Credentials {
+function currentCredentials(): PropertyInspectorCredentials {
   return {
     token: valueOf(queryRequired<SdpiValueElement>("#switchbot-token")),
     secret: valueOf(queryRequired<SdpiValueElement>("#switchbot-secret"))
@@ -75,17 +72,25 @@ function currentCredentials(): Credentials {
 }
 
 async function save(): Promise<void> {
-  await streamDeckClient.send("sendToPlugin", { type: "saveCredentials", credentials: currentCredentials() });
+  const message: SaveCredentialsMessage = { type: "saveCredentials", credentials: currentCredentials() };
+  await streamDeckClient.send("sendToPlugin", message);
 }
 
 async function testConnection(): Promise<void> {
   const status = queryRequired<HTMLElement>("#switchbot-auth-status");
   status.textContent = t("Testing...", "テスト中...");
   status.className = "auth-status";
-  await streamDeckClient.send("sendToPlugin", { type: "testConnection", credentials: currentCredentials() });
+  const message: TestConnectionMessage = { type: "testConnection", credentials: currentCredentials() };
+  await streamDeckClient.send("sendToPlugin", message);
 }
 
-function connectionFailureText(category: string | undefined): string {
+function executionErrorCategory(value: unknown): ExecutionErrorCategory | undefined {
+  return typeof value === "string" && [
+    "configuration", "authentication", "network", "http", "switchbot", "response", "internal"
+  ].includes(value) ? value as ExecutionErrorCategory : undefined;
+}
+
+function connectionFailureText(category: ExecutionErrorCategory | undefined): string {
   switch (category) {
     case "configuration": return t("Token and Secret are required.", "トークンとシークレットを入力してください。");
     case "authentication": return t("Authentication failed. Check Token and Secret.", "認証に失敗しました。トークンとシークレットを確認してください。");

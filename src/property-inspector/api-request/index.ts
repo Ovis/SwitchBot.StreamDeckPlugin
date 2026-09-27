@@ -1,26 +1,16 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
+import type {
+  ApiEndpointPropertyInspectorDefinition,
+  ApiEndpointsResultMessage,
+  DevicesResultMessage,
+  ScenesResultMessage
+} from "../../protocol/property-inspector-protocol.js";
 
-interface EndpointDefinition {
-  id: string;
-  method: string;
-  path: string;
-  parameter?: "device" | "scene";
-  bodyMode?: "none" | string;
-  defaultBody?: string;
-}
-
-interface ApiEndpointsPayload {
-  event: "getApiEndpoints";
-  definitions: EndpointDefinition[];
-}
-
-interface CatalogPayload {
-  event: "getDevices" | "getScenes";
-  commandTemplates?: Record<string, string>;
-  refreshFailed?: boolean;
-}
+type EndpointDefinition = ApiEndpointPropertyInspectorDefinition;
+type ApiEndpointsPayload = ApiEndpointsResultMessage;
+type CatalogPayload = DevicesResultMessage | ScenesResultMessage;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -29,9 +19,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function endpointPayload(value: unknown): ApiEndpointsPayload | undefined {
   if (!isRecord(value) || value.event !== "getApiEndpoints" || !Array.isArray(value.definitions)) return undefined;
   const definitions = value.definitions.filter((item): item is EndpointDefinition =>
-    isRecord(item) && typeof item.id === "string" && typeof item.method === "string" && typeof item.path === "string"
+    isRecord(item)
+    && typeof item.id === "string"
+    && typeof item.method === "string"
+    && typeof item.path === "string"
+    && (item.parameter === undefined || item.parameter === "device" || item.parameter === "scene")
+    && (item.bodyMode === "none" || item.bodyMode === "json")
+    && (item.defaultBody === undefined || typeof item.defaultBody === "string")
   );
-  return { event: "getApiEndpoints", definitions };
+  return { event: "getApiEndpoints", items: [], definitions };
 }
 
 function catalogPayload(value: unknown): CatalogPayload | undefined {
@@ -41,7 +37,8 @@ function catalogPayload(value: unknown): CatalogPayload | undefined {
     : undefined;
   return {
     event: value.event,
-    ...(commandTemplates ? { commandTemplates } : {}),
+    items: [],
+    ...(value.event === "getDevices" && commandTemplates ? { commandTemplates } : {}),
     ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
   };
 }
