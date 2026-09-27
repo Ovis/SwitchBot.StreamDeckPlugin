@@ -17,6 +17,21 @@
       "PropertyInspectorPath": "ui/get-devices.html"
     },
     {
+      "Name": "Get Scenes",
+      "Tooltip": "Refresh the saved SwitchBot scene catalog.",
+      "UUID": "com.esheep.switchbot.get-scenes",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ],
+      "PropertyInspectorPath": "ui/get-scenes.html"
+    },
+    {
       "Name": "Get Status",
       "Tooltip": "Get the selected SwitchBot device status.",
       "UUID": "com.esheep.switchbot.get-status",
