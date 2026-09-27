@@ -71,7 +71,7 @@
       mode: "モード",
       fanSpeed: "風量",
       power: "電源",
-      advancedOverride: "高度な上書き",
+      advancedOverride: "上書き",
       commandOverride: "コマンドを上書き",
       command: "コマンド",
       parameterOverride: "パラメーターを上書き",
