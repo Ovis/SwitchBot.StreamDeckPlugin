@@ -62,6 +62,13 @@ export class InfraredRemoteAction extends AuthenticatedAction {
       ? normalizeInfraredRemoteSettings(await actionInstance.getSettings())
       : normalizeInfraredRemoteSettings({});
 
+    streamDeck.logger.info("Infrared Remote PI catalog requested", {
+      actionId: typeof ev.context === "string" ? ev.context : undefined,
+      deviceId: settings.deviceId,
+      remoteType: settings.remoteType,
+      operation: settings.operation
+    });
+
     const remotes = (result.catalog?.infraredRemotes ?? [])
       .filter(remote => !remote.deleted || remote.deviceId === settings.deviceId)
       .map(remote => ({
