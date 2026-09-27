@@ -105,10 +105,16 @@
 
     function valueOf(element, fallback = "") { return element?.value ?? element?.getAttribute?.("value") ?? fallback; }
     function checked(element) {
-      // sdpi-checkbox は checked 属性を false 値でも保持する場合があるため、
-      // 属性の存在だけで判定すると OFF 状態まで ON と誤認する。
-      const value = element?.checked ?? element?.value ?? element?.getAttribute?.("checked");
-      return value === true || value === "true" || value === "";
+      // sdpi-checkbox は value を設定値として保持する。
+      // ネイティブ checkbox の checked 属性を参照するとコンポーネント内部状態とずれる。
+      return element?.value === true || element?.value === "true";
+    }
+
+    function setControlDisabled(element, disabled) {
+      // sdpi-components は disabled プロパティを参照して内部 input を描画する。
+      // 初期HTMLの disabled 属性も残さず同期させ、再描画時に無効状態へ戻らないようにする。
+      element.disabled = disabled;
+      element.toggleAttribute("disabled", disabled);
     }
     function selectedRemote() { return remotes.get(valueOf(remote)); }
     function selectedCommand() { return selectedRemote()?.commands?.find(item => item.value === valueOf(operation)); }
@@ -128,14 +134,20 @@
       };
     }
 
-    async function clearOverridesAfterBodyChange() {
+    function clearOverridesAfterBodyChange() {
       if (suppressBodyChange) return;
-      setTimeout(async () => {
-        await patchSettings(settings => emptyOverrides(settings));
-        commandOverride.checked = false; parameterOverride.checked = false; typeOverride.checked = false;
-        commandValue.value = ""; parameterValue.value = ""; typeValue.value = "";
-        updateUi();
-      }, 0);
+
+      // 各 sdpi-* コンポーネント自身に設定を保存させる。
+      // ここで getSettings/setSettings を行うと、入力コンポーネントの遅延保存と競合して
+      // 入力直後の値を古い設定で上書きするため、個々の value だけを変更する。
+      commandOverride.value = false;
+      parameterOverride.value = false;
+      typeOverride.value = false;
+      commandValue.value = "";
+      parameterValue.value = "";
+      typeValue.value = "";
+      typeModeInitialized = false;
+      updateUi();
     }
 
     function setOperationOptions(remoteInfo, preserve) {
@@ -211,9 +223,9 @@
       channelItem.hidden = cmd?.parameterKind !== "channel";
       acFields.hidden = cmd?.parameterKind !== "air-conditioner";
 
-      commandValue.disabled = !checked(commandOverride);
-      parameterValue.disabled = !checked(parameterOverride);
-      typeMode.disabled = !checked(typeOverride);
+      setControlDisabled(commandValue, !checked(commandOverride));
+      setControlDisabled(parameterValue, !checked(parameterOverride));
+      setControlDisabled(typeMode, !checked(typeOverride));
       if (checked(typeOverride) && !typeModeInitialized) {
         const savedType = valueOf(typeValue);
         typeMode.value = ["command", "customize"].includes(savedType) ? savedType : "custom";
@@ -239,17 +251,19 @@
         : JSON.stringify({ command: body.command, parameter: body.parameter, commandType: body.commandType }, null, 2);
     }
 
-    async function enableOverride(kind, enabled) {
+    function enableOverride(kind, enabled) {
       const generated = generatedBody();
       const key = kind === "type" ? "commandType" : kind;
       const generatedValue = generated[key] ?? "";
-      await patchSettings(settings => {
-        settings.overrides ??= {};
-        settings.overrides[key] = enabled ? { enabled: true, value: generatedValue } : { enabled: false, value: "" };
-      });
       const field = kind === "command" ? commandValue : kind === "parameter" ? parameterValue : typeValue;
+
+      // enabled 自体は checkbox が自動保存する。値側も対応する sdpi-textfield に保存させ、
+      // 同一設定オブジェクトへの複数の setSettings が競合しないようにする。
       field.value = enabled ? generatedValue : "";
-      if (kind === "type") typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
+      if (kind === "type") {
+        typeModeInitialized = false;
+        typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
+      }
       updateUi();
     }
 
@@ -277,7 +291,7 @@
     }
     commandOverride.addEventListener("valuechange", () => enableOverride("command", checked(commandOverride)));
     parameterOverride.addEventListener("valuechange", () => enableOverride("parameter", checked(parameterOverride)));
-    typeOverride.addEventListener("valuechange", () => { typeModeInitialized = false; enableOverride("type", checked(typeOverride)); });
+    typeOverride.addEventListener("valuechange", () => enableOverride("type", checked(typeOverride)));
     typeMode.addEventListener("valuechange", async () => {
       if (!checked(typeOverride)) return;
       const mode = valueOf(typeMode);
