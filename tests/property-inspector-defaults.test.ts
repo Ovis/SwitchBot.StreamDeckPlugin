@@ -2,9 +2,9 @@ import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const files = [
-  "com.esheep.switchbot.sdPlugin/ui/api-request.html",
-  "com.esheep.switchbot.sdPlugin/ui/get-status.html",
-  "com.esheep.switchbot.sdPlugin/ui/infrared-remote.html"
+  "src/property-inspector/api-request/index.html",
+  "src/property-inspector/get-status/index.html",
+  "src/property-inspector/infrared-remote/index.html"
 ];
 
 describe("Property Inspector checkbox defaults", () => {
@@ -21,12 +21,12 @@ describe("Property Inspector checkbox defaults", () => {
   });
 });
 
-
 describe("API Request command sample control", () => {
   it("provides an explicit sample JSON button below the request body", () => {
-    const html = fs.readFileSync("com.esheep.switchbot.sdPlugin/ui/api-request.html", "utf8");
+    const html = fs.readFileSync("src/property-inspector/api-request/index.html", "utf8");
+    const source = fs.readFileSync("src/property-inspector/api-request/index.ts", "utf8");
     expect(html).toContain('id="sample-body-button"');
-    expect(html).toContain('sampleBodyButton.addEventListener("click", setDeviceCommandSample)');
-    expect(html).toContain('selectedEndpoint() === "send-device-command"');
+    expect(source).toContain('sampleBodyButton.addEventListener("click", setDeviceCommandSample)');
+    expect(source).toContain('selectedEndpoint() === "send-device-command"');
   });
 });
