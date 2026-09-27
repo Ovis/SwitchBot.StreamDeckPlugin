@@ -62,7 +62,13 @@ export type PropertyInspectorToPluginMessage =
  */
 export interface PropertyInspectorMessageEnvelope {
   context?: string;
-  payload?: Partial<PropertyInspectorToPluginMessage> & Record<string, unknown>;
+  payload?: {
+    type?: unknown;
+    event?: unknown;
+    isRefresh?: unknown;
+    credentials?: unknown;
+    [key: string]: unknown;
+  };
 }
 
 /**

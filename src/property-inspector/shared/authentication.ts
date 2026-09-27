@@ -10,7 +10,7 @@ import type { ExecutionErrorCategory } from "../../execution/execution-result.js
 const { streamDeckClient } = SDPIComponents;
 
 interface GlobalSettingsPayload {
-  credentials?: Partial<Credentials>;
+  credentials?: Partial<PropertyInspectorCredentials>;
 }
 
 function t(en: string, ja: string): string {
