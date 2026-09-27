@@ -93,12 +93,31 @@ const extraCommands: Readonly<Record<string, readonly InfraredCommandDefinition[
 export const CUSTOM_OPERATION_ID = "custom";
 
 export function infraredCommandsForRemoteType(remoteType: string): readonly InfraredCommandDefinition[] {
-  if (remoteType === "Others" || !isKnownInfraredRemoteType(remoteType)) return [];
-  return [...baseCommands, ...(extraCommands[remoteType] ?? [])];
+  const canonicalType = canonicalInfraredRemoteType(remoteType);
+  if (canonicalType === "Others" || !canonicalType) return [];
+  return [...baseCommands, ...(extraCommands[canonicalType] ?? [])];
 }
 
 export function isKnownInfraredRemoteType(remoteType: string): boolean {
-  return KNOWN_REMOTE_TYPES.has(remoteType);
+  return canonicalInfraredRemoteType(remoteType) !== undefined;
+}
+
+/**
+ * SwitchBot API が返す DIY 系の remoteType を、同じ標準コマンド体系を持つ家電種別へ正規化する
+ *
+ * DIY Fan や DIY Light などはアプリで手動学習したリモコンだが、
+ * OpenAPI 上では対応する Fan / Light の標準コマンドも利用できる。
+ * 未知の DIY 種別まで推測して有効化しないよう、既知の家電種別に一致する場合だけ正規化する。
+ */
+function canonicalInfraredRemoteType(remoteType: string): string | undefined {
+  if (KNOWN_REMOTE_TYPES.has(remoteType)) return remoteType;
+
+  if (remoteType.startsWith("DIY ")) {
+    const baseType = remoteType.slice(4);
+    if (KNOWN_REMOTE_TYPES.has(baseType) && baseType !== "Others") return baseType;
+  }
+
+  return undefined;
 }
 
 const KNOWN_REMOTE_TYPES = new Set([
