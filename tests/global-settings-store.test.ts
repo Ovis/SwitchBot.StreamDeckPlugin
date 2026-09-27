@@ -1,23 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-let persisted: Record<string, unknown>;
-const getGlobalSettings = vi.fn(async () => ({ ...persisted }));
-const setGlobalSettings = vi.fn(async (value: Record<string, unknown>) => {
-  await Promise.resolve();
-  persisted = { ...value };
-});
+const mocks = vi.hoisted(() => ({
+  persisted: { value: {} as Record<string, unknown> },
+  getGlobalSettings: vi.fn(),
+  setGlobalSettings: vi.fn()
+}));
 
 vi.mock("@elgato/streamdeck", () => ({
-  default: { settings: { getGlobalSettings, setGlobalSettings } }
+  default: { settings: { getGlobalSettings: mocks.getGlobalSettings, setGlobalSettings: mocks.setGlobalSettings } }
 }));
 
 import { GlobalSettingsStore } from "../src/settings/global-settings-store.js";
 
 describe("GlobalSettingsStore", () => {
   beforeEach(() => {
-    persisted = { version: 1, credentials: { token: "t", secret: "s" } };
-    getGlobalSettings.mockClear();
-    setGlobalSettings.mockClear();
+    mocks.persisted.value = { version: 1, credentials: { token: "t", secret: "s" } };
+    mocks.getGlobalSettings.mockReset().mockImplementation(async () => ({ ...mocks.persisted.value }));
+    mocks.setGlobalSettings.mockReset().mockImplementation(async (value: Record<string, unknown>) => {
+      await Promise.resolve();
+      mocks.persisted.value = { ...value };
+    });
   });
 
   it("serializes concurrent read-modify-write updates", async () => {
