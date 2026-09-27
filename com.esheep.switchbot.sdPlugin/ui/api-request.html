@@ -82,11 +82,11 @@
       const preset = definition();
       if (!preset?.defaultBody || !body) return;
       const current = valueOf(body, "").trim();
-      const generic = '{
+      const generic = `{
   "command": "",
   "parameter": "default",
   "commandType": "command"
-}';
+}`;
       if (!current || current === generic.trim()) body.value = preset.defaultBody;
     }
 
