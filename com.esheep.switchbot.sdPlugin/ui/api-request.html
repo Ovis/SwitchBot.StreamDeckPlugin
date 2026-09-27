@@ -23,7 +23,7 @@
   <div id="preset-preview" class="endpoint-preview" hidden></div>
 
   <sdpi-item id="device-item" label="__MSG_device__" hidden>
-    <sdpi-select setting="deviceId" datasource="getDevices" loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__" show-refresh hot-reload></sdpi-select>
+    <sdpi-select id="device" setting="deviceId" datasource="getDevices" loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__" show-refresh hot-reload></sdpi-select>
   </sdpi-item>
   <sdpi-item id="scene-item" label="__MSG_scene__" hidden>
     <sdpi-select setting="sceneId" datasource="getScenes" loading="__MSG_loadingScenes__" placeholder="__MSG_selectScene__" show-refresh hot-reload></sdpi-select>
@@ -51,10 +51,12 @@
     const { streamDeckClient } = SDPIComponents;
     const endpoint = document.getElementById("endpoint"), method = document.getElementById("method");
     const methodItem = document.getElementById("method-item"), pathItem = document.getElementById("path-item"), path = document.getElementById("path");
-    const deviceItem = document.getElementById("device-item"), sceneItem = document.getElementById("scene-item");
+    const deviceItem = document.getElementById("device-item"), device = document.getElementById("device"), sceneItem = document.getElementById("scene-item");
     const preview = document.getElementById("preset-preview"), bodyItem = document.getElementById("body-item");
     const body = document.getElementById("request-body"), status = document.getElementById("json-status"), catalogStatus = document.getElementById("catalog-status");
     let definitions = new Map();
+    let commandTemplates = new Map();
+    let lastAutoTemplate = "";
 
     function valueOf(element, fallback) { return element.value || element.getAttribute("value") || fallback; }
     function selectedEndpoint() { return valueOf(endpoint, "custom"); }
@@ -80,6 +82,19 @@
       if (!current || current === generic.trim()) body.value = preset.defaultBody;
     }
 
+    function applyDeviceCommandTemplate() {
+      if (selectedEndpoint() !== "send-device-command") return;
+      const template = commandTemplates.get(valueOf(device, ""));
+      if (!template) return;
+      const current = valueOf(body, "").trim();
+      const generic = '{\n  "command": "",\n  "parameter": "default",\n  "commandType": "command"\n}';
+      if (!current || current === generic.trim() || current === lastAutoTemplate.trim()) {
+        body.value = template;
+        lastAutoTemplate = template;
+        validateJson();
+      }
+    }
+
     function validateJson() {
       if (bodyItem.hidden) return;
       const value = valueOf(body, "");
@@ -96,6 +111,7 @@
 
     endpoint.addEventListener("valuechange", onEndpointChanged);
     method.addEventListener("valuechange", updateUi);
+    device.addEventListener("valuechange", applyDeviceCommandTemplate);
     document.addEventListener("input", event => { if (event.target?.getAttribute?.("setting") === "body") validateJson(); });
 
     streamDeckClient.sendToPropertyInspector.subscribe(ev => {
@@ -103,7 +119,12 @@
       if (payload?.event === "getApiEndpoints" && Array.isArray(payload.definitions)) {
         definitions = new Map(payload.definitions.map(item => [item.id, item]));
         applyPresetBody();
+        applyDeviceCommandTemplate();
         updateUi();
+      }
+      if (payload?.event === "getDevices" && payload.commandTemplates) {
+        commandTemplates = new Map(Object.entries(payload.commandTemplates));
+        applyDeviceCommandTemplate();
       }
       if ((payload?.event === "getDevices" || payload?.event === "getScenes") && payload.refreshFailed) {
         catalogStatus.textContent = SwitchBotI18n.t(
