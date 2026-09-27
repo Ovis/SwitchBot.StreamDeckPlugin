@@ -16,7 +16,7 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   "Plug Mini (JP)": command("turnOn"),
   "Plug Mini (EU)": command("turnOn"),
   "Curtain": command("setPosition", "0,ff,50"),
-  "Curtain 3": command("setPosition", "0,ff,50"),
+  "Curtain3": command("setPosition", "0,ff,50"),
   "Blind Tilt": command("setPosition", "up;50"),
   "Humidifier": command("turnOn"),
   "Color Bulb": command("turnOn"),
@@ -24,17 +24,17 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   "Ceiling Light": command("turnOn"),
   "Ceiling Light Pro": command("turnOn"),
   "Lock": command("lock"),
-  "Lock Pro": command("lock"),
+  "Smart Lock Pro": command("lock"),
   "Lock Lite": command("lock"),
-  "Lock Ultra": command("lock"),
+  "Smart Lock Ultra": command("lock"),
   "Battery Circulator Fan": command("turnOn"),
   "Robot Vacuum Cleaner S1": command("start"),
   "Robot Vacuum Cleaner S1 Plus": command("start"),
-  "Floor Cleaning Robot S10": command("startClean", {
+  "Robot Vacuum Cleaner S10": command("startClean", {
     action: "sweep_mop",
     param: { fanLevel: 1, waterLevel: 1, times: 1 }
   }),
-  "Weather Station": command("customQuote", "Hello")
+  "WeatherStation": command("customQuote", "Hello")
 };
 
 export function getDeviceCommandTemplate(deviceType: string): DeviceCommandTemplate | undefined {
