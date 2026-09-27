@@ -1,6 +1,7 @@
 import streamDeck from "@elgato/streamdeck";
 import { ApiRequestAction } from "./actions/api-request-action.js";
 import { GetStatusAction } from "./actions/get-status-action.js";
+import { InfraredRemoteAction } from "./actions/infrared-remote-action.js";
 import { SwitchBotClient } from "./api/switchbot-client.js";
 import { RequestExecutor } from "./execution/request-executor.js";
 import { ClipboardOutput } from "./output/clipboard-output.js";
@@ -23,6 +24,9 @@ streamDeck.actions.registerAction(new ApiRequestAction(
   executor, output, deviceCatalogStore, sceneCatalogStore, catalogRefresh, globalSettings, streamDeck.info.application.language
 ));
 streamDeck.actions.registerAction(new GetStatusAction(
+  executor, output, deviceCatalogStore, catalogRefresh, globalSettings, streamDeck.info.application.language
+));
+streamDeck.actions.registerAction(new InfraredRemoteAction(
   executor, output, deviceCatalogStore, catalogRefresh, globalSettings, streamDeck.info.application.language
 ));
 
