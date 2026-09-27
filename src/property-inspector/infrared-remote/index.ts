@@ -4,7 +4,8 @@ import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import type {
   InfraredCommandPropertyInspectorItem,
   InfraredRemotePropertyInspectorItem,
-  InfraredRemotesResultMessage
+  InfraredRemotesResultMessage,
+  parsePluginToPropertyInspectorMessage
 } from "../../protocol/property-inspector-protocol.js";
 
 type InfraredCommand = InfraredCommandPropertyInspectorItem;
@@ -22,37 +23,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function parseCommand(value: unknown): InfraredCommand | undefined {
-  if (!isRecord(value) || typeof value.value !== "string" || typeof value.label !== "string") return undefined;
-  if (!["default", "channel", "air-conditioner", "custom"].includes(String(value.parameterKind))) return undefined;
-  return {
-    value: value.value,
-    label: value.label,
-    parameterKind: value.parameterKind as InfraredCommand["parameterKind"]
-  };
-}
-
-function parseRemote(value: unknown): InfraredRemote | undefined {
-  if (!isRecord(value) || typeof value.value !== "string" || typeof value.remoteType !== "string") return undefined;
-  if (typeof value.hubDeviceId !== "string" || !Array.isArray(value.commands)) return undefined;
-  const commands = value.commands.map(parseCommand).filter((item): item is InfraredCommand => item !== undefined);
-  return {
-    value: value.value,
-    label: typeof value.label === "string" ? value.label : value.value,
-    remoteType: value.remoteType,
-    hubDeviceId: value.hubDeviceId,
-    commands
-  };
-}
-
-function parsePayload(value: unknown): InfraredPayload | undefined {
-  if (!isRecord(value) || value.event !== "getInfraredRemotes" || !Array.isArray(value.remotes)) return undefined;
-  return {
-    event: "getInfraredRemotes",
-    remotes: value.remotes.map(parseRemote).filter((item): item is InfraredRemote => item !== undefined),
-    ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
-  };
-}
 
 function settingsRecord(value: unknown): Record<string, unknown> {
   if (!isRecord(value)) return {};
@@ -374,7 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
-    const payload = parsePayload(event.payload);
+    const message = parsePluginToPropertyInspectorMessage(event.payload);
+    const payload = message?.event === "getInfraredRemotes" ? message : undefined;
     if (!payload) return;
 
     void (async () => {

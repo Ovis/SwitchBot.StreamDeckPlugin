@@ -4,7 +4,8 @@ import type {
   SaveCredentialsRequest,
   TestConnectionRequest,
   TestConnectionResultMessage,
-  PropertyInspectorErrorCategory
+  PropertyInspectorErrorCategory,
+  parsePluginToPropertyInspectorMessage
 } from "../../protocol/property-inspector-protocol.js";
 
 const { streamDeckClient } = SDPIComponents;
@@ -26,13 +27,8 @@ function globalSettings(value: unknown): GlobalSettingsPayload {
 }
 
 function testConnectionResult(value: unknown): TestConnectionResultMessage | undefined {
-  if (!isRecord(value) || value.event !== "testConnectionResult" || typeof value.success !== "boolean") return undefined;
-  const errorCategory = executionErrorCategory(value.errorCategory);
-  return {
-    event: "testConnectionResult",
-    success: value.success,
-    ...(errorCategory ? { errorCategory } : {})
-  };
+  const message = parsePluginToPropertyInspectorMessage(value);
+  return message?.event === "testConnectionResult" ? message : undefined;
 }
 
 function render(): void {
@@ -84,11 +80,6 @@ async function testConnection(): Promise<void> {
   await streamDeckClient.send("sendToPlugin", message);
 }
 
-function executionErrorCategory(value: unknown): PropertyInspectorErrorCategory | undefined {
-  return typeof value === "string" && [
-    "configuration", "authentication", "network", "http", "switchbot", "response", "internal"
-  ].includes(value) ? value as PropertyInspectorErrorCategory : undefined;
-}
 
 function connectionFailureText(category: PropertyInspectorErrorCategory | undefined): string {
   switch (category) {
