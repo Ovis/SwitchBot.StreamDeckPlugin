@@ -12,6 +12,7 @@ const InfraredRemoteSchema = z.object({
   deviceId: z.string(),
   deviceName: z.string().catch(""),
   remoteType: z.string().catch(""),
+  hubDeviceId: z.string().catch("").default(""),
   lastSeenAt: z.string().optional().default(""),
   deleted: z.boolean().catch(false).default(false)
 });
