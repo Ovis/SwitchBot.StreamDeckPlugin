@@ -101,6 +101,7 @@
     const requestPreview = document.getElementById("request-preview");
     let remotes = new Map();
     let suppressBodyChange = false;
+    let typeModeInitialized = false;
 
     function valueOf(element, fallback = "") { return element?.value ?? element?.getAttribute?.("value") ?? fallback; }
     function checked(element) { return element?.checked === true || element?.value === true || element?.getAttribute?.("checked") !== null; }
@@ -190,6 +191,12 @@
       commandValue.disabled = !checked(commandOverride);
       parameterValue.disabled = !checked(parameterOverride);
       typeMode.disabled = !checked(typeOverride);
+      if (checked(typeOverride) && !typeModeInitialized) {
+        const savedType = valueOf(typeValue);
+        typeMode.value = ["command", "customize"].includes(savedType) ? savedType : "custom";
+        typeModeInitialized = true;
+      }
+      if (!checked(typeOverride)) typeModeInitialized = false;
       const anyOverride = checked(commandOverride) || checked(parameterOverride) || checked(typeOverride);
       overrideActive.hidden = !anyOverride;
 
@@ -247,7 +254,7 @@
     }
     commandOverride.addEventListener("valuechange", () => enableOverride("command", checked(commandOverride)));
     parameterOverride.addEventListener("valuechange", () => enableOverride("parameter", checked(parameterOverride)));
-    typeOverride.addEventListener("valuechange", () => enableOverride("type", checked(typeOverride)));
+    typeOverride.addEventListener("valuechange", () => { typeModeInitialized = false; enableOverride("type", checked(typeOverride)); });
     typeMode.addEventListener("valuechange", async () => {
       if (!checked(typeOverride)) return;
       const mode = valueOf(typeMode);
