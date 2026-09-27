@@ -8,8 +8,7 @@ const GetStatusSettingsSchema = z.object({
     showStatusOnKey: z.boolean().catch(true).default(true),
     copyResponseToClipboard: z.boolean().catch(false).default(false),
     prettyPrint: z.boolean().catch(true).default(true)
-  }).catch({ showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true })
-    .default({ showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true })
+  }).catch({}).default({})
 });
 
 export type GetStatusSettingsV1 = z.infer<typeof GetStatusSettingsSchema>;
