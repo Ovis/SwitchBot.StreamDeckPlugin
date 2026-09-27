@@ -1,6 +1,7 @@
 node_modules/
 coverage/
 *.log
-com.ovis.switchbot.sdPlugin/bin/
-com.ovis.switchbot.sdPlugin/logs/
+com.esheep.switchbot.sdPlugin/bin/
+com.esheep.switchbot.sdPlugin/logs/
+com.esheep.switchbot.sdPlugin/ui/
 .DS_Store
