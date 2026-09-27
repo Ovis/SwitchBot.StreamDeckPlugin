@@ -1,0 +1,39 @@
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@elgato/streamdeck", () => ({
+  default: { logger: { error: vi.fn() } }
+}));
+
+import { CatalogRefreshService } from "../src/services/catalog-refresh-service.js";
+import type { RequestExecutor } from "../src/execution/request-executor.js";
+import type { DeviceCatalogStore } from "../src/settings/device-catalog-store.js";
+import type { SceneCatalogStore } from "../src/settings/scene-catalog-store.js";
+
+describe("CatalogRefreshService", () => {
+  it("returns the saved device catalog and reports refresh failure", async () => {
+    const saved = { fetchedAt: "old", devices: [], infraredRemotes: [] };
+    const executor = { execute: vi.fn(async () => ({
+      success: false, request: { method: "GET", path: "/v1.1/devices" }, executedAt: "now",
+      error: { category: "network", message: "failed" }
+    })) } as unknown as RequestExecutor;
+    const devices = { get: vi.fn(async () => saved), set: vi.fn() } as unknown as DeviceCatalogStore;
+    const scenes = { get: vi.fn(), set: vi.fn() } as unknown as SceneCatalogStore;
+
+    const result = await new CatalogRefreshService(executor, devices, scenes).refreshDevices();
+    expect(result).toEqual({ catalog: saved, refreshed: false });
+  });
+
+  it("persists and reports a successful scene refresh", async () => {
+    const executor = { execute: vi.fn(async () => ({
+      success: true, request: { method: "GET", path: "/v1.1/scenes" }, executedAt: "2026-09-27T00:00:00.000Z",
+      response: { httpStatus: 200, headers: {}, rawBody: "", body: { statusCode: 100, body: [{ sceneId: "1", sceneName: "Home" }] } }
+    })) } as unknown as RequestExecutor;
+    const devices = { get: vi.fn(), set: vi.fn() } as unknown as DeviceCatalogStore;
+    const scenes = { get: vi.fn(async () => undefined), set: vi.fn(async () => undefined) } as unknown as SceneCatalogStore;
+
+    const result = await new CatalogRefreshService(executor, devices, scenes).refreshScenes();
+    expect(result.refreshed).toBe(true);
+    expect(result.catalog?.scenes[0]).toMatchObject({ sceneId: "1", deleted: false });
+    expect(scenes.set).toHaveBeenCalledOnce();
+  });
+});
