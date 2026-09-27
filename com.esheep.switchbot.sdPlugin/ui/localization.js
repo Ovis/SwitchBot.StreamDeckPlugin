@@ -19,7 +19,8 @@
       prettyPrint: "Pretty print",
       method: "Method",
       path: "Path",
-      requestBody: "Request Body",\n      sampleJson: "Sample",
+      requestBody: "Request Body",
+      sampleJson: "Sample",
       copyResponse: "Copy response",
       loadingDevices: "Loading saved devices...",
       selectDevice: "Select a device"
@@ -39,7 +40,8 @@
       prettyPrint: "整形",
       method: "メソッド",
       path: "パス",
-      requestBody: "リクエスト本文",\n      sampleJson: "サンプル",
+      requestBody: "リクエスト本文",
+      sampleJson: "サンプル",
       copyResponse: "レスポンスをコピー",
       loadingDevices: "保存済みデバイスを読み込み中...",
       selectDevice: "デバイスを選択"
