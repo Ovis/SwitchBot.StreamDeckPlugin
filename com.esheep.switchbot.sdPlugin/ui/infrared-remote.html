@@ -104,7 +104,12 @@
     let typeModeInitialized = false;
 
     function valueOf(element, fallback = "") { return element?.value ?? element?.getAttribute?.("value") ?? fallback; }
-    function checked(element) { return element?.checked === true || element?.value === true || element?.getAttribute?.("checked") !== null; }
+    function checked(element) {
+      // sdpi-checkbox は checked 属性を false 値でも保持する場合があるため、
+      // 属性の存在だけで判定すると OFF 状態まで ON と誤認する。
+      const value = element?.checked ?? element?.value ?? element?.getAttribute?.("checked");
+      return value === true || value === "true" || value === "";
+    }
     function selectedRemote() { return remotes.get(valueOf(remote)); }
     function selectedCommand() { return selectedRemote()?.commands?.find(item => item.value === valueOf(operation)); }
 
