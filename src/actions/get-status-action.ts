@@ -88,7 +88,7 @@ export class GetStatusAction extends AuthenticatedAction {
 
     if (!result.success) {
       streamDeck.logger.error("Get Status failed", {
-        category: result.error?.category,
+        category: result.error.category,
         method: result.request.method,
         path: result.request.path,
         httpStatus: result.response?.httpStatus,

@@ -24,7 +24,7 @@ export class CatalogRefreshService {
       this.logFailure("Device catalog refresh", result);
       return { catalog: await this.deviceCatalogStore.get(), refreshed: false };
     }
-    const latest = deviceCatalogFromResponse(result.response?.body, result.executedAt);
+    const latest = deviceCatalogFromResponse(result.response.body, result.executedAt);
     if (!latest) {
       streamDeck.logger.error("Device catalog refresh failed", { category: "response", reason: "invalid-device-catalog" });
       return { catalog: await this.deviceCatalogStore.get(), refreshed: false };
@@ -45,7 +45,7 @@ export class CatalogRefreshService {
       this.logFailure("Scene catalog refresh", result);
       return { catalog: await this.sceneCatalogStore.get(), refreshed: false };
     }
-    const latest = sceneCatalogFromResponse(result.response?.body, result.executedAt);
+    const latest = sceneCatalogFromResponse(result.response.body, result.executedAt);
     if (!latest) {
       streamDeck.logger.error("Scene catalog refresh failed", { category: "response", reason: "invalid-scene-catalog" });
       return { catalog: await this.sceneCatalogStore.get(), refreshed: false };
@@ -60,9 +60,9 @@ export class CatalogRefreshService {
     }
   }
 
-  private logFailure(operation: string, result: ExecutionResult): void {
+  private logFailure(operation: string, result: Extract<ExecutionResult, { success: false }>): void {
     streamDeck.logger.error(`${operation} failed`, {
-      category: result.success ? undefined : result.error.category,
+      category: result.error.category,
       method: result.request.method,
       path: result.request.path,
       httpStatus: result.response?.httpStatus,
