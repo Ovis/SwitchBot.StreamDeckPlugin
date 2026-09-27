@@ -88,8 +88,14 @@
       catch { status.textContent = SwitchBotI18n.t("Invalid JSON", "無効なJSON"); status.className = "invalid"; }
     }
 
-    endpoint.addEventListener("change", () => { catalogStatus.textContent = ""; applyPresetBody(); updateUi(); });
-    method.addEventListener("change", updateUi);
+    function onEndpointChanged() {
+      catalogStatus.textContent = "";
+      applyPresetBody();
+      updateUi();
+    }
+
+    endpoint.addEventListener("valuechange", onEndpointChanged);
+    method.addEventListener("valuechange", updateUi);
     document.addEventListener("input", event => { if (event.target?.getAttribute?.("setting") === "body") validateJson(); });
 
     streamDeckClient.sendToPropertyInspector.subscribe(ev => {
@@ -107,7 +113,11 @@
       }
     });
 
-    document.addEventListener("DOMContentLoaded", updateUi);
+    document.addEventListener("DOMContentLoaded", () => {
+      updateUi();
+      endpoint.updateComplete?.then(updateUi);
+      method.updateComplete?.then(updateUi);
+    });
     document.addEventListener("switchbot-locale-changed", updateUi);
   </script>
   <script src="authentication.js"></script>
