@@ -15,6 +15,11 @@
     .advanced { margin-top: 10px; border-top: 1px solid #555; padding-top: 8px; }
   </style>
   <link rel="stylesheet" href="authentication.css" />
+
+  <style>
+    .execution-diagnostics { margin-top: 12px; border-top: 1px solid #555; padding-top: 8px; }
+    .diagnostics-preview { margin: 6px 8px 10px; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; color: #d8d8d8; }
+  </style>
 </head>
 <body>
   <div id="switchbot-authentication"></div>
@@ -79,5 +84,10 @@
   <sdpi-item label="__MSG_showOperationOnKey__"><sdpi-checkbox setting="output.showOperationOnKey"></sdpi-checkbox></sdpi-item>
   <sdpi-item label="__MSG_copyResponse__"><sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox></sdpi-item>
   <sdpi-item label="__MSG_prettyPrint__"><sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox></sdpi-item>
+  <div id="execution-diagnostics" class="execution-diagnostics" hidden>
+    <div class="section-heading" data-ja-text="最新の実行結果">Latest execution result</div>
+    <pre id="execution-diagnostics-summary" class="diagnostics-preview"></pre>
+    <pre id="execution-diagnostics-response" class="diagnostics-preview"></pre>
+  </div>
 </body>
 </html>

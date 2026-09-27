@@ -29,7 +29,7 @@ streamDeck.actions.registerAction(new GetStatusAction(
   executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
 ));
 streamDeck.actions.registerAction(new InfraredRemoteAction(
-  executor, output, deviceCatalogStore, catalogRefresh, globalSettings, streamDeck.info.application.language
+  executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
 ));
 
 await streamDeck.connect();
