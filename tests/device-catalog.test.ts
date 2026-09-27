@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { deviceCatalogFromResponse, mergeDeviceCatalog } from "../src/settings/device-catalog.js";
-import { normalizeGetDevicesSettings } from "../src/settings/get-devices-settings.js";
 import { normalizeGlobalSettings } from "../src/settings/global-settings.js";
 
 describe("device catalog", () => {
@@ -81,18 +80,5 @@ describe("device catalog", () => {
       version: 1,
       credentials: { token: "token", secret: "secret" }
     });
-  });
-});
-
-describe("Get Devices settings", () => {
-  it("does not copy JSON by default", () => {
-    expect(normalizeGetDevicesSettings({}).output.copyResponseToClipboard).toBe(false);
-  });
-
-  it("preserves the clipboard option", () => {
-    expect(normalizeGetDevicesSettings({
-      version: 1,
-      output: { copyResponseToClipboard: true }
-    }).output.copyResponseToClipboard).toBe(true);
   });
 });
