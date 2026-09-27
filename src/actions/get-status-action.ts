@@ -4,6 +4,8 @@ import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
+import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
+import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 
@@ -16,9 +18,10 @@ export class GetStatusAction extends AuthenticatedAction {
     private readonly output: OutputProcessor,
     private readonly catalogStore: DeviceCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
+    globalSettings: GlobalSettingsStore,
     locale?: string
   ) {
-    super(executor);
+    super(executor, globalSettings);
     this.locale = displayLocale(locale);
   }
 
@@ -39,26 +42,29 @@ export class GetStatusAction extends AuthenticatedAction {
     this.clearRestoreTimer(ev.action.id);
   }
 
-  override async onSendToPlugin(ev: any): Promise<void> {
+  override async onSendToPlugin(value: unknown): Promise<void> {
+    const ev = propertyInspectorMessage(value);
     if (ev.payload?.event === "getDevices") {
-      const catalog = ev.payload?.isRefresh
-        ? await this.catalogRefresh.refreshDevices() ?? await this.catalogStore.get()
-        : await this.catalogStore.get();
-      const actionInstance = streamDeck.actions.getActionById(ev.context);
+      const refresh = ev.payload?.isRefresh === true;
+      const result = refresh
+        ? await this.catalogRefresh.refreshDevices()
+        : { catalog: await this.catalogStore.get(), refreshed: true };
+      const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
       const settings = actionInstance
         ? normalizeGetStatusSettings(await actionInstance.getSettings())
         : normalizeGetStatusSettings({});
       await streamDeck.ui.sendToPropertyInspector({
         event: "getDevices",
-        items: selectableDevices(catalog?.devices ?? [], settings.deviceId).map(device => ({
+        items: selectableDevices(result.catalog?.devices ?? [], settings.deviceId).map(device => ({
           label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
           value: device.deviceId
-        }))
+        })),
+        refreshFailed: refresh && !result.refreshed
       });
       return;
     }
 
-    await super.onSendToPlugin(ev);
+    await super.onSendToPlugin(value);
   }
 
   override async onKeyDown(ev: KeyDownEvent<GetStatusSettingsV1>): Promise<void> {
@@ -93,7 +99,9 @@ export class GetStatusAction extends AuthenticatedAction {
         await ev.action.setTitle(title);
         this.restoreTimers.set(ev.action.id, setTimeout(() => {
           this.restoreTimers.delete(ev.action.id);
-          void ev.action.setTitle(settings.buttonName);
+          void ev.action.setTitle(settings.buttonName).catch(error => {
+            streamDeck.logger.warn("Failed to restore Get Status button title", { errorName: error instanceof Error ? error.name : "UnknownError" });
+          });
         }, 15_000));
       }
     } else if (result.success) {
