@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head lang="en">
+  <meta charset="utf-8" />
+  <title>SwitchBot Get Status</title>
+  <script src="sdpi-components.js"></script>
+  <script src="localization.js"></script>
+  <link rel="stylesheet" href="authentication.css" />
+</head>
+<body>
+  <div id="switchbot-authentication"></div>
+  <sdpi-item id="device-item" label="__MSG_device__">
+    <sdpi-select
+      setting="deviceId"
+      label-setting="deviceLabel"
+      datasource="getDevices"
+      loading="__MSG_loadingDevices__"
+      placeholder="__MSG_selectDevice__"
+      show-refresh
+      hot-reload>
+    </sdpi-select>
+  </sdpi-item>
+  <sdpi-item id="button-name-item" label="__MSG_buttonName__">
+    <sdpi-textfield setting="buttonName"></sdpi-textfield>
+  </sdpi-item>
+  <div id="catalog-status" aria-live="polite"></div>
+  <div id="output-heading" class="section-heading" data-ja-text="出力">Output</div>
+  <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
+    <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
+  </sdpi-item>
+  <sdpi-item id="copy-json-item" label="__MSG_copyJson__">
+    <sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox>
+  </sdpi-item>
+  <sdpi-item id="pretty-item" label="__MSG_prettyPrint__">
+    <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
+  </sdpi-item>
+  <script>
+    const { streamDeckClient } = SDPIComponents;
+
+    function localizeUi() {
+      const { t } = SwitchBotI18n;
+      document.getElementById("output-heading").textContent = t("Output", "出力");
+    }
+    streamDeckClient.sendToPropertyInspector.subscribe(ev => {
+      if (ev?.payload?.event !== "getDevices") return;
+      const status = document.getElementById("catalog-status");
+      status.textContent = ev.payload.refreshFailed
+        ? SwitchBotI18n.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
+        : "";
+    });
+    document.addEventListener("DOMContentLoaded", localizeUi);
+    document.addEventListener("switchbot-locale-changed", localizeUi);
+  </script>
+  <script src="authentication.js"></script>
+</body>
+</html>

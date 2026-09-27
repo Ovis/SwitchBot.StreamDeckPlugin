@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Check Property Inspector JavaScript
+        run: npm run check:pi-js
+      - name: Test
+        run: npm test
+      - name: Test release version mapping
+        run: npm run test:release-version
+      - name: Build
+        run: npm run build
+      - name: Inspect distributable
+        run: npm run security:dist
+      - name: Validate Stream Deck plugin
+        run: npm run validate
+      - name: Verify package contents
+        run: npm run pack:check

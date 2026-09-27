@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import { normalizeGetStatusSettings } from "../src/settings/get-status-settings.js";
+
+describe("Get Status settings", () => {
+  it("keeps a configured device ID and output option", () => {
+    expect(normalizeGetStatusSettings({
+      version: 1,
+      deviceId: "ABC/123",
+      buttonName: "Living room",
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: false }
+    })).toEqual({
+      version: 1,
+      deviceId: "ABC/123",
+      buttonName: "Living room",
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: false }
+    });
+  });
+
+  it("preserves individual output values when sibling fields are missing", () => {
+    expect(normalizeGetStatusSettings({
+      version: 1,
+      output: { copyResponseToClipboard: true }
+    }).output).toEqual({
+      showStatusOnKey: true,
+      copyResponseToClipboard: true,
+      prettyPrint: true
+    });
+  });
+
+  it("falls back to safe defaults for malformed persisted settings", () => {
+    expect(normalizeGetStatusSettings({ version: 2, deviceId: 123 })).toEqual({
+      version: 1,
+      deviceId: "",
+      buttonName: "",
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
+    });
+  });
+});

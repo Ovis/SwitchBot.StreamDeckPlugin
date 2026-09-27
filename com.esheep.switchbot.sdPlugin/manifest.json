@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Actions": [
+    {
+      "Name": "Get Status",
+      "Tooltip": "Get the selected SwitchBot device status.",
+      "UUID": "com.esheep.switchbot.get-status",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ],
+      "PropertyInspectorPath": "ui/get-status.html",
+      "UserTitleEnabled": false
+    },
+    {
+      "Name": "API Request",
+      "Tooltip": "Send a configured request to SwitchBot OpenAPI.",
+      "UUID": "com.esheep.switchbot.api-request",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ],
+      "PropertyInspectorPath": "ui/api-request.html"
+    },
+    {
+      "Name": "Infrared Remote",
+      "Tooltip": "Send commands to a SwitchBot virtual infrared remote.",
+      "UUID": "com.esheep.switchbot.infrared-remote",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ],
+      "PropertyInspectorPath": "ui/infrared-remote.html"
+    }
+  ],
+  "Author": "Ovis",
+  "CodePath": "bin/plugin.js",
+  "Description": "Advanced Stream Deck client for SwitchBot OpenAPI v1.1.",
+  "Icon": "imgs/plugin",
+  "Name": "SwitchBot API Call",
+  "Nodejs": {
+    "Version": "24"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "13"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "UUID": "com.esheep.switchbot",
+  "Version": "0.1.0.0",
+  "URL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin",
+  "SupportURL": "https://github.com/Ovis/SwitchBot.StreamDeckPlugin/issues",
+  "Category": "SwitchBot API Call",
+  "CategoryIcon": "imgs/action"
+}

@@ -1,0 +1,364 @@
+<!doctype html>
+<html>
+<head lang="en">
+  <meta charset="utf-8" />
+  <title>SwitchBot Infrared Remote</title>
+  <script src="sdpi-components.js"></script>
+  <script src="localization.js"></script>
+  <style>
+    [hidden] { display: none !important; }
+    .section-heading { margin: 12px 8px 6px; font-weight: 600; }
+    .status { margin: 4px 8px 8px 116px; font-size: 11px; }
+    .invalid { color: #e57373; }
+    .notice { color: #e0b66d; }
+    .preview { margin: 6px 8px 10px; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; color: #d8d8d8; }
+    .advanced { margin-top: 10px; border-top: 1px solid #555; padding-top: 8px; }
+  </style>
+  <link rel="stylesheet" href="authentication.css" />
+</head>
+<body>
+  <div id="switchbot-authentication"></div>
+
+  <sdpi-item label="__MSG_device__">
+    <sdpi-select id="remote" setting="deviceId" datasource="getInfraredRemotes"
+      loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__" show-refresh hot-reload></sdpi-select>
+  </sdpi-item>
+  <div id="catalog-status" class="status invalid" aria-live="polite"></div>
+
+  <sdpi-item id="operation-item" label="__MSG_operation__">
+    <sdpi-select id="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
+  </sdpi-item>
+  <sdpi-item id="custom-item" label="__MSG_customButton__" hidden>
+    <sdpi-textfield id="custom-button" setting="customButtonName"></sdpi-textfield>
+  </sdpi-item>
+  <sdpi-item id="channel-item" label="__MSG_channel__" hidden>
+    <sdpi-textfield id="channel" setting="channel"></sdpi-textfield>
+  </sdpi-item>
+
+  <div id="ac-fields" hidden>
+    <sdpi-item label="__MSG_temperature__"><sdpi-textfield id="ac-temperature" setting="airConditioner.temperature"></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_mode__">
+      <sdpi-select id="ac-mode" setting="airConditioner.mode" default="2">
+        <option value="1">Auto</option><option value="2">Cool</option><option value="3">Dry</option>
+        <option value="4">Fan</option><option value="5">Heat</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="__MSG_fanSpeed__">
+      <sdpi-select id="ac-fan" setting="airConditioner.fanSpeed" default="1">
+        <option value="1">Auto</option><option value="2">Low</option><option value="3">Medium</option><option value="4">High</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="__MSG_power__">
+      <sdpi-select id="ac-power" setting="airConditioner.powerState" default="on">
+        <option value="on">ON</option><option value="off">OFF</option>
+      </sdpi-select>
+    </sdpi-item>
+  </div>
+  <div id="validation-status" class="status invalid" aria-live="polite"></div>
+  <div id="override-active" class="status notice" hidden></div>
+
+  <div class="advanced">
+    <div id="advanced-heading" class="section-heading"></div>
+    <sdpi-item label="__MSG_commandOverride__"><sdpi-checkbox id="command-override" setting="overrides.command.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_command__"><sdpi-textfield id="command-value" setting="overrides.command.value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_parameterOverride__"><sdpi-checkbox id="parameter-override" setting="overrides.parameter.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_parameter__"><sdpi-textfield id="parameter-value" setting="overrides.parameter.value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_commandTypeOverride__"><sdpi-checkbox id="type-override" setting="overrides.commandType.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_commandType__">
+      <sdpi-select id="type-mode" disabled>
+        <option value="command">command</option><option value="customize">customize</option><option id="custom-type-option" value="custom">Custom</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item id="custom-type-item" label="__MSG_customCommandType__" hidden>
+      <sdpi-textfield id="type-value" setting="overrides.commandType.value"></sdpi-textfield>
+    </sdpi-item>
+    <div id="request-preview" class="preview"></div>
+  </div>
+
+  <div id="output-heading" class="section-heading"></div>
+  <sdpi-item label="__MSG_showOperationOnKey__"><sdpi-checkbox setting="output.showOperationOnKey"></sdpi-checkbox></sdpi-item>
+  <sdpi-item label="__MSG_copyResponse__"><sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox></sdpi-item>
+  <sdpi-item label="__MSG_prettyPrint__"><sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox></sdpi-item>
+
+  <script>
+    const { streamDeckClient } = SDPIComponents;
+    const remote = document.getElementById("remote");
+    const operation = document.getElementById("operation");
+    const customItem = document.getElementById("custom-item");
+    const channelItem = document.getElementById("channel-item");
+    const acFields = document.getElementById("ac-fields");
+    const validationStatus = document.getElementById("validation-status");
+    const catalogStatus = document.getElementById("catalog-status");
+    const overrideActive = document.getElementById("override-active");
+    const commandOverride = document.getElementById("command-override");
+    const parameterOverride = document.getElementById("parameter-override");
+    const typeOverride = document.getElementById("type-override");
+    const commandValue = document.getElementById("command-value");
+    const parameterValue = document.getElementById("parameter-value");
+    const typeMode = document.getElementById("type-mode");
+    const typeValue = document.getElementById("type-value");
+    const customTypeItem = document.getElementById("custom-type-item");
+    const requestPreview = document.getElementById("request-preview");
+    let remotes = new Map();
+    let suppressBodyChange = false;
+    let typeModeInitialized = false;
+    let savedOperation = "";
+
+    function valueOf(element, fallback = "") { return element?.value ?? element?.getAttribute?.("value") ?? fallback; }
+    function checked(element) {
+      // sdpi-checkbox は value を設定値として保持する。
+      // ネイティブ checkbox の checked 属性を参照するとコンポーネント内部状態とずれる。
+      return element?.value === true || element?.value === "true";
+    }
+
+    function setControlDisabled(element, disabled) {
+      // sdpi-components は disabled プロパティを参照して内部 input を描画する。
+      // 初期HTMLの disabled 属性も残さず同期させ、再描画時に無効状態へ戻らないようにする。
+      element.disabled = disabled;
+      element.toggleAttribute("disabled", disabled);
+    }
+    function selectedRemote() { return remotes.get(valueOf(remote)); }
+    function selectedCommand() { return selectedRemote()?.commands?.find(item => item.value === valueOf(operation)); }
+
+    async function patchSettings(mutator) {
+      const payload = await streamDeckClient.getSettings();
+      const settings = payload?.settings ?? payload ?? {};
+      mutator(settings);
+      await streamDeckClient.setSettings(settings);
+    }
+
+    function emptyOverrides(settings) {
+      settings.overrides = {
+        command: { enabled: false, value: "" },
+        parameter: { enabled: false, value: "" },
+        commandType: { enabled: false, value: "" }
+      };
+    }
+
+    function clearOverridesAfterBodyChange() {
+      if (suppressBodyChange) return;
+
+      // 各 sdpi-* コンポーネント自身に設定を保存させる。
+      // ここで getSettings/setSettings を行うと、入力コンポーネントの遅延保存と競合して
+      // 入力直後の値を古い設定で上書きするため、個々の value だけを変更する。
+      commandOverride.value = false;
+      parameterOverride.value = false;
+      typeOverride.value = false;
+      commandValue.value = "";
+      parameterValue.value = "";
+      typeValue.value = "";
+      typeModeInitialized = false;
+      updateUi();
+    }
+
+    function setOperationOptions(remoteInfo, selectedOperation = "") {
+      const items = remoteInfo?.commands ?? [];
+      operation.innerHTML = '<option value=""></option>' + items.map(item =>
+        '<option value="' + escapeHtml(item.value) + '">' + escapeHtml(item.label) + '</option>').join("");
+
+      // operation は API 応答後に選択肢を動的生成するため、sdpi-select の初期化時に
+      // 一時的な空値が valuechange として通知される。復元処理中はそのイベントを無視し、
+      // 保存済みの値だけを選択状態へ反映する。
+      operation.value = items.some(item => item.value === selectedOperation) ? selectedOperation : "";
+    }
+
+    function generatedBody() {
+      const info = selectedRemote();
+      if (!info) return { error: SwitchBotI18n.t("Select an infrared remote.", "赤外線リモコンを選択してください。") };
+      const op = valueOf(operation);
+      const cmd = selectedCommand();
+      if (info.remoteType === "Others" || op === "custom") {
+        const name = valueOf(document.getElementById("custom-button")).trim();
+        if (!name) return { error: SwitchBotI18n.t("Enter a custom button name.", "カスタムボタン名を入力してください。") };
+        return { command: name, parameter: "default", commandType: "customize" };
+      }
+      if (!op || !cmd) return { error: SwitchBotI18n.t("Select an operation.", "操作を選択してください。") };
+      if (cmd.parameterKind === "channel") {
+        const channel = valueOf(document.getElementById("channel")).trim();
+        if (!channel) return { error: SwitchBotI18n.t("Enter a channel.", "チャンネルを入力してください。") };
+        return { command: op, parameter: channel, commandType: "command" };
+      }
+      if (cmd.parameterKind === "air-conditioner") {
+        const temperature = valueOf(document.getElementById("ac-temperature")).trim();
+        if (!temperature || !Number.isFinite(Number(temperature))) {
+          return { error: SwitchBotI18n.t("Enter a valid temperature.", "有効な温度を入力してください。") };
+        }
+        return {
+          command: op,
+          parameter: [temperature, valueOf(document.getElementById("ac-mode"), "2"), valueOf(document.getElementById("ac-fan"), "1"), valueOf(document.getElementById("ac-power"), "on")].join(","),
+          commandType: "command"
+        };
+      }
+      return { command: op, parameter: "default", commandType: "command" };
+    }
+
+    function finalBody() {
+      const generated = generatedBody();
+      const command = checked(commandOverride) ? valueOf(commandValue) : generated.command;
+      const parameter = checked(parameterOverride) ? valueOf(parameterValue) : generated.parameter;
+      const commandType = checked(typeOverride) ? valueOf(typeValue) : generated.commandType;
+      if (!command) return { error: generated.error || SwitchBotI18n.t("Command is required.", "Command は必須です。") };
+      if (!commandType) return { error: SwitchBotI18n.t("Command type is required.", "Command type は必須です。") };
+      return { command, parameter: parameter ?? "", commandType };
+    }
+
+    function applyInfraredLocale() {
+      const ja = SwitchBotI18n.locale === "ja";
+      document.getElementById("advanced-heading").textContent = SwitchBotI18n.t("Advanced Override", "上書き");
+      document.getElementById("output-heading").textContent = SwitchBotI18n.t("Output", "出力");
+      document.getElementById("override-active").textContent = SwitchBotI18n.t("Advanced Override active", "上書きが有効です");
+      document.getElementById("custom-type-option").textContent = SwitchBotI18n.t("Custom", "カスタム");
+      const mode = document.getElementById("ac-mode");
+      const fan = document.getElementById("ac-fan");
+      const modeLabels = ja ? ["自動", "冷房", "除湿", "送風", "暖房"] : ["Auto", "Cool", "Dry", "Fan", "Heat"];
+      const fanLabels = ja ? ["自動", "弱", "中", "強"] : ["Auto", "Low", "Medium", "High"];
+      // sdpi-select はネイティブ select ではないため options プロパティを持たない。
+      // 内部の option 要素を直接取得して表示名だけをローカライズする。
+      Array.from(mode.querySelectorAll("option")).forEach((option, index) => option.textContent = modeLabels[index]);
+      Array.from(fan.querySelectorAll("option")).forEach((option, index) => option.textContent = fanLabels[index]);
+      SwitchBotI18n.refreshSdpiLocalization();
+    }
+
+    function updateUi() {
+      applyInfraredLocale();
+      const info = selectedRemote();
+      const cmd = selectedCommand();
+      customItem.hidden = !(info?.remoteType === "Others" || valueOf(operation) === "custom");
+      channelItem.hidden = cmd?.parameterKind !== "channel";
+      acFields.hidden = cmd?.parameterKind !== "air-conditioner";
+
+      setControlDisabled(commandValue, !checked(commandOverride));
+      setControlDisabled(parameterValue, !checked(parameterOverride));
+      setControlDisabled(typeMode, !checked(typeOverride));
+      if (checked(typeOverride) && !typeModeInitialized) {
+        const savedType = valueOf(typeValue);
+        typeMode.value = ["command", "customize"].includes(savedType) ? savedType : "custom";
+        typeModeInitialized = true;
+      }
+      if (!checked(typeOverride)) typeModeInitialized = false;
+      const anyOverride = checked(commandOverride) || checked(parameterOverride) || checked(typeOverride);
+      overrideActive.hidden = !anyOverride;
+
+      const generated = generatedBody();
+      if (!checked(commandOverride)) commandValue.value = generated.command ?? "";
+      if (!checked(parameterOverride)) parameterValue.value = generated.parameter ?? "";
+      if (!checked(typeOverride)) {
+        typeValue.value = generated.commandType ?? "";
+        typeMode.value = ["command", "customize"].includes(generated.commandType) ? generated.commandType : "custom";
+      }
+      customTypeItem.hidden = !checked(typeOverride) || valueOf(typeMode) !== "custom";
+
+      const body = finalBody();
+      validationStatus.textContent = body.error ?? "";
+      requestPreview.textContent = body.error
+        ? SwitchBotI18n.t("Request Body unavailable: ", "Request Bodyを生成できません: ") + body.error
+        : JSON.stringify({ command: body.command, parameter: body.parameter, commandType: body.commandType }, null, 2);
+    }
+
+    function enableOverride(kind, enabled) {
+      const generated = generatedBody();
+      const key = kind === "type" ? "commandType" : kind;
+      const generatedValue = generated[key] ?? "";
+      const field = kind === "command" ? commandValue : kind === "parameter" ? parameterValue : typeValue;
+
+      // enabled 自体は checkbox が自動保存する。値側も対応する sdpi-textfield に保存させ、
+      // 同一設定オブジェクトへの複数の setSettings が競合しないようにする。
+      field.value = enabled ? generatedValue : "";
+      if (kind === "type") {
+        typeModeInitialized = false;
+        typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
+      }
+      updateUi();
+    }
+
+    remote.addEventListener("valuechange", async () => {
+      if (suppressBodyChange) return;
+
+      const next = selectedRemote();
+      if (!next) {
+        // datasource の復元時は、remote の値だけが先に設定され、カタログ受信前に
+        // valuechange が発生する。この時点で設定を書き戻すと remoteType/operation を
+        // 空値で破壊するため、実体を解決できるまで保存処理を行わない。
+        return;
+      }
+
+      const payload = await streamDeckClient.getSettings();
+      const settings = payload?.settings ?? payload ?? {};
+      const sameType = settings.remoteType === next.remoteType;
+      suppressBodyChange = true;
+      const preservedOperation = sameType ? (savedOperation || settings.operation || "") : "";
+      savedOperation = preservedOperation;
+      setOperationOptions(next, preservedOperation);
+      await patchSettings(current => {
+        current.deviceId = valueOf(remote);
+        current.remoteType = next.remoteType;
+        current.operation = preservedOperation;
+        emptyOverrides(current);
+      });
+      suppressBodyChange = false;
+      updateUi();
+    });
+
+    operation.addEventListener("valuechange", async () => {
+      if (suppressBodyChange) return;
+
+      const selectedOperation = valueOf(operation);
+      savedOperation = selectedOperation;
+
+      // 動的 select の自動保存と競合しないよう、ユーザーが選択した値を明示的に保存する。
+      await patchSettings(settings => {
+        settings.operation = selectedOperation;
+        emptyOverrides(settings);
+      });
+
+      clearOverridesAfterBodyChange();
+      updateUi();
+    });
+    for (const id of ["custom-button", "channel", "ac-temperature", "ac-mode", "ac-fan", "ac-power"]) {
+      document.getElementById(id).addEventListener("valuechange", () => { clearOverridesAfterBodyChange(); updateUi(); });
+      document.getElementById(id).addEventListener("input", updateUi);
+    }
+    commandOverride.addEventListener("valuechange", () => enableOverride("command", checked(commandOverride)));
+    parameterOverride.addEventListener("valuechange", () => enableOverride("parameter", checked(parameterOverride)));
+    typeOverride.addEventListener("valuechange", () => enableOverride("type", checked(typeOverride)));
+    typeMode.addEventListener("valuechange", () => {
+      if (!checked(typeOverride)) return;
+      const mode = valueOf(typeMode);
+      if (mode !== "custom") {
+        // commandType の実値は hidden な補助状態ではなく、setting を持つ
+        // textfield に集約して sdpi-components の通常保存経路を利用する。
+        typeValue.value = mode;
+      }
+      updateUi();
+    });
+    for (const field of [commandValue, parameterValue, typeValue]) {
+      field.addEventListener("input", updateUi);
+      field.addEventListener("valuechange", updateUi);
+    }
+
+    streamDeckClient.sendToPropertyInspector.subscribe(async ev => {
+      if (ev?.payload?.event !== "getInfraredRemotes") return;
+      remotes = new Map((ev.payload.remotes ?? []).map(item => [item.value, item]));
+      const payload = await streamDeckClient.getSettings();
+      const settings = payload?.settings ?? payload ?? {};
+      const info = remotes.get(settings.deviceId);
+      suppressBodyChange = true;
+      savedOperation = settings.operation ?? "";
+      setOperationOptions(info, savedOperation);
+      suppressBodyChange = false;
+      catalogStatus.textContent = ev.payload.refreshFailed
+        ? SwitchBotI18n.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
+        : "";
+      updateUi();
+    });
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+    }
+
+    document.addEventListener("DOMContentLoaded", updateUi);
+    document.addEventListener("switchbot-locale-changed", () => { applyInfraredLocale(); updateUi(); });
+  </script>
+  <script src="authentication.js"></script>
+</body>
+</html>

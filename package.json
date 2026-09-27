@@ -1,0 +1,33 @@
+{
+  "name": "switchbot-streamdeck-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "validate": "streamdeck validate com.esheep.switchbot.sdPlugin --no-update-check",
+    "prebuild": "node scripts/generate-assets.mjs",
+    "pack:check": "streamdeck pack com.esheep.switchbot.sdPlugin --dry-run --no-update-check",
+    "security:dist": "node scripts/check-distributable.mjs",
+    "test:release-version": "node scripts/release-version.mjs v0.0.1-alpha1 && node scripts/release-version.mjs v0.0.1-beta1 && node scripts/release-version.mjs v0.0.1-rc1 && node scripts/release-version.mjs v0.0.1",
+    "check:pi-js": "node --check com.esheep.switchbot.sdPlugin/ui/localization.js && node --check com.esheep.switchbot.sdPlugin/ui/authentication.js && node scripts/check-inline-pi-js.mjs"
+  },
+  "dependencies": {
+    "@elgato/streamdeck": "3.0.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@elgato/cli": "1.10.0",
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@tsconfig/node24": "^24.0.1",
+    "@types/node": "^24.5.2",
+    "rollup": "^4.52.2",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
