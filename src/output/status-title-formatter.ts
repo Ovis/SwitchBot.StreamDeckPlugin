@@ -50,7 +50,7 @@ function localizeValue(value: string | number | boolean, locale: DisplayLocale):
   if (locale !== "ja" || typeof value !== "string") return String(value);
   const values: Record<string, string> = {
     on: "オン", off: "オフ", locked: "施錠", unlocked: "解錠",
-    open: "開", close: "閉", closed: "閉", detected: "検知", notDetected: "未検知"
+    open: "開", close: "閉", closed: "閉", detected: "検知", notdetected: "未検知"
   };
   return values[value] ?? values[value.toLowerCase()] ?? value;
 }
