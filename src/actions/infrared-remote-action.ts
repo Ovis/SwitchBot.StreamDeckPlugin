@@ -49,12 +49,13 @@ export class InfraredRemoteAction extends AuthenticatedAction {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    if (ev.payload?.event !== "getInfraredRemotes") {
+    const request = propertyInspectorRequest(ev.payload);
+    if (request?.event !== "getInfraredRemotes") {
       await super.onSendToPlugin(value);
       return;
     }
 
-    const refresh = ev.payload.isRefresh === true;
+    const refresh = request.isRefresh === true;
     const result = refresh
       ? await this.catalogRefresh.refreshDevices()
       : { catalog: await this.catalogStore.get(), refreshed: true };

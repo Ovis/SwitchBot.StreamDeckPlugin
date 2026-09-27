@@ -37,12 +37,12 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       });
     }
 
-    const message: TestConnectionResultMessage = {
+    const response: TestConnectionResultMessage = {
       event: "testConnectionResult",
       success: result.success,
       ...(!result.success && result.error ? { errorCategory: result.error.category } : {})
     };
-    await streamDeck.ui.sendToPropertyInspector({ ...message });
+    await streamDeck.ui.sendToPropertyInspector({ ...response });
   }
 
   private async saveCredentials(credentials: PropertyInspectorCredentials): Promise<void> {
