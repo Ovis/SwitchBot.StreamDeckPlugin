@@ -12,6 +12,19 @@ describe("infrared remote commands", () => {
     expect(infraredCommandsForRemoteType("Future Device")).toEqual([]);
   });
 
+  it("maps documented DIY remote variants to their standard appliance command set", () => {
+    expect(infraredCommandsForRemoteType("DIY Fan").map(x => x.command)).toEqual([
+      "turnOn", "turnOff", "swing", "timer", "lowSpeed", "middleSpeed", "highSpeed"
+    ]);
+    expect(infraredCommandsForRemoteType("DIY Light").map(x => x.command)).toEqual([
+      "turnOn", "turnOff", "brightnessUp", "brightnessDown"
+    ]);
+    expect(infraredCommandsForRemoteType("DIY Air Conditioner").map(x => x.command)).toEqual([
+      "turnOn", "turnOff", "setAll"
+    ]);
+    expect(infraredCommandsForRemoteType("DIY Future Device")).toEqual([]);
+  });
+
   it("builds an air-conditioner setAll request", () => {
     const settings = normalizeInfraredRemoteSettings({
       deviceId: "ir/id",
