@@ -196,8 +196,10 @@
       const fan = document.getElementById("ac-fan");
       const modeLabels = ja ? ["自動", "冷房", "除湿", "送風", "暖房"] : ["Auto", "Cool", "Dry", "Fan", "Heat"];
       const fanLabels = ja ? ["自動", "弱", "中", "強"] : ["Auto", "Low", "Medium", "High"];
-      Array.from(mode.options).forEach((option, index) => option.textContent = modeLabels[index]);
-      Array.from(fan.options).forEach((option, index) => option.textContent = fanLabels[index]);
+      // sdpi-select はネイティブ select ではないため options プロパティを持たない。
+      // 内部の option 要素を直接取得して表示名だけをローカライズする。
+      Array.from(mode.querySelectorAll("option")).forEach((option, index) => option.textContent = modeLabels[index]);
+      Array.from(fan.querySelectorAll("option")).forEach((option, index) => option.textContent = fanLabels[index]);
       SwitchBotI18n.refreshSdpiLocalization();
     }
 
