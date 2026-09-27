@@ -16,6 +16,10 @@ describe("Get Status key title", () => {
     })).toBe("mode: auto\nspeed: 2");
   });
 
+  it("localizes case-sensitive SwitchBot status values in Japanese", () => {
+    expect(formatStatusForKey({ body: { motion: "notDetected" } }, "ja")).toBe("motion: 未検知");
+  });
+
   it("returns no title when there is no displayable status body", () => {
     expect(formatStatusForKey({ statusCode: 100, body: {} })).toBeUndefined();
   });
