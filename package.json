@@ -12,7 +12,7 @@
     "pack:check": "streamdeck pack com.esheep.switchbot.sdPlugin --dry-run --no-update-check",
     "security:dist": "node scripts/check-distributable.mjs",
     "test:release-version": "node scripts/release-version.mjs v0.0.1-alpha1 && node scripts/release-version.mjs v0.0.1-beta1 && node scripts/release-version.mjs v0.0.1-rc1 && node scripts/release-version.mjs v0.0.1",
-    "check:pi-js": "node --check com.esheep.switchbot.sdPlugin/ui/localization.js && node --check com.esheep.switchbot.sdPlugin/ui/authentication.js"
+    "check:pi-js": "node --check com.esheep.switchbot.sdPlugin/ui/localization.js && node --check com.esheep.switchbot.sdPlugin/ui/authentication.js && node scripts/check-inline-pi-js.mjs"
   },
   "dependencies": {
     "@elgato/streamdeck": "3.0.0",
