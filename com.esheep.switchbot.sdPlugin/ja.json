@@ -12,5 +12,9 @@
   "com.esheep.switchbot.api-request": {
     "Name": "APIリクエスト",
     "Tooltip": "SwitchBot OpenAPIへ設定したリクエストを送信します。"
+  },
+  "com.esheep.switchbot.get-scenes": {
+    "Name": "シーン取得",
+    "Tooltip": "SwitchBotの保存済みシーン一覧を最新化します。"
   }
 }
