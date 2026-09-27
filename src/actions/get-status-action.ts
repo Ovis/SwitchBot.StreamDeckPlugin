@@ -97,7 +97,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }
 
     if (result.success && settings.output.showStatusOnKey) {
-      const title = formatStatusForKey(result.response?.body, this.locale);
+      const title = formatStatusForKey(result.response.body, this.locale);
       if (title) {
         this.clearRestoreTimer(ev.action.id);
         await ev.action.setTitle(title);

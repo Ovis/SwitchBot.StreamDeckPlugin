@@ -32,7 +32,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     const result = await this.authExecutor.execute({ method: "GET", path: "/v1.1/devices" });
     if (!result.success) {
       streamDeck.logger.error("Test Connection failed", {
-        category: result.error?.category,
+        category: result.error.category,
         httpStatus: result.response?.httpStatus,
         switchBotStatus: result.response?.switchBot?.statusCode
       });
@@ -41,7 +41,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     const response: TestConnectionResultMessage = {
       event: "testConnectionResult",
       success: result.success,
-      ...(!result.success && result.error ? { errorCategory: result.error.category } : {})
+      ...(!result.success ? { errorCategory: result.error.category } : {})
     };
     await streamDeck.ui.sendToPropertyInspector({ ...response });
   }
