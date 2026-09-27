@@ -9,7 +9,11 @@
       secret: "Secret",
       copyJson: "Copy JSON",
       deviceCatalog: "Device catalog",
-      device: "Device",\n      scene: "Scene",\n      endpoint: "Endpoint",\n      loadingScenes: "Loading saved scenes...",\n      selectScene: "Run Get Scenes first",
+      device: "Device",
+      scene: "Scene",
+      endpoint: "Endpoint",
+      loadingScenes: "Loading saved scenes...",
+      selectScene: "Run Get Scenes first",
       buttonName: "Button name",
       showOnKey: "Show result on button",
       prettyPrint: "Pretty print",
@@ -25,7 +29,11 @@
       secret: "シークレット",
       copyJson: "JSONをコピー",
       deviceCatalog: "デバイス一覧",
-      device: "デバイス",\n      scene: "シーン",\n      endpoint: "エンドポイント",\n      loadingScenes: "保存済みシーンを読み込み中...",\n      selectScene: "先にシーン取得を実行してください",
+      device: "デバイス",
+      scene: "シーン",
+      endpoint: "エンドポイント",
+      loadingScenes: "保存済みシーンを読み込み中...",
+      selectScene: "先にシーン取得を実行してください",
       buttonName: "ボタン名",
       showOnKey: "取得結果をボタンに表示",
       prettyPrint: "整形",
@@ -79,7 +87,6 @@
       console.error("[SwitchBot PI] registration info parse failed", error?.name ?? "Error");
       applyLocale("en");
     }
-
     originalConnect?.(port, uuid, event, info, actionInfo);
   };
 })();
