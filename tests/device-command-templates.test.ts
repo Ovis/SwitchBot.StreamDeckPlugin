@@ -6,9 +6,9 @@ describe("device command templates", () => {
     ["Bot", "press", "default"],
     ["Plug Mini (JP)", "turnOn", "default"],
     ["Lock", "lock", "default"],
-    ["Curtain 3", "setPosition", "0,ff,50"],
+    ["Curtain3", "setPosition", "0,ff,50"],
     ["Blind Tilt", "setPosition", "up;50"],
-    ["Weather Station", "customQuote", "Hello"]
+    ["WeatherStation", "customQuote", "Hello"]
   ])("provides an editable sample for %s", (deviceType, command, parameter) => {
     const template = getDeviceCommandTemplate(deviceType);
     expect(template).toBeDefined();
@@ -16,7 +16,7 @@ describe("device command templates", () => {
   });
 
   it("uses the documented object parameter shape for Floor Cleaning Robot S10", () => {
-    const body = JSON.parse(getDeviceCommandTemplate("Floor Cleaning Robot S10")!.body);
+    const body = JSON.parse(getDeviceCommandTemplate("Robot Vacuum Cleaner S10")!.body);
     expect(body).toEqual({
       command: "startClean",
       parameter: { action: "sweep_mop", param: { fanLevel: 1, waterLevel: 1, times: 1 } },
@@ -28,3 +28,11 @@ describe("device command templates", () => {
     expect(getDeviceCommandTemplate("Future Device")).toBeUndefined();
   });
 });
+
+
+  it.each([
+    "Smart Lock Pro",
+    "Smart Lock Ultra"
+  ])("matches the deviceType returned by the device list for %s", deviceType => {
+    expect(getDeviceCommandTemplate(deviceType)).toBeDefined();
+  });
