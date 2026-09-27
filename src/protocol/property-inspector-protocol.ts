@@ -3,7 +3,19 @@
  *
  * PR0-B では既存通信との互換性を維持するため、フィールド名やイベント名は変更しない。
  */
-export interface PropertyInspectorSelectItem extends Record<string, unknown> {
+type ProtocolJsonPrimitive = string | number | boolean | null | undefined;
+type ProtocolJsonValue = ProtocolJsonPrimitive | ProtocolJsonObject | ProtocolJsonValue[];
+
+/**
+ * Stream Deck SDK の JsonObject と構造的に互換な wire object を表す。
+ *
+ * Protocol層からSDK実装へ直接依存させず、通信可能なJSON値だけを許可する。
+ */
+interface ProtocolJsonObject {
+  [key: string]: ProtocolJsonValue;
+}
+
+export interface PropertyInspectorSelectItem extends ProtocolJsonObject {
   label: string;
   value: string;
 }
@@ -81,7 +93,7 @@ export type PropertyInspectorErrorCategory =
   | "response"
   | "internal";
 
-export interface TestConnectionResultMessage extends Record<string, unknown> {
+export interface TestConnectionResultMessage extends ProtocolJsonObject {
   type: "testConnectionResult";
   success: boolean;
   errorCategory?: PropertyInspectorErrorCategory;
@@ -90,7 +102,7 @@ export interface TestConnectionResultMessage extends Record<string, unknown> {
 /**
  * API Request PI が表示に使用するエンドポイント定義の wire 形式を表す。
  */
-export interface ApiEndpointPropertyInspectorDefinition extends Record<string, unknown> {
+export interface ApiEndpointPropertyInspectorDefinition extends ProtocolJsonObject {
   id: string;
   method: string;
   path: string;
@@ -102,7 +114,7 @@ export interface ApiEndpointPropertyInspectorDefinition extends Record<string, u
 /**
  * API Request PI にエンドポイント候補と定義を返す既存メッセージを表す。
  */
-export interface ApiEndpointsResultMessage extends Record<string, unknown> {
+export interface ApiEndpointsResultMessage extends ProtocolJsonObject {
   event: "getApiEndpoints";
   items: PropertyInspectorSelectItem[];
   definitions: ApiEndpointPropertyInspectorDefinition[];
@@ -113,7 +125,7 @@ export interface ApiEndpointsResultMessage extends Record<string, unknown> {
  *
  * commandTemplates は API Request の制御コマンド用サンプルだけで利用するため任意とする。
  */
-export interface DevicesResultMessage extends Record<string, unknown> {
+export interface DevicesResultMessage extends ProtocolJsonObject {
   event: "getDevices";
   items: PropertyInspectorSelectItem[];
   commandTemplates?: Record<string, string>;
@@ -123,7 +135,7 @@ export interface DevicesResultMessage extends Record<string, unknown> {
 /**
  * シーン一覧を返す既存メッセージを表す。
  */
-export interface ScenesResultMessage extends Record<string, unknown> {
+export interface ScenesResultMessage extends ProtocolJsonObject {
   event: "getScenes";
   items: PropertyInspectorSelectItem[];
   refreshFailed?: boolean;
@@ -150,7 +162,7 @@ export interface InfraredRemotePropertyInspectorItem extends PropertyInspectorSe
 /**
  * 赤外線リモコン一覧を返す既存メッセージを表す。
  */
-export interface InfraredRemotesResultMessage extends Record<string, unknown> {
+export interface InfraredRemotesResultMessage extends ProtocolJsonObject {
   event: "getInfraredRemotes";
   items: PropertyInspectorSelectItem[];
   remotes: InfraredRemotePropertyInspectorItem[];
