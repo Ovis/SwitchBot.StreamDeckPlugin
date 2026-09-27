@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { API_ENDPOINT_IDS } from "../api/api-endpoints.js";
 
 export const DEFAULT_API_REQUEST_BODY = `{
   "command": "",
@@ -8,6 +9,9 @@ export const DEFAULT_API_REQUEST_BODY = `{
 
 const ApiRequestSettingsSchema = z.object({
   version: z.literal(1).default(1),
+  endpoint: z.enum(API_ENDPOINT_IDS).catch("custom").default("custom"),
+  deviceId: z.string().catch("").default(""),
+  sceneId: z.string().catch("").default(""),
   method: z.enum(["GET", "POST", "PUT", "DELETE"]).catch("POST").default("POST"),
   path: z.string().catch("").default(""),
   body: z.string().catch(DEFAULT_API_REQUEST_BODY).default(DEFAULT_API_REQUEST_BODY),
