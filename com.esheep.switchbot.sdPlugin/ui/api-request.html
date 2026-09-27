@@ -95,11 +95,7 @@
       const template = commandTemplates.get(valueOf(device, ""));
       if (!template) return;
       const current = valueOf(body, "").trim();
-      const generic = '{
-  "command": "",
-  "parameter": "default",
-  "commandType": "command"
-}';
+      const generic = `{\n  "command": "",\n  "parameter": "default",\n  "commandType": "command"\n}`;
       if (!current || current === generic.trim() || current === lastAutoTemplate.trim()) {
         body.value = template;
         lastAutoTemplate = template;
