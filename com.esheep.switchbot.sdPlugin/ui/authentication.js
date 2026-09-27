@@ -30,43 +30,28 @@
   }
 
   async function load() {
-    console.info("[SwitchBot PI] global settings load start");
     const settings = await streamDeckClient.getGlobalSettings();
-    console.info("[SwitchBot PI] global settings load complete", {
-      credentialsPresent: Boolean(settings?.credentials),
-      tokenPresent: Boolean(settings?.credentials?.token),
-      secretPresent: Boolean(settings?.credentials?.secret)
-    });
     const credentials = settings?.credentials ?? {};
     document.getElementById("switchbot-token").value = credentials.token ?? "";
     document.getElementById("switchbot-secret").value = credentials.secret ?? "";
   }
 
+  function currentCredentials() {
+    return {
+      token: document.getElementById("switchbot-token")?.value ?? "",
+      secret: document.getElementById("switchbot-secret")?.value ?? ""
+    };
+  }
+
   async function save() {
-    console.info("[SwitchBot PI] global settings save start", {
-      tokenPresent: Boolean(document.getElementById("switchbot-token")?.value),
-      secretPresent: Boolean(document.getElementById("switchbot-secret")?.value)
-    });
-    const current = await streamDeckClient.getGlobalSettings();
-    await streamDeckClient.setGlobalSettings({
-      ...current,
-      version: 1,
-      credentials: {
-        token: document.getElementById("switchbot-token").value ?? "",
-        secret: document.getElementById("switchbot-secret").value ?? ""
-      }
-    });
-    console.info("[SwitchBot PI] global settings save complete");
+    await streamDeckClient.send("sendToPlugin", { type: "saveCredentials", credentials: currentCredentials() });
   }
 
   async function testConnection() {
-    console.info("[SwitchBot PI] test connection clicked");
     const status = document.getElementById("switchbot-auth-status");
     status.textContent = t("Testing...", "テスト中...");
     status.className = "auth-status";
-    await save();
-    await streamDeckClient.send("sendToPlugin", { type: "testConnection" });
-    console.info("[SwitchBot PI] sendToPlugin complete");
+    await streamDeckClient.send("sendToPlugin", { type: "testConnection", credentials: currentCredentials() });
   }
 
   function connectionFailureText(category) {
@@ -82,7 +67,6 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    console.info("[SwitchBot PI] authentication DOMContentLoaded");
     render();
     localizeAuthentication();
     document.addEventListener("switchbot-locale-changed", localizeAuthentication);
@@ -100,6 +84,9 @@
       status.className = payload.success ? "auth-status auth-success" : "auth-status auth-error";
     });
 
-    void load().catch(error => console.error("[SwitchBot PI] global settings load failed", error?.name ?? "Error"));
+    void load().catch(() => {
+      const status = document.getElementById("switchbot-auth-status");
+      if (status) status.textContent = t("Failed to load saved credentials.", "保存済み認証情報の読み込みに失敗しました。");
+    });
   });
 })();
