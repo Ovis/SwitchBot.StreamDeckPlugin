@@ -15,6 +15,16 @@ describe("API Request settings", () => {
     });
   });
 
+  it("preserves individual output values when sibling fields are missing", () => {
+    expect(normalizeApiRequestSettings({
+      version: 1,
+      output: { copyResponseToClipboard: true }
+    }).output).toEqual({
+      copyResponseToClipboard: true,
+      prettyPrint: true
+    });
+  });
+
   it("keeps configured values and treats legacy settings as custom", () => {
     expect(normalizeApiRequestSettings({
       version: 1,
