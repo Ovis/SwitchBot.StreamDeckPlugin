@@ -8,7 +8,7 @@ describe("device catalog", () => {
       statusCode: 100,
       body: {
         deviceList: [{ deviceId: "A", deviceName: "温湿度計", deviceType: "MeterPlus", extra: true }],
-        infraredRemoteList: [{ deviceId: "B", deviceName: "エアコン", remoteType: "Air Conditioner" }]
+        infraredRemoteList: [{ deviceId: "B", deviceName: "エアコン", remoteType: "Air Conditioner", hubDeviceId: "HUB" }]
       },
       message: "success"
     }, "2026-09-26T12:00:00.000Z");
@@ -16,7 +16,7 @@ describe("device catalog", () => {
     expect(catalog).toEqual({
       fetchedAt: "2026-09-26T12:00:00.000Z",
       devices: [{ deviceId: "A", deviceName: "温湿度計", deviceType: "MeterPlus", lastSeenAt: "2026-09-26T12:00:00.000Z", deleted: false }],
-      infraredRemotes: [{ deviceId: "B", deviceName: "エアコン", remoteType: "Air Conditioner", lastSeenAt: "2026-09-26T12:00:00.000Z", deleted: false }]
+      infraredRemotes: [{ deviceId: "B", deviceName: "エアコン", remoteType: "Air Conditioner", hubDeviceId: "HUB", lastSeenAt: "2026-09-26T12:00:00.000Z", deleted: false }]
     });
   });
 
