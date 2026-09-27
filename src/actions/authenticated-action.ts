@@ -1,17 +1,22 @@
 import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import type { ExecutionResult } from "../execution/execution-result.js";
+import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
+import { executionDiagnosticsView } from "../execution/execution-diagnostics.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import type {
   PropertyInspectorCredentials,
-  TestConnectionResultMessage
+  TestConnectionResultMessage,
+  ExecutionDiagnosticsMessage
 } from "../protocol/property-inspector-protocol.js";
 
 export abstract class AuthenticatedAction extends SingletonAction<any> {
   protected constructor(
     private readonly authExecutor: RequestExecutor,
-    private readonly globalSettings: GlobalSettingsStore
+    private readonly globalSettings: GlobalSettingsStore,
+    private readonly executionDiagnostics?: ExecutionDiagnosticsStore
   ) {
     super();
   }
@@ -19,6 +24,16 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
     const message = parsePropertyInspectorToPluginMessage(ev.payload);
+
+    if (message?.event === "getExecutionDiagnostics") {
+      const actionId = ev.context;
+      const result = actionId ? this.executionDiagnostics?.get(actionId) : undefined;
+      const response: ExecutionDiagnosticsMessage = result
+        ? { event: "executionDiagnostics", available: true, ...executionDiagnosticsView(result) }
+        : { event: "executionDiagnostics", available: false };
+      await streamDeck.ui.sendToPropertyInspector({ ...response });
+      return;
+    }
 
     if (message?.event === "saveCredentials") {
       await this.saveCredentials(message.credentials);
@@ -44,6 +59,27 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       ...(!result.success ? { errorCategory: result.error.category } : {})
     };
     await streamDeck.ui.sendToPropertyInspector({ ...response });
+  }
+
+  /** Action instanceの最新実行結果をPI診断表示用に記録する。 */
+  protected recordExecutionDiagnostics(actionId: string, result: ExecutionResult): void {
+    this.executionDiagnostics?.set(actionId, result);
+    const message: ExecutionDiagnosticsMessage = {
+      event: "executionDiagnostics",
+      available: true,
+      ...executionDiagnosticsView(result)
+    };
+    void streamDeck.ui.sendToPropertyInspector({ ...message }).catch(error => {
+      streamDeck.logger.warn("Failed to send execution diagnostics to Property Inspector", {
+        actionId,
+        errorName: error instanceof Error ? error.name : "UnknownError"
+      });
+    });
+  }
+
+  /** Action消失時にメモリ内の診断結果を破棄する。 */
+  protected clearExecutionDiagnostics(actionId: string): void {
+    this.executionDiagnostics?.delete(actionId);
   }
 
   private async saveCredentials(credentials: PropertyInspectorCredentials): Promise<void> {
