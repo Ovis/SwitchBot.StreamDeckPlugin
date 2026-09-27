@@ -34,61 +34,41 @@ describe("RequestExecutor", () => {
 
   it("classifies missing credentials as configuration", async () => {
     const executor = new RequestExecutor(clientReturning(200, {}), { getCredentials: async () => undefined });
-    {
-      const result = await executor.execute(request);
-      expect(result.success).toBe(false);
-      if (result.success) throw new Error("Expected execution to fail.");
-      expect(result.error.category).toBe("configuration");
-    }
+    const result = await executor.execute(request);
+    expectFailureCategory(result, "configuration");
   });
 
   it("classifies HTTP 401 as authentication", async () => {
     const executor = new RequestExecutor(clientReturning(401, { statusCode: 190 }), credentials);
-    {
-      const result = await executor.execute(request);
-      expect(result.success).toBe(false);
-      if (result.success) throw new Error("Expected execution to fail.");
-      expect(result.error.category).toBe("authentication");
-    }
+    const result = await executor.execute(request);
+    expectFailureCategory(result, "authentication");
   });
 
   it("classifies other HTTP failures", async () => {
     const executor = new RequestExecutor(clientReturning(500, { statusCode: 190 }), credentials);
-    {
-      const result = await executor.execute(request);
-      expect(result.success).toBe(false);
-      if (result.success) throw new Error("Expected execution to fail.");
-      expect(result.error.category).toBe("http");
-    }
+    const result = await executor.execute(request);
+    expectFailureCategory(result, "http");
   });
 
   it("preserves and classifies unknown SwitchBot error codes", async () => {
     const executor = new RequestExecutor(clientReturning(200, { statusCode: 98765, message: "future error" }), credentials);
     const result = await executor.execute(request);
-    expect(result.success).toBe(false);
-    if (result.success) throw new Error("Expected execution to fail.");
-    expect(result.error.category).toBe("switchbot");
-    expect(result.response?.switchBot?.statusCode).toBe(98765);
+    const failure = expectFailureCategory(result, "switchbot");
+    expect(failure.response?.switchBot?.statusCode).toBe(98765);
   });
 
   it("classifies malformed successful responses", async () => {
     const executor = new RequestExecutor(clientReturning(200, { hello: "world" }), credentials);
-    {
-      const result = await executor.execute(request);
-      expect(result.success).toBe(false);
-      if (result.success) throw new Error("Expected execution to fail.");
-      expect(result.error.category).toBe("response");
-    }
+    const result = await executor.execute(request);
+    expectFailureCategory(result, "response");
   });
 
   it("classifies transport exceptions as network", async () => {
     const client = { request: async () => { throw new Error("socket failed"); } } as unknown as SwitchBotClient;
     const executor = new RequestExecutor(client, credentials);
     const result = await executor.execute(request);
-    expect(result.success).toBe(false);
-    if (result.success) throw new Error("Expected execution to fail.");
-    expect(result.error.category).toBe("network");
-    expect(result.error.message).toBe("SwitchBot network request failed.");
+    const failure = expectFailureCategory(result, "network");
+    expect(failure.error.message).toBe("SwitchBot network request failed.");
   });
 
   it("rejects invalid requests before loading credentials", async () => {
@@ -97,9 +77,18 @@ describe("RequestExecutor", () => {
       getCredentials: async () => { requested = true; return { token: "t", secret: "s" }; }
     });
     const result = await executor.execute({ method: "GET", path: "https://evil.example/" });
-    expect(result.success).toBe(false);
-    if (result.success) throw new Error("Expected execution to fail.");
-    expect(result.error.category).toBe("configuration");
+    const failure = expectFailureCategory(result, "configuration");
     expect(requested).toBe(false);
   });
 });
+
+
+function expectFailureCategory(
+  result: Awaited<ReturnType<RequestExecutor["execute"]>>,
+  category: import("../src/execution/execution-result.js").ExecutionErrorCategory
+): Extract<Awaited<ReturnType<RequestExecutor["execute"]>>, { success: false }> {
+  expect(result.success).toBe(false);
+  if (result.success) throw new Error("Expected execution to fail.");
+  expect(result.error.category).toBe(category);
+  return result;
+}
