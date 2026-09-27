@@ -7,7 +7,8 @@
   <script src="localization.js"></script>
   <style>
     [hidden] { display: none !important; }
-    #json-status, #catalog-status { margin: 4px 8px 8px 116px; font-size: 11px; }\n    #sample-body-item { margin-top: 4px; }
+    #json-status, #catalog-status { margin: 4px 8px 8px 116px; font-size: 11px; }
+    #sample-body-item { margin-top: 4px; }
     .valid { color: #69c779; }
     .invalid { color: #e57373; }
     .endpoint-preview { margin: 4px 8px 10px; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; overflow-wrap: anywhere; color: #d8d8d8; }
@@ -72,14 +73,20 @@
       sceneItem.hidden = preset?.parameter !== "scene";
       if (preset) preview.textContent = preset.method + " " + preset.path;
       bodyItem.hidden = preset ? preset.bodyMode === "none" : effectiveMethod() !== "POST" && effectiveMethod() !== "PUT";
-      const hasSample = selectedEndpoint() === "send-device-command" && commandTemplates.has(valueOf(device, ""));\n      sampleBodyItem.hidden = bodyItem.hidden || !hasSample;\n      if (bodyItem.hidden) status.textContent = ""; else validateJson();
+      const hasSample = selectedEndpoint() === "send-device-command" && commandTemplates.has(valueOf(device, ""));
+      sampleBodyItem.hidden = bodyItem.hidden || !hasSample;
+      if (bodyItem.hidden) status.textContent = ""; else validateJson();
     }
 
     function applyPresetBody() {
       const preset = definition();
       if (!preset?.defaultBody || !body) return;
       const current = valueOf(body, "").trim();
-      const generic = '{\n  "command": "",\n  "parameter": "default",\n  "commandType": "command"\n}';
+      const generic = '{
+  "command": "",
+  "parameter": "default",
+  "commandType": "command"
+}';
       if (!current || current === generic.trim()) body.value = preset.defaultBody;
     }
 
@@ -88,7 +95,11 @@
       const template = commandTemplates.get(valueOf(device, ""));
       if (!template) return;
       const current = valueOf(body, "").trim();
-      const generic = '{\n  "command": "",\n  "parameter": "default",\n  "commandType": "command"\n}';
+      const generic = '{
+  "command": "",
+  "parameter": "default",
+  "commandType": "command"
+}';
       if (!current || current === generic.trim() || current === lastAutoTemplate.trim()) {
         body.value = template;
         lastAutoTemplate = template;
@@ -96,7 +107,15 @@
       }
     }
 
-    function setDeviceCommandSample() {\n      const template = commandTemplates.get(valueOf(device, ""));\n      if (!template || selectedEndpoint() !== "send-device-command") return;\n      body.value = template;\n      lastAutoTemplate = template;\n      validateJson();\n    }\n\n    function validateJson() {
+    function setDeviceCommandSample() {
+      const template = commandTemplates.get(valueOf(device, ""));
+      if (!template || selectedEndpoint() !== "send-device-command") return;
+      body.value = template;
+      lastAutoTemplate = template;
+      validateJson();
+    }
+
+    function validateJson() {
       if (bodyItem.hidden) return;
       const value = valueOf(body, "");
       if (!value.trim()) { status.textContent = SwitchBotI18n.t("Empty body", "本文が空です"); status.className = ""; return; }
@@ -112,7 +131,8 @@
 
     endpoint.addEventListener("valuechange", onEndpointChanged);
     method.addEventListener("valuechange", updateUi);
-    device.addEventListener("valuechange", () => { applyDeviceCommandTemplate(); updateUi(); });\n    sampleBodyButton.addEventListener("click", setDeviceCommandSample);
+    device.addEventListener("valuechange", () => { applyDeviceCommandTemplate(); updateUi(); });
+    sampleBodyButton.addEventListener("click", setDeviceCommandSample);
     document.addEventListener("input", event => { if (event.target?.getAttribute?.("setting") === "body") validateJson(); });
 
     streamDeckClient.sendToPropertyInspector.subscribe(ev => {
@@ -140,7 +160,10 @@
       endpoint.updateComplete?.then(updateUi);
       method.updateComplete?.then(updateUi);
     });
-    document.addEventListener("switchbot-locale-changed", () => {\n      sampleBodyButton.textContent = SwitchBotI18n.t("Set sample JSON", "サンプルJSONを設定");\n      updateUi();\n    });
+    document.addEventListener("switchbot-locale-changed", () => {
+      sampleBodyButton.textContent = SwitchBotI18n.t("Set sample JSON", "サンプルJSONを設定");
+      updateUi();
+    });
   </script>
   <script src="authentication.js"></script>
 </body>
