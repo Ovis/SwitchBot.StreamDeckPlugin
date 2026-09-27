@@ -12,6 +12,7 @@ import type { CatalogRefreshService } from "../services/catalog-refresh-service.
 import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { getDeviceCommandTemplate } from "../api/device-command-templates.js";
+import { supportsControlCommands } from "../api/device-command-support.js";
 
 @action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {
@@ -49,6 +50,7 @@ export class ApiRequestAction extends AuthenticatedAction {
       const refresh = ev.payload?.isRefresh === true;
       const result = refresh ? await this.catalogRefresh.refreshDevices() : { catalog: await this.deviceCatalogStore.get(), refreshed: true };
       const selectable = (result.catalog?.devices ?? [])
+        .filter(device => supportsControlCommands(device.deviceType))
         .filter(device => !device.deleted || device.deviceId === settings.deviceId);
       const items = selectable.map(device => ({
         label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
