@@ -25,58 +25,58 @@
   </sdpi-item>
   <div id="catalog-status" class="status invalid" aria-live="polite"></div>
 
-  <sdpi-item id="operation-item" label="Operation">
-    <sdpi-select id="operation" setting="operation" placeholder="Select operation"></sdpi-select>
+  <sdpi-item id="operation-item" label="__MSG_operation__">
+    <sdpi-select id="operation" setting="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
   </sdpi-item>
-  <sdpi-item id="custom-item" label="Custom button" hidden>
+  <sdpi-item id="custom-item" label="__MSG_customButton__" hidden>
     <sdpi-textfield id="custom-button" setting="customButtonName"></sdpi-textfield>
   </sdpi-item>
-  <sdpi-item id="channel-item" label="Channel" hidden>
+  <sdpi-item id="channel-item" label="__MSG_channel__" hidden>
     <sdpi-textfield id="channel" setting="channel"></sdpi-textfield>
   </sdpi-item>
 
   <div id="ac-fields" hidden>
-    <sdpi-item label="Temperature (℃)"><sdpi-textfield id="ac-temperature" setting="airConditioner.temperature"></sdpi-textfield></sdpi-item>
-    <sdpi-item label="Mode">
+    <sdpi-item label="__MSG_temperature__"><sdpi-textfield id="ac-temperature" setting="airConditioner.temperature"></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_mode__">
       <sdpi-select id="ac-mode" setting="airConditioner.mode" default="2">
         <option value="1">Auto</option><option value="2">Cool</option><option value="3">Dry</option>
         <option value="4">Fan</option><option value="5">Heat</option>
       </sdpi-select>
     </sdpi-item>
-    <sdpi-item label="Fan speed">
+    <sdpi-item label="__MSG_fanSpeed__">
       <sdpi-select id="ac-fan" setting="airConditioner.fanSpeed" default="1">
         <option value="1">Auto</option><option value="2">Low</option><option value="3">Medium</option><option value="4">High</option>
       </sdpi-select>
     </sdpi-item>
-    <sdpi-item label="Power">
+    <sdpi-item label="__MSG_power__">
       <sdpi-select id="ac-power" setting="airConditioner.powerState" default="on">
         <option value="on">ON</option><option value="off">OFF</option>
       </sdpi-select>
     </sdpi-item>
   </div>
   <div id="validation-status" class="status invalid" aria-live="polite"></div>
-  <div id="override-active" class="status notice" hidden>Advanced Override active</div>
+  <div id="override-active" class="status notice" hidden></div>
 
   <div class="advanced">
-    <div id="advanced-heading" class="section-heading">Advanced Override</div>
-    <sdpi-item label="Command override"><sdpi-checkbox id="command-override" setting="overrides.command.enabled"></sdpi-checkbox></sdpi-item>
-    <sdpi-item label="Command"><sdpi-textfield id="command-value" setting="overrides.command.value" disabled></sdpi-textfield></sdpi-item>
-    <sdpi-item label="Parameter override"><sdpi-checkbox id="parameter-override" setting="overrides.parameter.enabled"></sdpi-checkbox></sdpi-item>
-    <sdpi-item label="Parameter"><sdpi-textfield id="parameter-value" setting="overrides.parameter.value" disabled></sdpi-textfield></sdpi-item>
-    <sdpi-item label="Command type override"><sdpi-checkbox id="type-override" setting="overrides.commandType.enabled"></sdpi-checkbox></sdpi-item>
-    <sdpi-item label="Command type">
+    <div id="advanced-heading" class="section-heading"></div>
+    <sdpi-item label="__MSG_commandOverride__"><sdpi-checkbox id="command-override" setting="overrides.command.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_command__"><sdpi-textfield id="command-value" setting="overrides.command.value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_parameterOverride__"><sdpi-checkbox id="parameter-override" setting="overrides.parameter.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_parameter__"><sdpi-textfield id="parameter-value" setting="overrides.parameter.value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_commandTypeOverride__"><sdpi-checkbox id="type-override" setting="overrides.commandType.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_commandType__">
       <sdpi-select id="type-mode" disabled>
-        <option value="command">command</option><option value="customize">customize</option><option value="custom">Custom</option>
+        <option value="command">command</option><option value="customize">customize</option><option id="custom-type-option" value="custom">Custom</option>
       </sdpi-select>
     </sdpi-item>
-    <sdpi-item id="custom-type-item" label="Custom command type" hidden>
+    <sdpi-item id="custom-type-item" label="__MSG_customCommandType__" hidden>
       <sdpi-textfield id="type-value" setting="overrides.commandType.value"></sdpi-textfield>
     </sdpi-item>
     <div id="request-preview" class="preview"></div>
   </div>
 
-  <div id="output-heading" class="section-heading">Output</div>
-  <sdpi-item label="Show operation on key"><sdpi-checkbox setting="output.showOperationOnKey"></sdpi-checkbox></sdpi-item>
+  <div id="output-heading" class="section-heading"></div>
+  <sdpi-item label="__MSG_showOperationOnKey__"><sdpi-checkbox setting="output.showOperationOnKey"></sdpi-checkbox></sdpi-item>
   <sdpi-item label="__MSG_copyResponse__"><sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox></sdpi-item>
   <sdpi-item label="__MSG_prettyPrint__"><sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox></sdpi-item>
 
@@ -181,7 +181,23 @@
       return { command, parameter: parameter ?? "", commandType };
     }
 
+    function applyInfraredLocale() {
+      const ja = SwitchBotI18n.locale === "ja";
+      document.getElementById("advanced-heading").textContent = SwitchBotI18n.t("Advanced Override", "高度な上書き");
+      document.getElementById("output-heading").textContent = SwitchBotI18n.t("Output", "出力");
+      document.getElementById("override-active").textContent = SwitchBotI18n.t("Advanced Override active", "高度な上書きが有効です");
+      document.getElementById("custom-type-option").textContent = SwitchBotI18n.t("Custom", "カスタム");
+      const mode = document.getElementById("ac-mode");
+      const fan = document.getElementById("ac-fan");
+      const modeLabels = ja ? ["自動", "冷房", "除湿", "送風", "暖房"] : ["Auto", "Cool", "Dry", "Fan", "Heat"];
+      const fanLabels = ja ? ["自動", "弱", "中", "強"] : ["Auto", "Low", "Medium", "High"];
+      Array.from(mode.options).forEach((option, index) => option.textContent = modeLabels[index]);
+      Array.from(fan.options).forEach((option, index) => option.textContent = fanLabels[index]);
+      SwitchBotI18n.refreshSdpiLocalization();
+    }
+
     function updateUi() {
+      applyInfraredLocale();
       const info = selectedRemote();
       const cmd = selectedCommand();
       customItem.hidden = !(info?.remoteType === "Others" || valueOf(operation) === "custom");
@@ -291,7 +307,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", updateUi);
-    document.addEventListener("switchbot-locale-changed", updateUi);
+    document.addEventListener("switchbot-locale-changed", () => { applyInfraredLocale(); updateUi(); });
   </script>
   <script src="authentication.js"></script>
 </body>
