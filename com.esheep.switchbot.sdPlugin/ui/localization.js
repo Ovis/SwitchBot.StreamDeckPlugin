@@ -23,7 +23,25 @@
       sampleJson: "Sample",
       copyResponse: "Copy response",
       loadingDevices: "Loading saved devices...",
-      selectDevice: "Select a device"
+      selectDevice: "Select a device",
+      operation: "Operation",
+      selectOperation: "Select operation",
+      customButton: "Custom button",
+      channel: "Channel",
+      temperature: "Temperature (℃)",
+      mode: "Mode",
+      fanSpeed: "Fan speed",
+      power: "Power",
+      advancedOverride: "Advanced Override",
+      commandOverride: "Command override",
+      command: "Command",
+      parameterOverride: "Parameter override",
+      parameter: "Parameter",
+      commandTypeOverride: "Command type override",
+      commandType: "Command type",
+      customCommandType: "Custom command type",
+      output: "Output",
+      showOperationOnKey: "Show operation on key"
     },
     ja: {
       token: "トークン",
@@ -44,7 +62,25 @@
       sampleJson: "サンプル",
       copyResponse: "レスポンスをコピー",
       loadingDevices: "保存済みデバイスを読み込み中...",
-      selectDevice: "デバイスを選択"
+      selectDevice: "デバイスを選択",
+      operation: "操作",
+      selectOperation: "操作を選択",
+      customButton: "カスタムボタン",
+      channel: "チャンネル",
+      temperature: "温度 (℃)",
+      mode: "モード",
+      fanSpeed: "風量",
+      power: "電源",
+      advancedOverride: "高度な上書き",
+      commandOverride: "コマンドを上書き",
+      command: "コマンド",
+      parameterOverride: "パラメーターを上書き",
+      parameter: "パラメーター",
+      commandTypeOverride: "コマンド種別を上書き",
+      commandType: "コマンド種別",
+      customCommandType: "カスタムコマンド種別",
+      output: "出力",
+      showOperationOnKey: "操作内容をキーに表示"
     }
   };
 
