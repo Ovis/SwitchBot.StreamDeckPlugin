@@ -131,3 +131,98 @@ export type PluginToPropertyInspectorMessage =
   | DevicesResultMessage
   | ScenesResultMessage
   | InfraredRemotesResultMessage;
+
+
+/**
+ * Plugin から Property Inspector へ届く payload を共有Protocolとして検証する。
+ *
+ * Stream Deck SDK は外部境界なので型宣言だけを信用せず、未知eventや不正な必須値は受理しない。
+ */
+export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToPropertyInspectorMessage | undefined {
+  if (!protocolRecord(value) || typeof value.event !== "string") return undefined;
+
+  if (value.event === "testConnectionResult") {
+    if (typeof value.success !== "boolean") return undefined;
+    const errorCategory = protocolErrorCategory(value.errorCategory);
+    return { event: "testConnectionResult", success: value.success, ...(errorCategory ? { errorCategory } : {}) };
+  }
+
+  if (value.event === "getDevices" || value.event === "getScenes") {
+    if (!Array.isArray(value.items)) return undefined;
+    const items = value.items.map(protocolSelectItem).filter(protocolDefined);
+    const refreshFailed = typeof value.refreshFailed === "boolean" ? value.refreshFailed : undefined;
+    if (value.event === "getScenes") {
+      return { event: "getScenes", items, ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+    }
+    const commandTemplates = protocolRecord(value.commandTemplates)
+      ? Object.fromEntries(Object.entries(value.commandTemplates).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+      : undefined;
+    return { event: "getDevices", items, ...(commandTemplates ? { commandTemplates } : {}), ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+  }
+
+  if (value.event === "getApiEndpoints") {
+    if (!Array.isArray(value.items) || !Array.isArray(value.definitions)) return undefined;
+    const definitions = value.definitions.map(protocolEndpoint).filter(protocolDefined);
+    return { event: "getApiEndpoints", items: value.items.map(protocolSelectItem).filter(protocolDefined), definitions };
+  }
+
+  if (value.event === "getInfraredRemotes") {
+    if (!Array.isArray(value.items) || !Array.isArray(value.remotes)) return undefined;
+    const remotes = value.remotes.map(protocolInfraredRemote).filter(protocolDefined);
+    return {
+      event: "getInfraredRemotes",
+      items: value.items.map(protocolSelectItem).filter(protocolDefined),
+      remotes,
+      ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
+    };
+  }
+
+  return undefined;
+}
+
+function protocolSelectItem(value: unknown): PropertyInspectorSelectItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string") return undefined;
+  return { label: value.label, value: value.value };
+}
+
+function protocolEndpoint(value: unknown): ApiEndpointPropertyInspectorDefinition | undefined {
+  if (!protocolRecord(value) || typeof value.id !== "string" || typeof value.method !== "string" || typeof value.path !== "string") return undefined;
+  if (value.parameter !== undefined && value.parameter !== "device" && value.parameter !== "scene") return undefined;
+  if (value.bodyMode !== "none" && value.bodyMode !== "json") return undefined;
+  if (value.defaultBody !== undefined && typeof value.defaultBody !== "string") return undefined;
+  return {
+    id: value.id, method: value.method, path: value.path, bodyMode: value.bodyMode,
+    ...(value.parameter ? { parameter: value.parameter } : {}),
+    ...(typeof value.defaultBody === "string" ? { defaultBody: value.defaultBody } : {})
+  };
+}
+
+function protocolInfraredRemote(value: unknown): InfraredRemotePropertyInspectorItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string"
+    || typeof value.remoteType !== "string" || typeof value.hubDeviceId !== "string" || !Array.isArray(value.commands)) return undefined;
+  return {
+    label: value.label, value: value.value, remoteType: value.remoteType, hubDeviceId: value.hubDeviceId,
+    commands: value.commands.map(protocolInfraredCommand).filter(protocolDefined)
+  };
+}
+
+function protocolInfraredCommand(value: unknown): InfraredCommandPropertyInspectorItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string") return undefined;
+  if (value.parameterKind !== "default" && value.parameterKind !== "channel"
+    && value.parameterKind !== "air-conditioner" && value.parameterKind !== "custom") return undefined;
+  return { label: value.label, value: value.value, parameterKind: value.parameterKind };
+}
+
+function protocolErrorCategory(value: unknown): PropertyInspectorErrorCategory | undefined {
+  if (value === "configuration" || value === "authentication" || value === "network" || value === "http"
+    || value === "switchbot" || value === "response" || value === "internal") return value;
+  return undefined;
+}
+
+function protocolDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
+
+function protocolRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
