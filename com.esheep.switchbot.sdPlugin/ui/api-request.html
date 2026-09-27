@@ -6,21 +6,45 @@
   <script src="sdpi-components.js"></script>
   <script src="localization.js"></script>
   <style>
-    #body-item[hidden] { display: none; }
+    [hidden] { display: none !important; }
     #json-status { margin: 4px 0 0 116px; font-size: 11px; }
     .valid { color: #69c779; }
     .invalid { color: #e57373; }
+    .endpoint-preview { margin: 4px 8px 10px; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; overflow-wrap: anywhere; color: #d8d8d8; }
   </style>
   <link rel="stylesheet" href="authentication.css" />
 </head>
 <body>
   <div id="switchbot-authentication"></div>
+
+  <sdpi-item id="endpoint-item" label="__MSG_endpoint__">
+    <sdpi-select setting="endpoint" default="custom" id="endpoint">
+      <option value="get-devices">Devices — Get device list</option>
+      <option value="get-device-status">Devices — Get device status</option>
+      <option value="send-device-command">Devices — Send control command</option>
+      <option value="get-scenes">Scenes — Get scene list</option>
+      <option value="execute-scene">Scenes — Execute scene</option>
+      <option value="configure-webhook">Webhook — Configure</option>
+      <option value="query-webhook">Webhook — Query configuration</option>
+      <option value="update-webhook">Webhook — Update configuration</option>
+      <option value="delete-webhook">Webhook — Delete</option>
+      <option value="custom">Custom</option>
+    </sdpi-select>
+  </sdpi-item>
+
+  <div id="preset-preview" class="endpoint-preview" hidden></div>
+
+  <sdpi-item id="device-item" label="__MSG_device__" hidden>
+    <sdpi-select setting="deviceId" datasource="getDevices" loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__" show-refresh hot-reload></sdpi-select>
+  </sdpi-item>
+
+  <sdpi-item id="scene-item" label="__MSG_scene__" hidden>
+    <sdpi-select setting="sceneId" datasource="getScenes" loading="__MSG_loadingScenes__" placeholder="__MSG_selectScene__" show-refresh hot-reload></sdpi-select>
+  </sdpi-item>
+
   <sdpi-item id="method-item" label="__MSG_method__">
     <sdpi-select setting="method" default="POST" id="method">
-      <option value="GET">GET</option>
-      <option value="POST">POST</option>
-      <option value="PUT">PUT</option>
-      <option value="DELETE">DELETE</option>
+      <option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="DELETE">DELETE</option>
     </sdpi-select>
   </sdpi-item>
 
@@ -35,62 +59,68 @@
     <div id="json-status" aria-live="polite"></div>
   </div>
 
-  <sdpi-item id="copy-item" label="__MSG_copyResponse__">
-    <sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox>
-  </sdpi-item>
-
-  <sdpi-item id="pretty-item" label="__MSG_prettyPrint__">
-    <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
-  </sdpi-item>
+  <sdpi-item id="copy-item" label="__MSG_copyResponse__"><sdpi-checkbox setting="output.copyResponseToClipboard" default="false"></sdpi-checkbox></sdpi-item>
+  <sdpi-item id="pretty-item" label="__MSG_prettyPrint__"><sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox></sdpi-item>
 
   <script>
-    const { t } = SwitchBotI18n;
-    const method = document.getElementById("method");
-    const bodyItem = document.getElementById("body-item");
-    const status = document.getElementById("json-status");
+    const presets = {
+      "get-devices": ["GET", "/v1.1/devices"],
+      "get-device-status": ["GET", "/v1.1/devices/{deviceId}/status", "device"],
+      "send-device-command": ["POST", "/v1.1/devices/{deviceId}/commands", "device"],
+      "get-scenes": ["GET", "/v1.1/scenes"],
+      "execute-scene": ["POST", "/v1.1/scenes/{sceneId}/execute", "scene"],
+      "configure-webhook": ["POST", "/v1.1/webhook/setupWebhook"],
+      "query-webhook": ["POST", "/v1.1/webhook/queryWebhook"],
+      "update-webhook": ["POST", "/v1.1/webhook/updateWebhook"],
+      "delete-webhook": ["POST", "/v1.1/webhook/deleteWebhook"]
+    };
+    const labels = {
+      en: {
+        "get-devices":"Devices — Get device list","get-device-status":"Devices — Get device status","send-device-command":"Devices — Send control command",
+        "get-scenes":"Scenes — Get scene list","execute-scene":"Scenes — Execute scene","configure-webhook":"Webhook — Configure",
+        "query-webhook":"Webhook — Query configuration","update-webhook":"Webhook — Update configuration","delete-webhook":"Webhook — Delete","custom":"Custom"
+      },
+      ja: {
+        "get-devices":"デバイス — デバイス一覧を取得","get-device-status":"デバイス — デバイス状態を取得","send-device-command":"デバイス — 制御コマンドを送信",
+        "get-scenes":"シーン — シーン一覧を取得","execute-scene":"シーン — シーンを実行","configure-webhook":"Webhook — 設定",
+        "query-webhook":"Webhook — 設定を取得","update-webhook":"Webhook — 設定を更新","delete-webhook":"Webhook — 削除","custom":"カスタム"
+      }
+    };
+    const endpoint = document.getElementById("endpoint"), method = document.getElementById("method");
+    const methodItem = document.getElementById("method-item"), pathItem = document.getElementById("path-item");
+    const deviceItem = document.getElementById("device-item"), sceneItem = document.getElementById("scene-item");
+    const preview = document.getElementById("preset-preview"), bodyItem = document.getElementById("body-item"), status = document.getElementById("json-status");
 
-    function currentMethod() {
-      return method.value || method.getAttribute("value") || "POST";
-    }
+    function valueOf(element, fallback) { return element.value || element.getAttribute("value") || fallback; }
+    function selectedEndpoint() { return valueOf(endpoint, "custom"); }
+    function effectiveMethod() { return presets[selectedEndpoint()]?.[0] || valueOf(method, "POST"); }
 
-    function updateBodyVisibility() {
-      const visible = currentMethod() === "POST" || currentMethod() === "PUT";
-      bodyItem.hidden = !visible;
-      if (visible) validateJson();
-      else status.textContent = "";
-    }
-
-    function findBodyInput() {
-      return document.querySelector('sdpi-textarea[setting="body"]');
+    function updateUi() {
+      const selected = selectedEndpoint(), preset = presets[selected], custom = !preset;
+      methodItem.hidden = !custom; pathItem.hidden = !custom; preview.hidden = custom;
+      deviceItem.hidden = preset?.[2] !== "device"; sceneItem.hidden = preset?.[2] !== "scene";
+      if (preset) preview.textContent = preset[0] + " " + preset[1];
+      bodyItem.hidden = effectiveMethod() !== "POST" && effectiveMethod() !== "PUT";
+      if (bodyItem.hidden) status.textContent = ""; else validateJson();
     }
 
     function validateJson() {
       if (bodyItem.hidden) return;
-      const body = findBodyInput();
+      const body = document.querySelector('sdpi-textarea[setting="body"]');
       const value = body?.value ?? body?.getAttribute("value") ?? "";
-      if (!value.trim()) {
-        status.textContent = t("Empty body", "本文が空です");
-        status.className = "";
-        return;
-      }
-      try {
-        JSON.parse(value);
-        status.textContent = t("Valid JSON", "有効なJSON");
-        status.className = "valid";
-      } catch {
-        status.textContent = t("Invalid JSON", "無効なJSON");
-        status.className = "invalid";
-      }
+      if (!value.trim()) { status.textContent = SwitchBotI18n.t("Empty body", "本文が空です"); status.className = ""; return; }
+      try { JSON.parse(value); status.textContent = SwitchBotI18n.t("Valid JSON", "有効なJSON"); status.className = "valid"; }
+      catch { status.textContent = SwitchBotI18n.t("Invalid JSON", "無効なJSON"); status.className = "invalid"; }
     }
 
-    method.addEventListener("change", updateBodyVisibility);
-    document.addEventListener("input", event => {
-      if (event.target?.getAttribute?.("setting") === "body") validateJson();
-    });
     function localizeUi() {
-      updateBodyVisibility();
-      setTimeout(updateBodyVisibility, 100);
+      const locale = SwitchBotI18n.locale;
+      endpoint.querySelectorAll("option").forEach(option => { option.textContent = labels[locale][option.value] || option.value; });
+      updateUi(); setTimeout(updateUi, 100);
     }
+
+    endpoint.addEventListener("change", updateUi); method.addEventListener("change", updateUi);
+    document.addEventListener("input", event => { if (event.target?.getAttribute?.("setting") === "body") validateJson(); });
     document.addEventListener("DOMContentLoaded", localizeUi);
     document.addEventListener("switchbot-locale-changed", localizeUi);
   </script>
