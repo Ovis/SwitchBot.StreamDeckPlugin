@@ -49,7 +49,7 @@
   </sdpi-item>
 
   <sdpi-item id="path-item" label="__MSG_path__">
-    <sdpi-textfield setting="path" placeholder="/v1.1/devices/{deviceId}/commands" required></sdpi-textfield>
+    <sdpi-textfield id="path" setting="path" placeholder="/v1.1/devices/{deviceId}/commands"></sdpi-textfield>
   </sdpi-item>
 
   <div id="body-item">
@@ -87,7 +87,7 @@
       }
     };
     const endpoint = document.getElementById("endpoint"), method = document.getElementById("method");
-    const methodItem = document.getElementById("method-item"), pathItem = document.getElementById("path-item");
+    const methodItem = document.getElementById("method-item"), pathItem = document.getElementById("path-item"), path = document.getElementById("path");
     const deviceItem = document.getElementById("device-item"), sceneItem = document.getElementById("scene-item");
     const preview = document.getElementById("preset-preview"), bodyItem = document.getElementById("body-item"), status = document.getElementById("json-status");
 
@@ -98,6 +98,7 @@
     function updateUi() {
       const selected = selectedEndpoint(), preset = presets[selected], custom = !preset;
       methodItem.hidden = !custom; pathItem.hidden = !custom; preview.hidden = custom;
+      if (custom) path.setAttribute("required", ""); else path.removeAttribute("required");
       deviceItem.hidden = preset?.[2] !== "device"; sceneItem.hidden = preset?.[2] !== "scene";
       if (preset) preview.textContent = preset[0] + " " + preset[1];
       bodyItem.hidden = effectiveMethod() !== "POST" && effectiveMethod() !== "PUT";
