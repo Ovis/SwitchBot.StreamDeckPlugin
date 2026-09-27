@@ -48,8 +48,10 @@ describe("security boundaries", () => {
     });
 
     const result = await executor.execute({ method: "GET", path: "/v1.1/devices" });
-    expect(result.error?.category).toBe("network");
-    expect(result.error?.message).toBe("SwitchBot network request failed.");
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error("Expected execution to fail.");
+    expect(result.error.category).toBe("network");
+    expect(result.error.message).toBe("SwitchBot network request failed.");
     expect(JSON.stringify(result)).not.toContain(secret);
   });
 });
