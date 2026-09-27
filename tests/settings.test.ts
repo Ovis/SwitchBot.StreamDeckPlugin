@@ -18,6 +18,7 @@ describe("settings normalization", () => {
     expect(normalizeGetStatusSettings({})).toEqual({
       version: 1,
       deviceId: "",
+      buttonName: "",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
@@ -67,10 +68,12 @@ describe("settings normalization", () => {
     expect(normalizeGetStatusSettings({
       version: 1,
       deviceId: "device",
+      buttonName: "Bedroom",
       output: { prettyPrint: "invalid" }
     })).toEqual({
       version: 1,
       deviceId: "device",
+      buttonName: "Bedroom",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
