@@ -19,3 +19,13 @@ describe("Property Inspector checkbox defaults", () => {
     expect(checkbox).not.toContain("default=");
   });
 });
+
+
+describe("API Request command sample control", () => {
+  it("provides an explicit sample JSON button below the request body", () => {
+    const html = fs.readFileSync("com.esheep.switchbot.sdPlugin/ui/api-request.html", "utf8");
+    expect(html).toContain('id="sample-body-button"');
+    expect(html).toContain('sampleBodyButton.addEventListener("click", setDeviceCommandSample)');
+    expect(html).toContain('selectedEndpoint() === "send-device-command"');
+  });
+});
