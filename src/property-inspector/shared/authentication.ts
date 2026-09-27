@@ -1,10 +1,11 @@
 import { queryRequired, valueOf } from "./dom.js";
-import type {
+import {
   PropertyInspectorCredentials,
-  SaveCredentialsMessage,
-  TestConnectionMessage,
+  SaveCredentialsRequest,
+  TestConnectionRequest,
   TestConnectionResultMessage,
-  PropertyInspectorErrorCategory
+  PropertyInspectorErrorCategory,
+  parsePluginToPropertyInspectorMessage
 } from "../../protocol/property-inspector-protocol.js";
 
 const { streamDeckClient } = SDPIComponents;
@@ -26,13 +27,8 @@ function globalSettings(value: unknown): GlobalSettingsPayload {
 }
 
 function testConnectionResult(value: unknown): TestConnectionResultMessage | undefined {
-  if (!isRecord(value) || value.type !== "testConnectionResult" || typeof value.success !== "boolean") return undefined;
-  const errorCategory = executionErrorCategory(value.errorCategory);
-  return {
-    type: "testConnectionResult",
-    success: value.success,
-    ...(errorCategory ? { errorCategory } : {})
-  };
+  const message = parsePluginToPropertyInspectorMessage(value);
+  return message?.event === "testConnectionResult" ? message : undefined;
 }
 
 function render(): void {
@@ -72,7 +68,7 @@ function currentCredentials(): PropertyInspectorCredentials {
 }
 
 async function save(): Promise<void> {
-  const message: SaveCredentialsMessage = { type: "saveCredentials", credentials: currentCredentials() };
+  const message: SaveCredentialsRequest = { event: "saveCredentials", credentials: currentCredentials() };
   await streamDeckClient.send("sendToPlugin", message);
 }
 
@@ -80,15 +76,10 @@ async function testConnection(): Promise<void> {
   const status = queryRequired<HTMLElement>("#switchbot-auth-status");
   status.textContent = t("Testing...", "テスト中...");
   status.className = "auth-status";
-  const message: TestConnectionMessage = { type: "testConnection", credentials: currentCredentials() };
+  const message: TestConnectionRequest = { event: "testConnection", credentials: currentCredentials() };
   await streamDeckClient.send("sendToPlugin", message);
 }
 
-function executionErrorCategory(value: unknown): PropertyInspectorErrorCategory | undefined {
-  return typeof value === "string" && [
-    "configuration", "authentication", "network", "http", "switchbot", "response", "internal"
-  ].includes(value) ? value as PropertyInspectorErrorCategory : undefined;
-}
 
 function connectionFailureText(category: PropertyInspectorErrorCategory | undefined): string {
   switch (category) {

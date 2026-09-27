@@ -7,6 +7,7 @@ import type { CatalogRefreshService } from "../services/catalog-refresh-service.
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import { normalizeInfraredRemoteSettings, type InfraredRemoteSettingsV1 } from "../settings/infrared-remote-settings.js";
 import { buildInfraredRequest, truncateInfraredDisplayText } from "../api/infrared-request-builder.js";
 import { displayLocale, type DisplayLocale } from "../output/status-title-formatter.js";
@@ -49,12 +50,13 @@ export class InfraredRemoteAction extends AuthenticatedAction {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    if (ev.payload?.event !== "getInfraredRemotes") {
+    const request = parsePropertyInspectorToPluginMessage(ev.payload);
+    if (request?.event !== "getInfraredRemotes") {
       await super.onSendToPlugin(value);
       return;
     }
 
-    const refresh = ev.payload.isRefresh === true;
+    const refresh = request.isRefresh === true;
     const result = refresh
       ? await this.catalogRefresh.refreshDevices()
       : { catalog: await this.catalogStore.get(), refreshed: true };

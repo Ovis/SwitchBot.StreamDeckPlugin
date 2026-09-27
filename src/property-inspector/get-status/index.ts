@@ -1,17 +1,8 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired } from "../shared/dom.js";
-import type { DevicesResultMessage } from "../../protocol/property-inspector-protocol.js";
+import { parsePluginToPropertyInspectorMessage } from "../../protocol/property-inspector-protocol.js";
 
-function deviceCatalogPayload(value: unknown): Pick<DevicesResultMessage, "event" | "refreshFailed"> | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-  const record = value as Record<string, unknown>;
-  if (record.event !== "getDevices") return undefined;
-  return {
-    event: "getDevices",
-    ...(typeof record.refreshFailed === "boolean" ? { refreshFailed: record.refreshFailed } : {})
-  };
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
@@ -22,7 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
-    const payload = deviceCatalogPayload(event.payload);
+    const message = parsePluginToPropertyInspectorMessage(event.payload);
+    const payload = message?.event === "getDevices" ? message : undefined;
     if (!payload) return;
     queryRequired<HTMLElement>("#catalog-status").textContent = payload.refreshFailed
       ? window.SwitchBotI18n?.t(

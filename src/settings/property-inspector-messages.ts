@@ -1,17 +1,18 @@
-import type {
-  PropertyInspectorCredentials,
-  PropertyInspectorMessageEnvelope
-} from "../protocol/property-inspector-protocol.js";
+import type { PropertyInspectorMessageEnvelope } from "../protocol/property-inspector-protocol.js";
 
-export type PropertyInspectorMessage = PropertyInspectorMessageEnvelope;
-
-export function propertyInspectorMessage(value: unknown): PropertyInspectorMessage {
-  return typeof value === "object" && value !== null ? value as PropertyInspectorMessage : {};
+/**
+ * Stream Deck SDK から渡される envelope を安全に読み取る。
+ *
+ * envelope自体はSDK固有のためここで切り出し、payloadのProtocol検証はprotocol層に委ねる。
+ */
+export function propertyInspectorMessage(value: unknown): PropertyInspectorMessageEnvelope {
+  if (!isRecord(value)) return {};
+  return {
+    ...(typeof value.context === "string" ? { context: value.context } : {}),
+    ...("payload" in value ? { payload: value.payload } : {})
+  };
 }
 
-export function credentialsFromPayload(value: unknown): PropertyInspectorCredentials | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-  const record = value as Record<string, unknown>;
-  if (typeof record.token !== "string" || typeof record.secret !== "string") return undefined;
-  return { token: record.token, secret: record.secret };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

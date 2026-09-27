@@ -1,16 +1,12 @@
 /**
- * Property Inspector とプラグイン間で共有する選択肢の wire 形式を表す。
+ * Property Inspector とプラグイン間の通信契約を定義する。
  *
- * PR0-B では既存通信との互換性を維持するため、フィールド名やイベント名は変更しない。
+ * datasource が要求する event 名は維持しつつ、すべてのメッセージを event で判別できる
+ * discriminated union に統一する。外部境界の値は別途 parser で検証してから利用する。
  */
 type ProtocolJsonPrimitive = string | number | boolean | null | undefined;
 type ProtocolJsonValue = ProtocolJsonPrimitive | ProtocolJsonObject | ProtocolJsonValue[];
 
-/**
- * Stream Deck SDK の JsonObject と構造的に互換な wire object を表す。
- *
- * Protocol層からSDK実装へ直接依存させず、通信可能なJSON値だけを許可する。
- */
 interface ProtocolJsonObject {
   [key: string]: ProtocolJsonValue;
 }
@@ -20,70 +16,53 @@ export interface PropertyInspectorSelectItem extends ProtocolJsonObject {
   value: string;
 }
 
-/**
- * Property Inspector から認証情報を保存・検証するときに送信する値を表す。
- */
-export interface PropertyInspectorCredentials {
+export interface PropertyInspectorCredentials extends ProtocolJsonObject {
   token: string;
   secret: string;
 }
 
-/**
- * 認証情報を保存する既存メッセージを表す。
- */
-export interface SaveCredentialsMessage {
-  type: "saveCredentials";
+export interface SaveCredentialsRequest extends ProtocolJsonObject {
+  event: "saveCredentials";
   credentials: PropertyInspectorCredentials;
 }
 
-/**
- * 接続テストを実行する既存メッセージを表す。
- */
-export interface TestConnectionMessage {
-  type: "testConnection";
+export interface TestConnectionRequest extends ProtocolJsonObject {
+  event: "testConnection";
   credentials: PropertyInspectorCredentials;
 }
 
-/**
- * datasource の一覧取得・明示更新で使用する既存メッセージを表す。
- */
-export interface CatalogRequestMessage {
-  event: "getDevices" | "getScenes" | "getInfraredRemotes";
-  isRefresh?: boolean;
-}
-
-/**
- * API Request のエンドポイント定義取得に使用する既存メッセージを表す。
- */
-export interface ApiEndpointsRequestMessage {
+export interface ApiEndpointsRequest extends ProtocolJsonObject {
   event: "getApiEndpoints";
 }
 
-export type PropertyInspectorToPluginMessage =
-  | SaveCredentialsMessage
-  | TestConnectionMessage
-  | CatalogRequestMessage
-  | ApiEndpointsRequestMessage;
-
-/**
- * Stream Deck SDK が sendToPlugin の payload と併せてプラグインへ渡す envelope を表す。
- *
- * SDK由来の入力自体は信頼せず、既存の実行時チェックを維持する。
- */
-export interface PropertyInspectorMessageEnvelope {
-  context?: string;
-  payload?: {
-    type?: unknown;
-    event?: unknown;
-    isRefresh?: unknown;
-    credentials?: unknown;
-    [key: string]: unknown;
-  };
+export interface DevicesRequest extends ProtocolJsonObject {
+  event: "getDevices";
+  isRefresh?: boolean;
 }
 
-/**
- * 接続テスト結果として返す既存メッセージを表す。
- */
+export interface ScenesRequest extends ProtocolJsonObject {
+  event: "getScenes";
+  isRefresh?: boolean;
+}
+
+export interface InfraredRemotesRequest extends ProtocolJsonObject {
+  event: "getInfraredRemotes";
+  isRefresh?: boolean;
+}
+
+export type PropertyInspectorToPluginMessage =
+  | SaveCredentialsRequest
+  | TestConnectionRequest
+  | ApiEndpointsRequest
+  | DevicesRequest
+  | ScenesRequest
+  | InfraredRemotesRequest;
+
+export interface PropertyInspectorMessageEnvelope {
+  context?: string;
+  payload?: unknown;
+}
+
 export type PropertyInspectorErrorCategory =
   | "configuration"
   | "authentication"
@@ -94,14 +73,11 @@ export type PropertyInspectorErrorCategory =
   | "internal";
 
 export interface TestConnectionResultMessage extends ProtocolJsonObject {
-  type: "testConnectionResult";
+  event: "testConnectionResult";
   success: boolean;
   errorCategory?: PropertyInspectorErrorCategory;
 }
 
-/**
- * API Request PI が表示に使用するエンドポイント定義の wire 形式を表す。
- */
 export interface ApiEndpointPropertyInspectorDefinition extends ProtocolJsonObject {
   id: string;
   method: string;
@@ -111,20 +87,12 @@ export interface ApiEndpointPropertyInspectorDefinition extends ProtocolJsonObje
   defaultBody?: string;
 }
 
-/**
- * API Request PI にエンドポイント候補と定義を返す既存メッセージを表す。
- */
 export interface ApiEndpointsResultMessage extends ProtocolJsonObject {
   event: "getApiEndpoints";
   items: PropertyInspectorSelectItem[];
   definitions: ApiEndpointPropertyInspectorDefinition[];
 }
 
-/**
- * 物理デバイス一覧を返す既存メッセージを表す。
- *
- * commandTemplates は API Request の制御コマンド用サンプルだけで利用するため任意とする。
- */
 export interface DevicesResultMessage extends ProtocolJsonObject {
   event: "getDevices";
   items: PropertyInspectorSelectItem[];
@@ -132,9 +100,6 @@ export interface DevicesResultMessage extends ProtocolJsonObject {
   refreshFailed?: boolean;
 }
 
-/**
- * シーン一覧を返す既存メッセージを表す。
- */
 export interface ScenesResultMessage extends ProtocolJsonObject {
   event: "getScenes";
   items: PropertyInspectorSelectItem[];
@@ -143,25 +108,16 @@ export interface ScenesResultMessage extends ProtocolJsonObject {
 
 export type InfraredParameterKind = "default" | "channel" | "air-conditioner" | "custom";
 
-/**
- * 赤外線リモコン PI の操作候補を表す。
- */
 export interface InfraredCommandPropertyInspectorItem extends PropertyInspectorSelectItem {
   parameterKind: InfraredParameterKind;
 }
 
-/**
- * 赤外線リモコン PI が操作候補を切り替えるために必要なリモコン情報を表す。
- */
 export interface InfraredRemotePropertyInspectorItem extends PropertyInspectorSelectItem {
   remoteType: string;
   hubDeviceId: string;
   commands: InfraredCommandPropertyInspectorItem[];
 }
 
-/**
- * 赤外線リモコン一覧を返す既存メッセージを表す。
- */
 export interface InfraredRemotesResultMessage extends ProtocolJsonObject {
   event: "getInfraredRemotes";
   items: PropertyInspectorSelectItem[];
@@ -175,3 +131,125 @@ export type PluginToPropertyInspectorMessage =
   | DevicesResultMessage
   | ScenesResultMessage
   | InfraredRemotesResultMessage;
+
+
+/**
+ * Property Inspector からPluginへ届く payload を共有Protocolとして検証する。
+ *
+ * 未知eventや不正な必須値は受理せず、Actionが未検証の外部入力を扱わないようにする。
+ */
+export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyInspectorToPluginMessage | undefined {
+  if (!protocolRecord(value) || typeof value.event !== "string") return undefined;
+
+  if (value.event === "saveCredentials" || value.event === "testConnection") {
+    const credentials = protocolCredentials(value.credentials);
+    return credentials ? { event: value.event, credentials } : undefined;
+  }
+  if (value.event === "getApiEndpoints") return { event: "getApiEndpoints" };
+  if (value.event === "getDevices" || value.event === "getScenes" || value.event === "getInfraredRemotes") {
+    return {
+      event: value.event,
+      ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {})
+    };
+  }
+  return undefined;
+}
+
+function protocolCredentials(value: unknown): PropertyInspectorCredentials | undefined {
+  if (!protocolRecord(value) || typeof value.token !== "string" || typeof value.secret !== "string") return undefined;
+  return { token: value.token, secret: value.secret };
+}
+
+/**
+ * Plugin から Property Inspector へ届く payload を共有Protocolとして検証する。
+ *
+ * Stream Deck SDK は外部境界なので型宣言だけを信用せず、未知eventや不正な必須値は受理しない。
+ */
+export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToPropertyInspectorMessage | undefined {
+  if (!protocolRecord(value) || typeof value.event !== "string") return undefined;
+
+  if (value.event === "testConnectionResult") {
+    if (typeof value.success !== "boolean") return undefined;
+    const errorCategory = protocolErrorCategory(value.errorCategory);
+    return { event: "testConnectionResult", success: value.success, ...(errorCategory ? { errorCategory } : {}) };
+  }
+
+  if (value.event === "getDevices" || value.event === "getScenes") {
+    if (!Array.isArray(value.items)) return undefined;
+    const items = value.items.map(protocolSelectItem).filter(protocolDefined);
+    const refreshFailed = typeof value.refreshFailed === "boolean" ? value.refreshFailed : undefined;
+    if (value.event === "getScenes") {
+      return { event: "getScenes", items, ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+    }
+    const commandTemplates = protocolRecord(value.commandTemplates)
+      ? Object.fromEntries(Object.entries(value.commandTemplates).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+      : undefined;
+    return { event: "getDevices", items, ...(commandTemplates ? { commandTemplates } : {}), ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+  }
+
+  if (value.event === "getApiEndpoints") {
+    if (!Array.isArray(value.items) || !Array.isArray(value.definitions)) return undefined;
+    const definitions = value.definitions.map(protocolEndpoint).filter(protocolDefined);
+    return { event: "getApiEndpoints", items: value.items.map(protocolSelectItem).filter(protocolDefined), definitions };
+  }
+
+  if (value.event === "getInfraredRemotes") {
+    if (!Array.isArray(value.items) || !Array.isArray(value.remotes)) return undefined;
+    const remotes = value.remotes.map(protocolInfraredRemote).filter(protocolDefined);
+    return {
+      event: "getInfraredRemotes",
+      items: value.items.map(protocolSelectItem).filter(protocolDefined),
+      remotes,
+      ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
+    };
+  }
+
+  return undefined;
+}
+
+function protocolSelectItem(value: unknown): PropertyInspectorSelectItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string") return undefined;
+  return { label: value.label, value: value.value };
+}
+
+function protocolEndpoint(value: unknown): ApiEndpointPropertyInspectorDefinition | undefined {
+  if (!protocolRecord(value) || typeof value.id !== "string" || typeof value.method !== "string" || typeof value.path !== "string") return undefined;
+  if (value.parameter !== undefined && value.parameter !== "device" && value.parameter !== "scene") return undefined;
+  if (value.bodyMode !== "none" && value.bodyMode !== "json") return undefined;
+  if (value.defaultBody !== undefined && typeof value.defaultBody !== "string") return undefined;
+  return {
+    id: value.id, method: value.method, path: value.path, bodyMode: value.bodyMode,
+    ...(value.parameter ? { parameter: value.parameter } : {}),
+    ...(typeof value.defaultBody === "string" ? { defaultBody: value.defaultBody } : {})
+  };
+}
+
+function protocolInfraredRemote(value: unknown): InfraredRemotePropertyInspectorItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string"
+    || typeof value.remoteType !== "string" || typeof value.hubDeviceId !== "string" || !Array.isArray(value.commands)) return undefined;
+  return {
+    label: value.label, value: value.value, remoteType: value.remoteType, hubDeviceId: value.hubDeviceId,
+    commands: value.commands.map(protocolInfraredCommand).filter(protocolDefined)
+  };
+}
+
+function protocolInfraredCommand(value: unknown): InfraredCommandPropertyInspectorItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string") return undefined;
+  if (value.parameterKind !== "default" && value.parameterKind !== "channel"
+    && value.parameterKind !== "air-conditioner" && value.parameterKind !== "custom") return undefined;
+  return { label: value.label, value: value.value, parameterKind: value.parameterKind };
+}
+
+function protocolErrorCategory(value: unknown): PropertyInspectorErrorCategory | undefined {
+  if (value === "configuration" || value === "authentication" || value === "network" || value === "http"
+    || value === "switchbot" || value === "response" || value === "internal") return value;
+  return undefined;
+}
+
+function protocolDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
+
+function protocolRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}

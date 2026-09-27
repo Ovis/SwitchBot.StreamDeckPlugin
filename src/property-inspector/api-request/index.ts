@@ -1,11 +1,12 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
-import type {
+import {
   ApiEndpointPropertyInspectorDefinition,
   ApiEndpointsResultMessage,
   DevicesResultMessage,
-  ScenesResultMessage
+  ScenesResultMessage,
+  parsePluginToPropertyInspectorMessage
 } from "../../protocol/property-inspector-protocol.js";
 
 type EndpointDefinition = ApiEndpointPropertyInspectorDefinition;
@@ -14,35 +15,6 @@ type CatalogPayload =
   | Pick<DevicesResultMessage, "event" | "commandTemplates" | "refreshFailed">
   | Pick<ScenesResultMessage, "event" | "refreshFailed">;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function endpointPayload(value: unknown): ApiEndpointsPayload | undefined {
-  if (!isRecord(value) || value.event !== "getApiEndpoints" || !Array.isArray(value.definitions)) return undefined;
-  const definitions = value.definitions.filter((item): item is EndpointDefinition =>
-    isRecord(item)
-    && typeof item.id === "string"
-    && typeof item.method === "string"
-    && typeof item.path === "string"
-    && (item.parameter === undefined || item.parameter === "device" || item.parameter === "scene")
-    && (item.bodyMode === "none" || item.bodyMode === "json")
-    && (item.defaultBody === undefined || typeof item.defaultBody === "string")
-  );
-  return { event: "getApiEndpoints", definitions };
-}
-
-function catalogPayload(value: unknown): CatalogPayload | undefined {
-  if (!isRecord(value) || (value.event !== "getDevices" && value.event !== "getScenes")) return undefined;
-  const commandTemplates = isRecord(value.commandTemplates)
-    ? Object.fromEntries(Object.entries(value.commandTemplates).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
-    : undefined;
-  return {
-    event: value.event,
-    ...(value.event === "getDevices" && commandTemplates ? { commandTemplates } : {}),
-    ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
-  };
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
@@ -163,7 +135,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
-    const endpoints = endpointPayload(event.payload);
+    const message = parsePluginToPropertyInspectorMessage(event.payload);
+    const endpoints = message?.event === "getApiEndpoints" ? message : undefined;
     if (endpoints) {
       definitions = new Map(endpoints.definitions.map(item => [item.id, item]));
       applyPresetBody();
@@ -172,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const catalog = catalogPayload(event.payload);
+    const catalog = message?.event === "getDevices" || message?.event === "getScenes" ? message : undefined;
     if (!catalog) return;
     if (catalog.event === "getDevices" && catalog.commandTemplates) {
       commandTemplates = new Map(Object.entries(catalog.commandTemplates));
