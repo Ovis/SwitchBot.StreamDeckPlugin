@@ -1,14 +1,16 @@
 import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
-import { resolveApiEndpoint } from "../api/api-endpoints.js";
+import { apiEndpointPropertyInspectorData, resolveApiEndpoint, resolveApiRequestBody } from "../api/api-endpoints.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
+import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
-import { normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
+import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
+import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 
 @action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {
@@ -20,47 +22,55 @@ export class ApiRequestAction extends AuthenticatedAction {
     private readonly deviceCatalogStore: DeviceCatalogStore,
     private readonly sceneCatalogStore: SceneCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
+    globalSettings: GlobalSettingsStore,
     locale?: string
   ) {
-    super(executor);
+    super(executor, globalSettings);
     this.locale = displayLocale(locale);
   }
 
-  override async onSendToPlugin(ev: any): Promise<void> {
-    const actionInstance = streamDeck.actions.getActionById(ev.context);
+  override async onSendToPlugin(value: unknown): Promise<void> {
+    const ev = propertyInspectorMessage(value);
+    const event = typeof ev.payload?.event === "string" ? ev.payload.event : undefined;
+
+    if (event === "getApiEndpoints") {
+      const data = apiEndpointPropertyInspectorData(this.locale);
+      await streamDeck.ui.sendToPropertyInspector({ event, ...data });
+      return;
+    }
+
+    const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
     const settings = actionInstance
       ? normalizeApiRequestSettings(await actionInstance.getSettings())
       : normalizeApiRequestSettings({});
 
-    if (ev.payload?.event === "getDevices") {
-      const catalog = ev.payload?.isRefresh
-        ? await this.catalogRefresh.refreshDevices() ?? await this.deviceCatalogStore.get()
-        : await this.deviceCatalogStore.get();
-      const items = (catalog?.devices ?? [])
+    if (event === "getDevices") {
+      const refresh = ev.payload?.isRefresh === true;
+      const result = refresh ? await this.catalogRefresh.refreshDevices() : { catalog: await this.deviceCatalogStore.get(), refreshed: true };
+      const items = (result.catalog?.devices ?? [])
         .filter(device => !device.deleted || device.deviceId === settings.deviceId)
         .map(device => ({
           label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
           value: device.deviceId
         }));
-      await streamDeck.ui.sendToPropertyInspector({ event: "getDevices", items });
+      await streamDeck.ui.sendToPropertyInspector({ event, items, refreshFailed: refresh && !result.refreshed });
       return;
     }
 
-    if (ev.payload?.event === "getScenes") {
-      const catalog = ev.payload?.isRefresh
-        ? await this.catalogRefresh.refreshScenes() ?? await this.sceneCatalogStore.get()
-        : await this.sceneCatalogStore.get();
-      const items = (catalog?.scenes ?? [])
+    if (event === "getScenes") {
+      const refresh = ev.payload?.isRefresh === true;
+      const result = refresh ? await this.catalogRefresh.refreshScenes() : { catalog: await this.sceneCatalogStore.get(), refreshed: true };
+      const items = (result.catalog?.scenes ?? [])
         .filter(scene => !scene.deleted || scene.sceneId === settings.sceneId)
         .map(scene => ({
           label: sceneLabel(scene.sceneName, scene.sceneId, scene.deleted, this.locale),
           value: scene.sceneId
         }));
-      await streamDeck.ui.sendToPropertyInspector({ event: "getScenes", items });
+      await streamDeck.ui.sendToPropertyInspector({ event, items, refreshFailed: refresh && !result.refreshed });
       return;
     }
 
-    await super.onSendToPlugin(ev);
+    await super.onSendToPlugin(value);
   }
 
   override async onKeyDown(ev: KeyDownEvent<ApiRequestSettingsV1>): Promise<void> {
@@ -73,10 +83,11 @@ export class ApiRequestAction extends AuthenticatedAction {
       return;
     }
 
+    const body = resolveApiRequestBody(endpoint, settings.body, DEFAULT_API_REQUEST_BODY);
     const request: ExecutionRequest = {
       method: endpoint.method,
       path: endpoint.path,
-      ...((endpoint.method === "POST" || endpoint.method === "PUT") ? { body: settings.body } : {})
+      ...(body !== undefined ? { body } : {})
     };
 
     const result = await this.executor.execute(request);
@@ -90,14 +101,10 @@ export class ApiRequestAction extends AuthenticatedAction {
       });
     }
 
-    await this.output.process(
-      result,
-      {
-        copyResponseToClipboard: settings.output.copyResponseToClipboard,
-        prettyPrint: settings.output.prettyPrint
-      },
-      ev.action
-    );
+    await this.output.process(result, {
+      copyResponseToClipboard: settings.output.copyResponseToClipboard,
+      prettyPrint: settings.output.prettyPrint
+    }, ev.action);
   }
 }
 
