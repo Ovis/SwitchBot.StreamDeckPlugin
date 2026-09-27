@@ -134,6 +134,33 @@ export type PluginToPropertyInspectorMessage =
 
 
 /**
+ * Property Inspector からPluginへ届く payload を共有Protocolとして検証する。
+ *
+ * 未知eventや不正な必須値は受理せず、Actionが未検証の外部入力を扱わないようにする。
+ */
+export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyInspectorToPluginMessage | undefined {
+  if (!protocolRecord(value) || typeof value.event !== "string") return undefined;
+
+  if (value.event === "saveCredentials" || value.event === "testConnection") {
+    const credentials = protocolCredentials(value.credentials);
+    return credentials ? { event: value.event, credentials } : undefined;
+  }
+  if (value.event === "getApiEndpoints") return { event: "getApiEndpoints" };
+  if (value.event === "getDevices" || value.event === "getScenes" || value.event === "getInfraredRemotes") {
+    return {
+      event: value.event,
+      ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {})
+    };
+  }
+  return undefined;
+}
+
+function protocolCredentials(value: unknown): PropertyInspectorCredentials | undefined {
+  if (!protocolRecord(value) || typeof value.token !== "string" || typeof value.secret !== "string") return undefined;
+  return { token: value.token, secret: value.secret };
+}
+
+/**
  * Plugin から Property Inspector へ届く payload を共有Protocolとして検証する。
  *
  * Stream Deck SDK は外部境界なので型宣言だけを信用せず、未知eventや不正な必須値は受理しない。

@@ -1,7 +1,7 @@
 import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { propertyInspectorMessage, propertyInspectorRequest } from "../settings/property-inspector-messages.js";
+import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import type {
   PropertyInspectorCredentials,
   TestConnectionResultMessage
@@ -17,7 +17,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    const message = propertyInspectorRequest(ev.payload);
+    const message = parsePropertyInspectorToPluginMessage(ev.payload);
 
     if (message?.event === "saveCredentials") {
       await this.saveCredentials(message.credentials);

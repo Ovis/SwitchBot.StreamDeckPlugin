@@ -10,7 +10,7 @@ import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
-import { propertyInspectorMessage, propertyInspectorRequest } from "../settings/property-inspector-messages.js";
+import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { getDeviceCommandTemplate } from "../api/device-command-templates.js";
 import { supportsControlCommands } from "../api/device-command-support.js";
 import type {
@@ -38,7 +38,7 @@ export class ApiRequestAction extends AuthenticatedAction {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    const request = propertyInspectorRequest(ev.payload);
+    const request = parsePropertyInspectorToPluginMessage(ev.payload);
     const event = request?.event;
 
     if (event === "getApiEndpoints") {
