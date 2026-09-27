@@ -26,7 +26,7 @@
   <div id="catalog-status" class="status invalid" aria-live="polite"></div>
 
   <sdpi-item id="operation-item" label="__MSG_operation__">
-    <sdpi-select id="operation" setting="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
+    <sdpi-select id="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
   </sdpi-item>
   <sdpi-item id="custom-item" label="__MSG_customButton__" hidden>
     <sdpi-textfield id="custom-button" setting="customButtonName"></sdpi-textfield>
@@ -123,9 +123,7 @@
     async function patchSettings(mutator) {
       const payload = await streamDeckClient.getSettings();
       const settings = payload?.settings ?? payload ?? {};
-      console.log("[IR PI] patchSettings before", structuredClone(settings));
       mutator(settings);
-      console.log("[IR PI] patchSettings setSettings", structuredClone(settings));
       await streamDeckClient.setSettings(settings);
     }
 
@@ -155,11 +153,6 @@
 
     function setOperationOptions(remoteInfo, selectedOperation = "") {
       const items = remoteInfo?.commands ?? [];
-      console.log("[IR PI] setOperationOptions before", {
-        selectedOperation,
-        operationValue: valueOf(operation),
-        commandValues: items.map(item => item.value)
-      });
       operation.innerHTML = '<option value=""></option>' + items.map(item =>
         '<option value="' + escapeHtml(item.value) + '">' + escapeHtml(item.label) + '</option>').join("");
 
@@ -167,10 +160,6 @@
       // 一時的な空値が valuechange として通知される。復元処理中はそのイベントを無視し、
       // 保存済みの値だけを選択状態へ反映する。
       operation.value = items.some(item => item.value === selectedOperation) ? selectedOperation : "";
-      console.log("[IR PI] setOperationOptions after", {
-        selectedOperation,
-        operationValue: valueOf(operation)
-      });
     }
 
     function generatedBody() {
@@ -283,25 +272,26 @@
     }
 
     remote.addEventListener("valuechange", async () => {
-      console.log("[IR PI] remote valuechange", {
-        remoteValue: valueOf(remote),
-        operationValue: valueOf(operation),
-        savedOperation,
-        suppressBodyChange
-      });
       if (suppressBodyChange) return;
 
       const next = selectedRemote();
+      if (!next) {
+        // datasource の復元時は、remote の値だけが先に設定され、カタログ受信前に
+        // valuechange が発生する。この時点で設定を書き戻すと remoteType/operation を
+        // 空値で破壊するため、実体を解決できるまで保存処理を行わない。
+        return;
+      }
+
       const payload = await streamDeckClient.getSettings();
       const settings = payload?.settings ?? payload ?? {};
-      const sameType = !!next && settings.remoteType === next.remoteType;
+      const sameType = settings.remoteType === next.remoteType;
       suppressBodyChange = true;
       const preservedOperation = sameType ? (savedOperation || settings.operation || "") : "";
       savedOperation = preservedOperation;
       setOperationOptions(next, preservedOperation);
       await patchSettings(current => {
         current.deviceId = valueOf(remote);
-        current.remoteType = next?.remoteType ?? "";
+        current.remoteType = next.remoteType;
         current.operation = preservedOperation;
         emptyOverrides(current);
       });
@@ -310,11 +300,6 @@
     });
 
     operation.addEventListener("valuechange", async () => {
-      console.log("[IR PI] operation valuechange", {
-        operationValue: valueOf(operation),
-        savedOperation,
-        suppressBodyChange
-      });
       if (suppressBodyChange) return;
 
       const selectedOperation = valueOf(operation);
@@ -356,12 +341,6 @@
       remotes = new Map((ev.payload.remotes ?? []).map(item => [item.value, item]));
       const payload = await streamDeckClient.getSettings();
       const settings = payload?.settings ?? payload ?? {};
-      console.log("[IR PI] getInfraredRemotes received", {
-        settings: structuredClone(settings),
-        remoteValue: valueOf(remote),
-        operationValue: valueOf(operation),
-        savedOperation
-      });
       const info = remotes.get(settings.deviceId);
       suppressBodyChange = true;
       savedOperation = settings.operation ?? "";
