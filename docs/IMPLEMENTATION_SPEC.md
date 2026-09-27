@@ -108,7 +108,7 @@ Current presets:
 - Update webhook configuration
 - Delete webhook
 
-Parameterized device/scene presets use the cached selectors.
+Parameterized device/scene presets use the cached selectors. For `Send device control command`, selecting a known physical device type may populate an editable sample request body derived from the official SwitchBot control-command documentation. Unknown device types are not guessed. A user-edited body is not overwritten merely by changing the selected device.
 
 Each preset defines its HTTP method, path, parameter requirement, body policy, localized labels, and optional default request body. Bodyless presets MUST NOT send a request body. Webhook templates follow the documented SwitchBot v1.1 request shapes.
 
