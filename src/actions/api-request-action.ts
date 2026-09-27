@@ -7,6 +7,7 @@ import type { OutputProcessor } from "../output/output-processor.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
+import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 
 @action({ UUID: "com.esheep.switchbot.api-request" })
@@ -18,6 +19,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     private readonly output: OutputProcessor,
     private readonly deviceCatalogStore: DeviceCatalogStore,
     private readonly sceneCatalogStore: SceneCatalogStore,
+    private readonly catalogRefresh: CatalogRefreshService,
     locale?: string
   ) {
     super(executor);
@@ -31,7 +33,7 @@ export class ApiRequestAction extends AuthenticatedAction {
       : normalizeApiRequestSettings({});
 
     if (ev.payload?.event === "getDevices") {
-      const catalog = await this.deviceCatalogStore.get();
+      const catalog = await this.catalogRefresh.refreshDevices() ?? await this.deviceCatalogStore.get();
       const items = (catalog?.devices ?? [])
         .filter(device => !device.deleted || device.deviceId === settings.deviceId)
         .map(device => ({
@@ -43,7 +45,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     }
 
     if (ev.payload?.event === "getScenes") {
-      const catalog = await this.sceneCatalogStore.get();
+      const catalog = await this.catalogRefresh.refreshScenes() ?? await this.sceneCatalogStore.get();
       const items = (catalog?.scenes ?? [])
         .filter(scene => !scene.deleted || scene.sceneId === settings.sceneId)
         .map(scene => ({
