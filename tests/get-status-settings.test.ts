@@ -6,10 +6,12 @@ describe("Get Status settings", () => {
     expect(normalizeGetStatusSettings({
       version: 1,
       deviceId: "ABC/123",
+      buttonName: "Living room",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: false }
     })).toEqual({
       version: 1,
       deviceId: "ABC/123",
+      buttonName: "Living room",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: false }
     });
   });
@@ -18,6 +20,7 @@ describe("Get Status settings", () => {
     expect(normalizeGetStatusSettings({ version: 2, deviceId: 123 })).toEqual({
       version: 1,
       deviceId: "",
+      buttonName: "",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
