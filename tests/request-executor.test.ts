@@ -28,7 +28,8 @@ describe("RequestExecutor", () => {
     );
     const result = await executor.execute(request);
     expect(result.success).toBe(true);
-    expect(result.response?.switchBot?.statusCode).toBe(100);
+    if (!result.success) throw new Error("Expected execution to succeed.");
+    expect(result.response.switchBot?.statusCode).toBe(100);
     expect(result.executedAt).toBe("2026-09-26T00:00:00.000Z");
   });
 
