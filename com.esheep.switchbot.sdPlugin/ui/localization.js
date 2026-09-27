@@ -13,7 +13,7 @@
       scene: "Scene",
       endpoint: "Endpoint",
       loadingScenes: "Loading saved scenes...",
-      selectScene: "Run Get Scenes first",
+      selectScene: "Select a scene",
       buttonName: "Button name",
       showOnKey: "Show result on button",
       prettyPrint: "Pretty print",
@@ -22,7 +22,7 @@
       requestBody: "Request Body",
       copyResponse: "Copy response",
       loadingDevices: "Loading saved devices...",
-      selectDevice: "Run Get Devices first"
+      selectDevice: "Select a device"
     },
     ja: {
       token: "トークン",
@@ -33,7 +33,7 @@
       scene: "シーン",
       endpoint: "エンドポイント",
       loadingScenes: "保存済みシーンを読み込み中...",
-      selectScene: "先にシーン取得を実行してください",
+      selectScene: "シーンを選択",
       buttonName: "ボタン名",
       showOnKey: "取得結果をボタンに表示",
       prettyPrint: "整形",
@@ -42,7 +42,7 @@
       requestBody: "リクエスト本文",
       copyResponse: "レスポンスをコピー",
       loadingDevices: "保存済みデバイスを読み込み中...",
-      selectDevice: "先にデバイス取得を実行してください"
+      selectDevice: "デバイスを選択"
     }
   };
 
