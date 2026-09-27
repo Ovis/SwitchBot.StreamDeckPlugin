@@ -1,24 +1,15 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { checked, queryRequired, valueOf } from "../shared/dom.js";
+import type {
+  InfraredCommandPropertyInspectorItem,
+  InfraredRemotePropertyInspectorItem,
+  InfraredRemotesResultMessage
+} from "../../protocol/property-inspector-protocol.js";
 
-interface InfraredCommand {
-  value: string;
-  label: string;
-  parameterKind?: "channel" | "air-conditioner";
-}
-
-interface InfraredRemote {
-  value: string;
-  remoteType: string;
-  commands?: InfraredCommand[];
-}
-
-interface InfraredPayload {
-  event: "getInfraredRemotes";
-  remotes: InfraredRemote[];
-  refreshFailed?: boolean;
-}
+type InfraredCommand = InfraredCommandPropertyInspectorItem;
+type InfraredRemote = InfraredRemotePropertyInspectorItem;
+type InfraredPayload = Pick<InfraredRemotesResultMessage, "event" | "remotes" | "refreshFailed">;
 
 interface GeneratedBody {
   error?: string;
@@ -33,25 +24,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseCommand(value: unknown): InfraredCommand | undefined {
   if (!isRecord(value) || typeof value.value !== "string" || typeof value.label !== "string") return undefined;
-  const parameterKind = value.parameterKind === "channel" || value.parameterKind === "air-conditioner"
-    ? value.parameterKind
-    : undefined;
+  if (!["default", "channel", "air-conditioner", "custom"].includes(String(value.parameterKind))) return undefined;
   return {
     value: value.value,
     label: value.label,
-    ...(parameterKind ? { parameterKind } : {})
+    parameterKind: value.parameterKind as InfraredCommand["parameterKind"]
   };
 }
 
 function parseRemote(value: unknown): InfraredRemote | undefined {
   if (!isRecord(value) || typeof value.value !== "string" || typeof value.remoteType !== "string") return undefined;
-  const commands = Array.isArray(value.commands)
-    ? value.commands.map(parseCommand).filter((item): item is InfraredCommand => item !== undefined)
-    : undefined;
+  if (typeof value.hubDeviceId !== "string" || !Array.isArray(value.commands)) return undefined;
+  const commands = value.commands.map(parseCommand).filter((item): item is InfraredCommand => item !== undefined);
   return {
     value: value.value,
+    label: typeof value.label === "string" ? value.label : value.value,
     remoteType: value.remoteType,
-    ...(commands ? { commands } : {})
+    hubDeviceId: value.hubDeviceId,
+    commands
   };
 }
 

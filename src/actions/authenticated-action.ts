@@ -2,6 +2,10 @@ import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { credentialsFromPayload, propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import type {
+  PropertyInspectorCredentials,
+  TestConnectionResultMessage
+} from "../protocol/property-inspector-protocol.js";
 
 export abstract class AuthenticatedAction extends SingletonAction<any> {
   protected constructor(
@@ -36,14 +40,15 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       });
     }
 
-    await streamDeck.ui.sendToPropertyInspector({
+    const message: TestConnectionResultMessage = {
       type: "testConnectionResult",
       success: result.success,
-      errorCategory: result.success ? undefined : result.error?.category
-    });
+      ...(!result.success && result.error ? { errorCategory: result.error.category } : {})
+    };
+    await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
 
-  private async saveCredentials(credentials: { token: string; secret: string }): Promise<void> {
+  private async saveCredentials(credentials: PropertyInspectorCredentials): Promise<void> {
     await this.globalSettings.update(current => ({
       ...current,
       version: 1,

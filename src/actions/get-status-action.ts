@@ -8,6 +8,7 @@ import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
+import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 
 @action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
@@ -53,14 +54,15 @@ export class GetStatusAction extends AuthenticatedAction {
       const settings = actionInstance
         ? normalizeGetStatusSettings(await actionInstance.getSettings())
         : normalizeGetStatusSettings({});
-      await streamDeck.ui.sendToPropertyInspector({
+      const message: DevicesResultMessage = {
         event: "getDevices",
         items: selectableDevices(result.catalog?.devices ?? [], settings.deviceId).map(device => ({
           label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
           value: device.deviceId
         })),
         refreshFailed: refresh && !result.refreshed
-      });
+      };
+      await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;
     }
 

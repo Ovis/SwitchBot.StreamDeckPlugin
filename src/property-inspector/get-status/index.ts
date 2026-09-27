@@ -1,13 +1,9 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired } from "../shared/dom.js";
+import type { DevicesResultMessage } from "../../protocol/property-inspector-protocol.js";
 
-interface DeviceCatalogPayload {
-  event: "getDevices";
-  refreshFailed?: boolean;
-}
-
-function deviceCatalogPayload(value: unknown): DeviceCatalogPayload | undefined {
+function deviceCatalogPayload(value: unknown): Pick<DevicesResultMessage, "event" | "refreshFailed"> | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const record = value as Record<string, unknown>;
   if (record.event !== "getDevices") return undefined;

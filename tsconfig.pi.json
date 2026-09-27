@@ -7,5 +7,9 @@
     "moduleResolution": "Bundler",
     "types": []
   },
-  "include": ["src/property-inspector/**/*.ts", "src/property-inspector/**/*.d.ts"]
+  "include": [
+    "src/property-inspector/**/*.ts",
+    "src/property-inspector/**/*.d.ts",
+    "src/protocol/**/*.ts"
+  ]
 }
