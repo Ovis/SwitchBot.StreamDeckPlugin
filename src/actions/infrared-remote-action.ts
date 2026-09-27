@@ -86,7 +86,7 @@ export class InfraredRemoteAction extends AuthenticatedAction {
       remotes,
       refreshFailed: refresh && !result.refreshed
     };
-    await streamDeck.ui.sendToPropertyInspector(message);
+    await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
 
   override async onKeyDown(ev: KeyDownEvent<InfraredRemoteSettingsV1>): Promise<void> {

@@ -43,7 +43,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     if (event === "getApiEndpoints") {
       const data = apiEndpointPropertyInspectorData(this.locale);
       const message: ApiEndpointsResultMessage = { event: "getApiEndpoints", ...data };
-      await streamDeck.ui.sendToPropertyInspector(message);
+      await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;
     }
 
@@ -69,7 +69,7 @@ export class ApiRequestAction extends AuthenticatedAction {
         })
       );
       const message: DevicesResultMessage = { event: "getDevices", items, commandTemplates, refreshFailed: refresh && !result.refreshed };
-      await streamDeck.ui.sendToPropertyInspector(message);
+      await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;
     }
 
@@ -83,7 +83,7 @@ export class ApiRequestAction extends AuthenticatedAction {
           value: scene.sceneId
         }));
       const message: ScenesResultMessage = { event: "getScenes", items, refreshFailed: refresh && !result.refreshed };
-      await streamDeck.ui.sendToPropertyInspector(message);
+      await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;
     }
 
