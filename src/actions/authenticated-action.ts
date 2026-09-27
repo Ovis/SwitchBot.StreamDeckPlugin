@@ -1,7 +1,7 @@
 import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { credentialsFromPayload, propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { propertyInspectorMessage, propertyInspectorRequest } from "../settings/property-inspector-messages.js";
 import type {
   PropertyInspectorCredentials,
   TestConnectionResultMessage
@@ -17,19 +17,16 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    const type = typeof ev.payload?.type === "string" ? ev.payload.type : undefined;
+    const message = propertyInspectorRequest(ev.payload);
 
-    if (type === "saveCredentials") {
-      const credentials = credentialsFromPayload(ev.payload?.credentials);
-      if (!credentials) return;
-      await this.saveCredentials(credentials);
+    if (message?.event === "saveCredentials") {
+      await this.saveCredentials(message.credentials);
       return;
     }
 
-    if (type !== "testConnection") return;
+    if (message?.event !== "testConnection") return;
 
-    const credentials = credentialsFromPayload(ev.payload?.credentials);
-    if (credentials) await this.saveCredentials(credentials);
+    await this.saveCredentials(message.credentials);
 
     const result = await this.authExecutor.execute({ method: "GET", path: "/v1.1/devices" });
     if (!result.success) {
@@ -41,7 +38,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     }
 
     const message: TestConnectionResultMessage = {
-      type: "testConnectionResult",
+      event: "testConnectionResult",
       success: result.success,
       ...(!result.success && result.error ? { errorCategory: result.error.category } : {})
     };
