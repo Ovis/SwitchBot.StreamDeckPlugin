@@ -3,22 +3,25 @@ import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings } from "../src/se
 import { getCredentials, normalizeGlobalSettings } from "../src/settings/global-settings.js";
 import { normalizeGetStatusSettings } from "../src/settings/get-status-settings.js";
 
+const defaultApiRequest = {
+  version: 1,
+  endpoint: "custom",
+  deviceId: "",
+  sceneId: "",
+  method: "POST",
+  path: "",
+  body: DEFAULT_API_REQUEST_BODY,
+  output: { copyResponseToClipboard: false, prettyPrint: true }
+};
+
 describe("settings normalization", () => {
   it("applies API Request defaults", () => {
-    expect(normalizeApiRequestSettings({})).toEqual({
-      version: 1,
-      method: "POST",
-      path: "",
-      body: DEFAULT_API_REQUEST_BODY,
-      output: { copyResponseToClipboard: false, prettyPrint: true }
-    });
+    expect(normalizeApiRequestSettings({})).toEqual(defaultApiRequest);
   });
 
   it("applies Get Status defaults", () => {
     expect(normalizeGetStatusSettings({})).toEqual({
-      version: 1,
-      deviceId: "",
-      buttonName: "",
+      version: 1, deviceId: "", buttonName: "",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
@@ -28,22 +31,16 @@ describe("settings normalization", () => {
   });
 
   it("trims complete credentials", () => {
-    expect(getCredentials(normalizeGlobalSettings({
-      version: 1,
-      credentials: { token: " token ", secret: " secret " }
-    }))).toEqual({ token: "token", secret: "secret" });
+    expect(getCredentials(normalizeGlobalSettings({ version: 1, credentials: { token: " token ", secret: " secret " } })))
+      .toEqual({ token: "token", secret: "secret" });
   });
 
   it("recovers malformed v1 fields without discarding valid fields", () => {
     expect(normalizeApiRequestSettings({
-      version: 1,
-      method: 123,
-      path: "/v1.1/devices",
-      body: "{}",
+      version: 1, method: 123, path: "/v1.1/devices", body: "{}",
       output: { copyResponseToClipboard: true, prettyPrint: "invalid" }
     })).toEqual({
-      version: 1,
-      method: "POST",
+      ...defaultApiRequest,
       path: "/v1.1/devices",
       body: "{}",
       output: { copyResponseToClipboard: true, prettyPrint: true }
@@ -51,29 +48,14 @@ describe("settings normalization", () => {
   });
 
   it("does not interpret unknown future versions as v1", () => {
-    expect(normalizeApiRequestSettings({
-      version: 99,
-      method: "GET",
-      path: "/future"
-    })).toEqual({
-      version: 1,
-      method: "POST",
-      path: "",
-      body: DEFAULT_API_REQUEST_BODY,
-      output: { copyResponseToClipboard: false, prettyPrint: true }
-    });
+    expect(normalizeApiRequestSettings({ version: 99, method: "GET", path: "/future" })).toEqual(defaultApiRequest);
   });
 
   it("recovers a malformed Get Status output without losing device ID", () => {
     expect(normalizeGetStatusSettings({
-      version: 1,
-      deviceId: "device",
-      buttonName: "Bedroom",
-      output: { prettyPrint: "invalid" }
+      version: 1, deviceId: "device", buttonName: "Bedroom", output: { prettyPrint: "invalid" }
     })).toEqual({
-      version: 1,
-      deviceId: "device",
-      buttonName: "Bedroom",
+      version: 1, deviceId: "device", buttonName: "Bedroom",
       output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
     });
   });
