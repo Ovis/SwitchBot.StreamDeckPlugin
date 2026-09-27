@@ -1,5 +1,6 @@
 import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
@@ -37,9 +38,10 @@ export class InfraredRemoteAction extends AuthenticatedAction {
     private readonly catalogStore: DeviceCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
     globalSettings: GlobalSettingsStore,
+    executionDiagnostics?: ExecutionDiagnosticsStore,
     locale?: string
   ) {
-    super(executor, globalSettings);
+    super(executor, globalSettings, executionDiagnostics);
     this.locale = displayLocale(locale);
     this.commandQueue = new ActionInstanceFifo(
       MAX_QUEUED_COMMANDS,
@@ -131,6 +133,7 @@ export class InfraredRemoteAction extends AuthenticatedAction {
   override onWillDisappear(ev: WillDisappearEvent<InfraredRemoteSettingsV1>): void {
     this.commandQueue.dispose(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
+    this.clearExecutionDiagnostics(ev.action.id);
   }
 
   private async executeQueuedCommand(
@@ -139,6 +142,7 @@ export class InfraredRemoteAction extends AuthenticatedAction {
     isDisposed: () => boolean
   ): Promise<void> {
     const result = await this.executor.execute(item.request);
+    this.recordExecutionDiagnostics(actionId, result);
 
     if (!result.success) {
       streamDeck.logger.error("Infrared Remote command failed", {

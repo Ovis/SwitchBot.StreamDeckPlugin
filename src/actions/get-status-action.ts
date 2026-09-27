@@ -1,5 +1,6 @@
 import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
@@ -21,9 +22,10 @@ export class GetStatusAction extends AuthenticatedAction {
     private readonly catalogStore: DeviceCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
     globalSettings: GlobalSettingsStore,
+    executionDiagnostics?: ExecutionDiagnosticsStore,
     locale?: string
   ) {
-    super(executor, globalSettings);
+    super(executor, globalSettings, executionDiagnostics);
     this.locale = displayLocale(locale);
   }
 
@@ -42,6 +44,7 @@ export class GetStatusAction extends AuthenticatedAction {
 
   override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
     this.clearRestoreTimer(ev.action.id);
+    this.clearExecutionDiagnostics(ev.action.id);
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {
@@ -85,6 +88,7 @@ export class GetStatusAction extends AuthenticatedAction {
       method: "GET",
       path: `/v1.1/devices/${encodeURIComponent(deviceId)}/status`
     });
+    this.recordExecutionDiagnostics(ev.action.id, result);
 
     if (!result.success) {
       streamDeck.logger.error("Get Status failed", {

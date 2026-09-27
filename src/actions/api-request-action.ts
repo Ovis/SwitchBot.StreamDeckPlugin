@@ -1,6 +1,7 @@
 import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import { apiEndpointPropertyInspectorData, resolveApiEndpoint, resolveApiRequestBody } from "../api/api-endpoints.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
@@ -31,9 +32,10 @@ export class ApiRequestAction extends AuthenticatedAction {
     private readonly sceneCatalogStore: SceneCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
     globalSettings: GlobalSettingsStore,
+    executionDiagnostics?: ExecutionDiagnosticsStore,
     locale?: string
   ) {
-    super(executor, globalSettings);
+    super(executor, globalSettings, executionDiagnostics);
     this.locale = displayLocale(locale);
   }
 
@@ -110,6 +112,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     };
 
     const result = await this.executor.execute(request);
+    this.recordExecutionDiagnostics(ev.action.id, result);
     if (!result.success) {
       streamDeck.logger.error("API Request failed", {
         category: result.error.category,
