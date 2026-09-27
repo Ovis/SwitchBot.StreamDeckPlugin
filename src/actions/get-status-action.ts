@@ -3,6 +3,7 @@ import type { RequestExecutor } from "../execution/request-executor.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
+import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 
@@ -14,6 +15,7 @@ export class GetStatusAction extends AuthenticatedAction {
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor,
     private readonly catalogStore: DeviceCatalogStore,
+    private readonly catalogRefresh: CatalogRefreshService,
     locale?: string
   ) {
     super(executor);
@@ -39,7 +41,7 @@ export class GetStatusAction extends AuthenticatedAction {
 
   override async onSendToPlugin(ev: any): Promise<void> {
     if (ev.payload?.event === "getDevices") {
-      const catalog = await this.catalogStore.get();
+      const catalog = await this.catalogRefresh.refreshDevices() ?? await this.catalogStore.get();
       const actionInstance = streamDeck.actions.getActionById(ev.context);
       const settings = actionInstance
         ? normalizeGetStatusSettings(await actionInstance.getSettings())
