@@ -33,7 +33,7 @@ export class ApiRequestAction extends AuthenticatedAction {
       : normalizeApiRequestSettings({});
 
     if (ev.payload?.event === "getDevices") {
-      const catalog = await this.catalogRefresh.refreshDevices() ?? await this.deviceCatalogStore.get();
+      const catalog = ev.payload?.isRefresh\n        ? await this.catalogRefresh.refreshDevices() ?? await this.deviceCatalogStore.get()\n        : await this.deviceCatalogStore.get();
       const items = (catalog?.devices ?? [])
         .filter(device => !device.deleted || device.deviceId === settings.deviceId)
         .map(device => ({
@@ -45,7 +45,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     }
 
     if (ev.payload?.event === "getScenes") {
-      const catalog = await this.catalogRefresh.refreshScenes() ?? await this.sceneCatalogStore.get();
+      const catalog = ev.payload?.isRefresh\n        ? await this.catalogRefresh.refreshScenes() ?? await this.sceneCatalogStore.get()\n        : await this.sceneCatalogStore.get();
       const items = (catalog?.scenes ?? [])
         .filter(scene => !scene.deleted || scene.sceneId === settings.sceneId)
         .map(scene => ({
