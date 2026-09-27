@@ -1,7 +1,8 @@
 import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";\nimport { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
+import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import type {
   PropertyInspectorCredentials,
   TestConnectionResultMessage
