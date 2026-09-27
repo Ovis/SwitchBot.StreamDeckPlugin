@@ -38,6 +38,14 @@
       const { t } = SwitchBotI18n;
       document.getElementById("output-heading").textContent = t("Output", "出力");
     }
+    streamDeckClient.sendToPropertyInspector.subscribe(ev => {
+      if (ev?.payload?.event === "getDevices" && ev.payload.refreshFailed) {
+        document.getElementById("catalog-status").textContent = SwitchBotI18n.t(
+          "Refresh failed. Showing the saved catalog.",
+          "更新に失敗しました。保存済みの一覧を表示しています。"
+        );
+      }
+    });
     document.addEventListener("DOMContentLoaded", localizeUi);
     document.addEventListener("switchbot-locale-changed", localizeUi);
   </script>
