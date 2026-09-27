@@ -4,15 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "rollup -c",
-    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && npm run build:assets && npm run build:bundle",
+    "build:assets": "node scripts/generate-assets.mjs && node scripts/build-property-inspector.mjs",
+    "build:bundle": "rollup -c",
+    "typecheck": "npm run typecheck:plugin && npm run typecheck:pi",
+    "typecheck:plugin": "tsc --noEmit -p tsconfig.plugin.json",
+    "typecheck:pi": "tsc --noEmit -p tsconfig.pi.json",
     "test": "vitest run --passWithNoTests",
     "validate": "streamdeck validate com.esheep.switchbot.sdPlugin --no-update-check",
-    "prebuild": "node scripts/generate-assets.mjs",
+    "verify": "npm test && npm run test:release-version && npm run security:dist && npm run check:pi-dist && npm run validate && npm run pack:check",
+    "pack": "npm run build && npm run verify && streamdeck pack com.esheep.switchbot.sdPlugin --no-update-check",
     "pack:check": "streamdeck pack com.esheep.switchbot.sdPlugin --dry-run --no-update-check",
     "security:dist": "node scripts/check-distributable.mjs",
-    "test:release-version": "node scripts/release-version.mjs v0.0.1-alpha1 && node scripts/release-version.mjs v0.0.1-beta1 && node scripts/release-version.mjs v0.0.1-rc1 && node scripts/release-version.mjs v0.0.1",
-    "check:pi-js": "node --check com.esheep.switchbot.sdPlugin/ui/localization.js && node --check com.esheep.switchbot.sdPlugin/ui/authentication.js && node scripts/check-inline-pi-js.mjs"
+    "check:pi-dist": "node scripts/check-property-inspector-dist.mjs",
+    "test:release-version": "node scripts/release-version.mjs v0.0.1-alpha1 && node scripts/release-version.mjs v0.0.1-beta1 && node scripts/release-version.mjs v0.0.1-rc1 && node scripts/release-version.mjs v0.0.1"
   },
   "dependencies": {
     "@elgato/streamdeck": "3.0.0",

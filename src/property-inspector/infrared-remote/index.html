@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head lang="en">
+  <meta charset="utf-8" />
+  <title>SwitchBot Infrared Remote</title>
+  <script src="sdpi-components.js"></script>
+  <script src="infrared-remote.js"></script>
+  <style>
+    [hidden] { display: none !important; }
+    .section-heading { margin: 12px 8px 6px; font-weight: 600; }
+    .status { margin: 4px 8px 8px 116px; font-size: 11px; }
+    .invalid { color: #e57373; }
+    .notice { color: #e0b66d; }
+    .preview { margin: 6px 8px 10px; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; color: #d8d8d8; }
+    .advanced { margin-top: 10px; border-top: 1px solid #555; padding-top: 8px; }
+  </style>
+  <link rel="stylesheet" href="authentication.css" />
+</head>
+<body>
+  <div id="switchbot-authentication"></div>
+
+  <sdpi-item label="__MSG_device__">
+    <sdpi-select id="remote" setting="deviceId" datasource="getInfraredRemotes"
+      loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__" show-refresh hot-reload></sdpi-select>
+  </sdpi-item>
+  <div id="catalog-status" class="status invalid" aria-live="polite"></div>
+
+  <sdpi-item id="operation-item" label="__MSG_operation__">
+    <sdpi-select id="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
+  </sdpi-item>
+  <sdpi-item id="custom-item" label="__MSG_customButton__" hidden>
+    <sdpi-textfield id="custom-button" setting="customButtonName"></sdpi-textfield>
+  </sdpi-item>
+  <sdpi-item id="channel-item" label="__MSG_channel__" hidden>
+    <sdpi-textfield id="channel" setting="channel"></sdpi-textfield>
+  </sdpi-item>
+
+  <div id="ac-fields" hidden>
+    <sdpi-item label="__MSG_temperature__"><sdpi-textfield id="ac-temperature" setting="airConditioner.temperature"></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_mode__">
+      <sdpi-select id="ac-mode" setting="airConditioner.mode" default="2">
+        <option value="1">Auto</option><option value="2">Cool</option><option value="3">Dry</option>
+        <option value="4">Fan</option><option value="5">Heat</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="__MSG_fanSpeed__">
+      <sdpi-select id="ac-fan" setting="airConditioner.fanSpeed" default="1">
+        <option value="1">Auto</option><option value="2">Low</option><option value="3">Medium</option><option value="4">High</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="__MSG_power__">
+      <sdpi-select id="ac-power" setting="airConditioner.powerState" default="on">
+        <option value="on">ON</option><option value="off">OFF</option>
+      </sdpi-select>
+    </sdpi-item>
+  </div>
+  <div id="validation-status" class="status invalid" aria-live="polite"></div>
+  <div id="override-active" class="status notice" hidden></div>
+
+  <div class="advanced">
+    <div id="advanced-heading" class="section-heading"></div>
+    <sdpi-item label="__MSG_commandOverride__"><sdpi-checkbox id="command-override" setting="overrides.command.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_command__"><sdpi-textfield id="command-value" setting="overrides.command.value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_parameterOverride__"><sdpi-checkbox id="parameter-override" setting="overrides.parameter.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_parameter__"><sdpi-textfield id="parameter-value" setting="overrides.parameter.value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_commandTypeOverride__"><sdpi-checkbox id="type-override" setting="overrides.commandType.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_commandType__">
+      <sdpi-select id="type-mode" disabled>
+        <option value="command">command</option><option value="customize">customize</option><option id="custom-type-option" value="custom">Custom</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item id="custom-type-item" label="__MSG_customCommandType__" hidden>
+      <sdpi-textfield id="type-value" setting="overrides.commandType.value"></sdpi-textfield>
+    </sdpi-item>
+    <div id="request-preview" class="preview"></div>
+  </div>
+
+  <div id="output-heading" class="section-heading"></div>
+  <sdpi-item label="__MSG_showOperationOnKey__"><sdpi-checkbox setting="output.showOperationOnKey"></sdpi-checkbox></sdpi-item>
+  <sdpi-item label="__MSG_copyResponse__"><sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox></sdpi-item>
+  <sdpi-item label="__MSG_prettyPrint__"><sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox></sdpi-item>
+</body>
+</html>

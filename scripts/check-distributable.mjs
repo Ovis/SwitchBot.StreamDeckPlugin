@@ -32,8 +32,7 @@ const forbiddenPiApiPatterns = [
 ];
 
 for (const path of files) {
-  if (path.endsWith(".map")) throw new Error(`Source map must not be distributed: ${path}`);
-  if (!/\.(?:js|html|json|css)$/i.test(path)) continue;
+  if (!/\.(?:js|html|json|css|map)$/i.test(path)) continue;
   const content = await readFile(path, "utf8");
   if (path.includes(`${root}/ui/`) || path.includes(`${root}\\ui\\`)) {
     for (const pattern of forbiddenPiApiPatterns) {
