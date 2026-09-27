@@ -16,6 +16,17 @@ describe("Get Status settings", () => {
     });
   });
 
+  it("preserves individual output values when sibling fields are missing", () => {
+    expect(normalizeGetStatusSettings({
+      version: 1,
+      output: { copyResponseToClipboard: true }
+    }).output).toEqual({
+      showStatusOnKey: true,
+      copyResponseToClipboard: true,
+      prettyPrint: true
+    });
+  });
+
   it("falls back to safe defaults for malformed persisted settings", () => {
     expect(normalizeGetStatusSettings({ version: 2, deviceId: 123 })).toEqual({
       version: 1,
