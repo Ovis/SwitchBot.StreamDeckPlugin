@@ -8,5 +8,9 @@
   "com.esheep.switchbot.api-request": {
     "Name": "APIリクエスト",
     "Tooltip": "SwitchBot OpenAPIへ設定したリクエストを送信します。"
+  },
+  "com.esheep.switchbot.infrared-remote": {
+    "Name": "赤外線リモコン",
+    "Tooltip": "SwitchBotの仮想赤外線リモコンへコマンドを送信します。"
   }
 }
