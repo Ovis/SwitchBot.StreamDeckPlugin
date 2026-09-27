@@ -1,8 +1,8 @@
 import { queryRequired, valueOf } from "./dom.js";
 import type {
   PropertyInspectorCredentials,
-  SaveCredentialsMessage,
-  TestConnectionMessage,
+  SaveCredentialsRequest,
+  TestConnectionRequest,
   TestConnectionResultMessage,
   PropertyInspectorErrorCategory
 } from "../../protocol/property-inspector-protocol.js";
@@ -26,10 +26,10 @@ function globalSettings(value: unknown): GlobalSettingsPayload {
 }
 
 function testConnectionResult(value: unknown): TestConnectionResultMessage | undefined {
-  if (!isRecord(value) || value.type !== "testConnectionResult" || typeof value.success !== "boolean") return undefined;
+  if (!isRecord(value) || value.event !== "testConnectionResult" || typeof value.success !== "boolean") return undefined;
   const errorCategory = executionErrorCategory(value.errorCategory);
   return {
-    type: "testConnectionResult",
+    event: "testConnectionResult",
     success: value.success,
     ...(errorCategory ? { errorCategory } : {})
   };
@@ -72,7 +72,7 @@ function currentCredentials(): PropertyInspectorCredentials {
 }
 
 async function save(): Promise<void> {
-  const message: SaveCredentialsMessage = { type: "saveCredentials", credentials: currentCredentials() };
+  const message: SaveCredentialsRequest = { event: "saveCredentials", credentials: currentCredentials() };
   await streamDeckClient.send("sendToPlugin", message);
 }
 
@@ -80,7 +80,7 @@ async function testConnection(): Promise<void> {
   const status = queryRequired<HTMLElement>("#switchbot-auth-status");
   status.textContent = t("Testing...", "テスト中...");
   status.className = "auth-status";
-  const message: TestConnectionMessage = { type: "testConnection", credentials: currentCredentials() };
+  const message: TestConnectionRequest = { event: "testConnection", credentials: currentCredentials() };
   await streamDeckClient.send("sendToPlugin", message);
 }
 

@@ -10,7 +10,7 @@ import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { propertyInspectorMessage, propertyInspectorRequest } from "../settings/property-inspector-messages.js";
 import { getDeviceCommandTemplate } from "../api/device-command-templates.js";
 import { supportsControlCommands } from "../api/device-command-support.js";
 import type {
@@ -38,7 +38,8 @@ export class ApiRequestAction extends AuthenticatedAction {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    const event = typeof ev.payload?.event === "string" ? ev.payload.event : undefined;
+    const request = propertyInspectorRequest(ev.payload);
+    const event = request?.event;
 
     if (event === "getApiEndpoints") {
       const data = apiEndpointPropertyInspectorData(this.locale);
@@ -53,7 +54,7 @@ export class ApiRequestAction extends AuthenticatedAction {
       : normalizeApiRequestSettings({});
 
     if (event === "getDevices") {
-      const refresh = ev.payload?.isRefresh === true;
+      const refresh = request?.event === "getDevices" && request.isRefresh === true;
       const result = refresh ? await this.catalogRefresh.refreshDevices() : { catalog: await this.deviceCatalogStore.get(), refreshed: true };
       const selectable = (result.catalog?.devices ?? [])
         .filter(device => supportsControlCommands(device.deviceType))
@@ -74,7 +75,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     }
 
     if (event === "getScenes") {
-      const refresh = ev.payload?.isRefresh === true;
+      const refresh = request?.event === "getScenes" && request.isRefresh === true;
       const result = refresh ? await this.catalogRefresh.refreshScenes() : { catalog: await this.sceneCatalogStore.get(), refreshed: true };
       const items = (result.catalog?.scenes ?? [])
         .filter(scene => !scene.deleted || scene.sceneId === settings.sceneId)

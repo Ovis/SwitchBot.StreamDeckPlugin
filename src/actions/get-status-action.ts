@@ -5,7 +5,7 @@ import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { propertyInspectorMessage, propertyInspectorRequest } from "../settings/property-inspector-messages.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
@@ -45,8 +45,9 @@ export class GetStatusAction extends AuthenticatedAction {
 
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
-    if (ev.payload?.event === "getDevices") {
-      const refresh = ev.payload?.isRefresh === true;
+    const request = propertyInspectorRequest(ev.payload);
+    if (request?.event === "getDevices") {
+      const refresh = request.isRefresh === true;
       const result = refresh
         ? await this.catalogRefresh.refreshDevices()
         : { catalog: await this.catalogStore.get(), refreshed: true };
