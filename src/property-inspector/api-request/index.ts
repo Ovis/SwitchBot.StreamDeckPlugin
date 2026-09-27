@@ -1,7 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
-import type {
+import {
   ApiEndpointPropertyInspectorDefinition,
   ApiEndpointsResultMessage,
   DevicesResultMessage,

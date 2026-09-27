@@ -1,7 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { checked, queryRequired, valueOf } from "../shared/dom.js";
-import type {
+import {
   InfraredCommandPropertyInspectorItem,
   InfraredRemotePropertyInspectorItem,
   InfraredRemotesResultMessage,

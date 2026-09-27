@@ -1,5 +1,5 @@
 import { queryRequired, valueOf } from "./dom.js";
-import type {
+import {
   PropertyInspectorCredentials,
   SaveCredentialsRequest,
   TestConnectionRequest,
