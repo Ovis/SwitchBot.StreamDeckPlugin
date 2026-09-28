@@ -22,7 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
   attachExecutionDiagnostics(streamDeckClient);
   const device = queryRequired<SdpiValueElement>("#device");
   const operation = queryRequired<SdpiValueElement>("#operation");
-  let devices = new Map<string, PhysicalControlDeviceItem>();\n  let operations = new Map<string, PhysicalControlOperationItem>();
+  let devices = new Map<string, PhysicalControlDeviceItem>();
+  let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
 
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
@@ -61,7 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
     if (message?.event !== "physicalControlCatalog") return;
     void (async () => {
-      devices = new Map(message.devices.map(item => [item.value, item]));\n      operations = new Map(message.operations.map(item => [item.value, item]));
+      devices = new Map(message.devices.map(item => [item.value, item]));
+      operations = new Map(message.operations.map(item => [item.value, item]));
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
@@ -78,7 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppress = false;
       }
-      updateRequestPreview();\n      queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
+      updateRequestPreview();
+      queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
         ? window.SwitchBotI18n?.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。") ?? ""
         : "";
     })();
