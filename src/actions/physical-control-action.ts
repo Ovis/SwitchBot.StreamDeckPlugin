@@ -12,11 +12,11 @@ import { normalizePhysicalControlSettings, type PhysicalControlSettingsV1 } from
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage } from "../protocol/property-inspector-protocol.js";
 import { physicalDeviceDefinition, supportsPhysicalAction, type PhysicalControlActionId } from "../physical-control/physical-control-catalog.js";
-import { buildPhysicalCommand } from "../physical-control/physical-command-builder.js";
+import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/physical-command-builder.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 
-interface QueuedBotCommand {
+interface QueuedPhysicalCommand {
   request: ExecutionRequest;
   displayText: string;
   action: KeyDownEvent<PhysicalControlSettingsV1>["action"];
@@ -25,9 +25,15 @@ interface QueuedBotCommand {
 const MAX_QUEUED_COMMANDS = 5;
 const TEMPORARY_TITLE_MS = 3_000;
 
+/**
+ * SwitchBot物理デバイスの日常操作に共通する実行・Catalog・feedback処理を提供する。
+ *
+ * 製品カテゴリ固有のActionはこのクラスへPhysicalControlActionIdを渡すだけに留め、
+ * Control Commandの差異はPhysical Device Catalog側で宣言的に管理する。
+ */
 export class PhysicalControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
-  private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;
+  private readonly commandQueue: ActionInstanceFifo<QueuedPhysicalCommand>;
   private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(
@@ -93,11 +99,15 @@ export class PhysicalControlAction extends AuthenticatedAction {
       operations: operations.map(operation => ({
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
         value: operation.id,
-        requestBody: JSON.stringify({
-          command: operation.command,
-          parameter: operation.parameter,
-          commandType: operation.commandType
-        }, null, 2)
+        requestBody: (() => {
+          const built = buildPhysicalCommand({
+            action: this.physicalActionId,
+            deviceId: settings.deviceId,
+            deviceType: settings.deviceType,
+            operationId: operation.id
+          });
+          return built.command ? physicalCommandBody(built.command, true) : "";
+        })()
       })),
       refreshFailed: result.refreshFailed
     };
@@ -138,7 +148,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
 
   private async executeQueuedCommand(
     actionId: string,
-    item: QueuedBotCommand,
+    item: QueuedPhysicalCommand,
     isDisposed: () => boolean
   ): Promise<void> {
     const result = await this.executor.execute(item.request);
