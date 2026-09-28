@@ -77,13 +77,18 @@ export interface ExecutionDiagnosticsRequest extends ProtocolJsonObject {
   event: "getExecutionDiagnostics";
 }
 
-export interface ExecutionDiagnosticsMessage extends ProtocolJsonObject {
+export interface ExecutionDiagnosticsUnavailableMessage extends ProtocolJsonObject {
   event: "executionDiagnostics";
-  available: boolean;
-  executedAt?: string;
-  method?: string;
-  path?: string;
-  success?: boolean;
+  available: false;
+}
+
+export interface ExecutionDiagnosticsAvailableMessage extends ProtocolJsonObject {
+  event: "executionDiagnostics";
+  available: true;
+  executedAt: string;
+  method: string;
+  path: string;
+  success: boolean;
   errorCategory?: PropertyInspectorErrorCategory;
   errorMessage?: string;
   httpStatus?: number;
@@ -91,6 +96,10 @@ export interface ExecutionDiagnosticsMessage extends ProtocolJsonObject {
   switchBotMessage?: string;
   responseBody?: string;
 }
+
+export type ExecutionDiagnosticsMessage =
+  | ExecutionDiagnosticsUnavailableMessage
+  | ExecutionDiagnosticsAvailableMessage;
 
 export interface TestConnectionResultMessage extends ProtocolJsonObject {
   event: "testConnectionResult";
