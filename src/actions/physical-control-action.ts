@@ -2,6 +2,7 @@ import streamDeck, { type Action, type DidReceiveSettingsEvent, type KeyDownEven
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
+import type { ExecutionErrorCategory } from "../execution/execution-result.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
@@ -23,7 +24,8 @@ interface QueuedPhysicalCommand {
 }
 
 const MAX_QUEUED_COMMANDS = 5;
-const TEMPORARY_TITLE_MS = 3_000;
+const SUCCESS_TITLE_MS = 3_000;
+const FAILURE_TITLE_MS = 5_000;
 
 /**
  * SwitchBot物理デバイスの日常操作に共通する実行・Catalog・feedback処理を提供する。
@@ -121,6 +123,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     if (!selected || selected.deleted || selected.deviceType !== settings.deviceType || !supportsPhysicalAction(selected.deviceType, this.physicalActionId)) {
       streamDeck.logger.error("Physical Control failed", { category: "configuration", reason: "device-unavailable-or-type-mismatch" });
       await ev.action.showAlert();
+      await this.showTemporaryTitle(ev.action.id, ev.action, this.failureTitle("configuration"), FAILURE_TITLE_MS);
       return;
     }
 
@@ -128,6 +131,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     if (!built.request) {
       streamDeck.logger.error("Physical Control failed", { category: "configuration", reason: built.error ?? "invalid-request" });
       await ev.action.showAlert();
+      await this.showTemporaryTitle(ev.action.id, ev.action, this.failureTitle("configuration"), FAILURE_TITLE_MS);
       return;
     }
 
@@ -169,14 +173,41 @@ export class PhysicalControlAction extends AuthenticatedAction {
       { copyResponseToClipboard: false, prettyPrint: true },
       item.action
     );
-    if (!succeeded) return;
+    if (!succeeded) {
+      if (!result.success) {
+        await this.showTemporaryTitle(actionId, item.action, this.failureTitle(result.error.category), FAILURE_TITLE_MS);
+      }
+      return;
+    }
 
+    await this.showTemporaryTitle(actionId, item.action, item.displayText, SUCCESS_TITLE_MS);
+  }
+
+  private async showTemporaryTitle(
+    actionId: string,
+    actionInstance: Action<PhysicalControlSettingsV1>,
+    title: string,
+    durationMs: number
+  ): Promise<void> {
     this.clearTemporaryTitle(actionId);
-    await item.action.setTitle(item.displayText);
+    await actionInstance.setTitle(title);
     this.restoreTimers.set(actionId, setTimeout(() => {
       this.restoreTimers.delete(actionId);
-      void this.updateNormalTitleFromCurrentSettings(item.action);
-    }, TEMPORARY_TITLE_MS));
+      void this.updateNormalTitleFromCurrentSettings(actionInstance);
+    }, durationMs));
+  }
+
+  private failureTitle(category: ExecutionErrorCategory): string {
+    const labels: Record<ExecutionErrorCategory, { en: string; ja: string }> = {
+      configuration: { en: "Configuration error", ja: "設定エラー" },
+      authentication: { en: "Authentication error", ja: "認証エラー" },
+      network: { en: "Network error", ja: "通信エラー" },
+      http: { en: "HTTP error", ja: "HTTPエラー" },
+      switchbot: { en: "SwitchBot error", ja: "SwitchBotエラー" },
+      response: { en: "Response error", ja: "応答エラー" },
+      internal: { en: "Internal error", ja: "内部エラー" }
+    };
+    return this.locale === "ja" ? labels[category].ja : labels[category].en;
   }
 
   private clearTemporaryTitle(actionId: string): void {
