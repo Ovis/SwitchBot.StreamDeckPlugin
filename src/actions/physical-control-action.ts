@@ -30,6 +30,19 @@ const SUCCESS_TITLE_MS = 3_000;
 const FAILURE_TITLE_MS = 5_000;
 
 /**
+ * 危険操作の確認を省略できるかを判定する。
+ *
+ * ユーザー設定で省略可能なのは通常のunlockだけに限定し、deadboltやnight latch、
+ * Garage Doorなど他の確認必須操作へ設定が波及しないよう明示的に判定する。
+ */
+export function shouldSkipPhysicalControlConfirmation(
+  skipUnlockConfirmation: boolean,
+  operationId: string
+): boolean {
+  return skipUnlockConfirmation && operationId === "unlock";
+}
+
+/**
  * SwitchBot物理デバイスの日常操作に共通する実行・Catalog・feedback処理を提供する。
  *
  * 製品カテゴリ固有のActionはこのクラスへPhysicalControlActionIdを渡すだけに留め、
@@ -180,7 +193,10 @@ export class PhysicalControlAction extends AuthenticatedAction {
     }
 
     const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
-    const skipConfirmation = settings.skipUnlockConfirmation === true && settings.operationId === "unlock";
+    const skipConfirmation = shouldSkipPhysicalControlConfirmation(
+      settings.skipUnlockConfirmation === true,
+      settings.operationId
+    );
     if (operation?.confirmationRequired && !skipConfirmation) {
       const confirmationKey = `${settings.deviceId}:${settings.deviceType}:${settings.operationId}`;
       if (this.confirmationGate.confirm(ev.action.id, confirmationKey) === "required") {
