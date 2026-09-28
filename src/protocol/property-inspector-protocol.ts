@@ -56,7 +56,8 @@ export type PropertyInspectorToPluginMessage =
   | ApiEndpointsRequest
   | DevicesRequest
   | ScenesRequest
-  | InfraredRemotesRequest;
+  | InfraredRemotesRequest
+  | ExecutionDiagnosticsRequest;
 
 export interface PropertyInspectorMessageEnvelope {
   context?: string;
@@ -71,6 +72,34 @@ export type PropertyInspectorErrorCategory =
   | "switchbot"
   | "response"
   | "internal";
+
+export interface ExecutionDiagnosticsRequest extends ProtocolJsonObject {
+  event: "getExecutionDiagnostics";
+}
+
+export interface ExecutionDiagnosticsUnavailableMessage extends ProtocolJsonObject {
+  event: "executionDiagnostics";
+  available: false;
+}
+
+export interface ExecutionDiagnosticsAvailableMessage extends ProtocolJsonObject {
+  event: "executionDiagnostics";
+  available: true;
+  executedAt: string;
+  method: string;
+  path: string;
+  success: boolean;
+  errorCategory?: PropertyInspectorErrorCategory;
+  errorMessage?: string;
+  httpStatus?: number;
+  switchBotStatusCode?: number;
+  switchBotMessage?: string;
+  responseBody?: string;
+}
+
+export type ExecutionDiagnosticsMessage =
+  | ExecutionDiagnosticsUnavailableMessage
+  | ExecutionDiagnosticsAvailableMessage;
 
 export interface TestConnectionResultMessage extends ProtocolJsonObject {
   event: "testConnectionResult";
@@ -130,7 +159,8 @@ export type PluginToPropertyInspectorMessage =
   | ApiEndpointsResultMessage
   | DevicesResultMessage
   | ScenesResultMessage
-  | InfraredRemotesResultMessage;
+  | InfraredRemotesResultMessage
+  | ExecutionDiagnosticsMessage;
 
 
 /**
@@ -146,6 +176,7 @@ export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyI
     return credentials ? { event: value.event, credentials } : undefined;
   }
   if (value.event === "getApiEndpoints") return { event: "getApiEndpoints" };
+  if (value.event === "getExecutionDiagnostics") return { event: "getExecutionDiagnostics" };
   if (value.event === "getDevices" || value.event === "getScenes" || value.event === "getInfraredRemotes") {
     return {
       event: value.event,
@@ -167,6 +198,28 @@ function protocolCredentials(value: unknown): PropertyInspectorCredentials | und
  */
 export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToPropertyInspectorMessage | undefined {
   if (!protocolRecord(value) || typeof value.event !== "string") return undefined;
+
+  if (value.event === "executionDiagnostics") {
+    if (typeof value.available !== "boolean") return undefined;
+    if (!value.available) return { event: "executionDiagnostics", available: false };
+    if (typeof value.executedAt !== "string" || typeof value.method !== "string" || typeof value.path !== "string"
+      || typeof value.success !== "boolean") return undefined;
+    const errorCategory = protocolErrorCategory(value.errorCategory);
+    return {
+      event: "executionDiagnostics",
+      available: true,
+      executedAt: value.executedAt,
+      method: value.method,
+      path: value.path,
+      success: value.success,
+      ...(errorCategory ? { errorCategory } : {}),
+      ...(typeof value.errorMessage === "string" ? { errorMessage: value.errorMessage } : {}),
+      ...(typeof value.httpStatus === "number" ? { httpStatus: value.httpStatus } : {}),
+      ...(typeof value.switchBotStatusCode === "number" ? { switchBotStatusCode: value.switchBotStatusCode } : {}),
+      ...(typeof value.switchBotMessage === "string" ? { switchBotMessage: value.switchBotMessage } : {}),
+      ...(typeof value.responseBody === "string" ? { responseBody: value.responseBody } : {})
+    };
+  }
 
   if (value.event === "testConnectionResult") {
     if (typeof value.success !== "boolean") return undefined;

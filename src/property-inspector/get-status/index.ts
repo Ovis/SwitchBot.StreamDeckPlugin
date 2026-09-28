@@ -1,11 +1,13 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
+import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { queryRequired } from "../shared/dom.js";
 import { parsePluginToPropertyInspectorMessage } from "../../protocol/property-inspector-protocol.js";
 
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
+  attachExecutionDiagnostics(streamDeckClient);
 
   function localizeUi(): void {
     queryRequired<HTMLElement>("#output-heading").textContent =

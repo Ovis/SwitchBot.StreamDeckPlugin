@@ -1,5 +1,6 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
+import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import {
   InfraredCommandPropertyInspectorItem,
@@ -43,6 +44,7 @@ function escapeHtml(value: string): string {
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
+  attachExecutionDiagnostics(streamDeckClient);
   const remote = queryRequired<SdpiValueElement>("#remote");
   const operation = queryRequired<SdpiValueElement>("#operation");
   const customItem = queryRequired<HTMLElement>("#custom-item");

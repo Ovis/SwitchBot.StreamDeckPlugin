@@ -16,6 +16,12 @@ describe("Property Inspector protocol", () => {
       });
     });
 
+    it("実行診断要求を判別する", () => {
+      expect(parsePropertyInspectorToPluginMessage({
+        event: "getExecutionDiagnostics"
+      })).toEqual({ event: "getExecutionDiagnostics" });
+    });
+
     it("カタログ更新要求のrefresh指定を保持する", () => {
       expect(parsePropertyInspectorToPluginMessage({
         event: "getDevices",
@@ -69,6 +75,44 @@ describe("Property Inspector protocol", () => {
           commands: [{ label: "Power On", value: "turnOn", parameterKind: "default" }]
         }]
       });
+    });
+
+    it("実行診断応答を検証する", () => {
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "executionDiagnostics",
+        available: true,
+        executedAt: "2026-09-28T00:00:00.000Z",
+        method: "GET",
+        path: "/v1.1/devices",
+        success: false,
+        errorCategory: "http",
+        errorMessage: "HTTP 500",
+        httpStatus: 500,
+        responseBody: `{\n  "error": true\n}`
+      })).toEqual({
+        event: "executionDiagnostics",
+        available: true,
+        executedAt: "2026-09-28T00:00:00.000Z",
+        method: "GET",
+        path: "/v1.1/devices",
+        success: false,
+        errorCategory: "http",
+        errorMessage: "HTTP 500",
+        httpStatus: 500,
+        responseBody: `{\n  "error": true\n}`
+      });
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "executionDiagnostics",
+        available: false
+      })).toEqual({ event: "executionDiagnostics", available: false });
+    });
+
+    it("不完全な実行診断応答をfail closedする", () => {
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "executionDiagnostics",
+        available: true,
+        method: "GET"
+      })).toBeUndefined();
     });
 
     it("未知eventと必須配列欠落をfail closedする", () => {

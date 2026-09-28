@@ -1,5 +1,6 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
+import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
 import {
   ApiEndpointPropertyInspectorDefinition,
@@ -18,6 +19,7 @@ type CatalogPayload =
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
+  attachExecutionDiagnostics(streamDeckClient);
   const endpoint = queryRequired<SdpiValueElement>("#endpoint");
   const method = queryRequired<SdpiValueElement>("#method");
   const methodItem = queryRequired<HTMLElement>("#method-item");
