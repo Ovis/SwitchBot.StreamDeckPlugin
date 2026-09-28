@@ -1,4 +1,4 @@
-export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security";
+export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security" | "curtains-blinds";
 
 export type PhysicalOperationParameter =
   | { kind: "number"; key: string; label: { en: string; ja: string }; min: number; max: number; step: number; unit?: string }
@@ -11,8 +11,8 @@ export interface PhysicalOperationDefinition {
   parameter: string;
   commandType: "command";
   input?: PhysicalOperationParameter;
-  /** 検証済み数値を公式APIのJSON parameterへ埋め込む場合の宣言的な形式。 */
-  parameterFormat?: { kind: "json-number-field"; prefix: string; suffix: string };
+  /** 検証済み数値を公式APIのparameter文字列へ埋め込むための宣言的な形式。 */
+  parameterFormat?: { prefix: string; suffix: string };
   /** 誤操作で物理的なアクセス状態を変え得る操作は、キー上で再押下確認を必須にする。 */
   confirmationRequired?: boolean;
 }
@@ -92,7 +92,7 @@ const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
   fixed("level-3", "Level 3", "レベル3", "setMode", '{"mode":2,"targetHumidify":0}'),
   fixed("level-2", "Level 2", "レベル2", "setMode", '{"mode":3,"targetHumidify":0}'),
   fixed("level-1", "Level 1", "レベル1", "setMode", '{"mode":4,"targetHumidify":0}'),
-  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { kind: "json-number-field", prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
+  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
   fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":6,"targetHumidify":0}'),
   fixed("auto", "Auto", "自動", "setMode", '{"mode":7,"targetHumidify":0}'),
   fixed("drying", "Drying", "乾燥", "setMode", '{"mode":8,"targetHumidify":0}'),
@@ -101,7 +101,7 @@ const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
 ];
 const AIR_PURIFIER: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { kind: "json-number-field", prefix: '{"mode":1,"fanGear":', suffix: "}" }),
+  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { prefix: '{"mode":1,"fanGear":', suffix: "}" }),
   fixed("auto", "Auto", "自動", "setMode", '{"mode":2}'),
   fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":3}'),
   fixed("pet", "Pet", "ペット", "setMode", '{"mode":4}'),
@@ -182,6 +182,30 @@ const VIDEO_DOORBELL: readonly PhysicalOperationDefinition[] = [
   securityOperation("motion-detection-off", "Disable Motion Detection", "動体検知 OFF", "disableMotionDetection")
 ];
 
+const CURTAIN: readonly PhysicalOperationDefinition[] = [
+  fixed("open", "Open", "開く", "turnOn", "default"),
+  fixed("close", "Close", "閉じる", "turnOff", "default"),
+  fixed("pause", "Pause", "一時停止", "pause", "default"),
+  numeric("set-position", "Set Position", "位置を設定", "setPosition", 0, 100, 1, "Closed Position", "閉じ具合", "%", {
+    prefix: "0,ff,", suffix: ""
+  })
+];
+const BLIND_TILT: readonly PhysicalOperationDefinition[] = [
+  fixed("fully-open", "Fully Open", "全開", "fullyOpen", "default"),
+  fixed("close-up", "Close Up", "上向きに閉じる", "closeUp", "default"),
+  fixed("close-down", "Close Down", "下向きに閉じる", "closeDown", "default"),
+  // Blind Tiltは方向もwire parameterの一部なので、方向ごとにOperationを分けて単一数値入力の契約を維持する。
+  numeric("set-position-up", "Set Position (Up)", "位置を設定（上向き）", "setPosition", 0, 100, 2, "Open Position", "開き具合", "%", {
+    prefix: "up;", suffix: ""
+  }),
+  numeric("set-position-down", "Set Position (Down)", "位置を設定（下向き）", "setPosition", 0, 100, 2, "Open Position", "開き具合", "%", {
+    prefix: "down;", suffix: ""
+  })
+];
+const ROLLER_SHADE: readonly PhysicalOperationDefinition[] = [
+  numeric("set-position", "Set Position", "位置を設定", "setPosition", 0, 100, 1, "Closed Position", "閉じ具合", "%")
+];
+
 const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
@@ -204,8 +228,6 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Candle Warmer Lamp", action: "lighting", operations: CANDLE_WARMER },
   { deviceType: "Humidifier", action: "climate", operations: HUMIDIFIER },
   { deviceType: "Humidifier2", action: "climate", operations: HUMIDIFIER2 },
-  { deviceType: "Evaporative Humidifier", action: "climate", operations: HUMIDIFIER2 },
-  { deviceType: "Evaporative Humidifier (Auto-refill)", action: "climate", operations: HUMIDIFIER2 },
   { deviceType: "Air Purifier VOC", action: "climate", operations: AIR_PURIFIER },
   { deviceType: "Air Purifier PM2.5", action: "climate", operations: AIR_PURIFIER },
   { deviceType: "Air Purifier Table VOC", action: "climate", operations: AIR_PURIFIER },
@@ -213,7 +235,8 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Smart Radiator Thermostat", action: "climate", operations: RADIATOR_THERMOSTAT },
   { deviceType: "Battery Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
   { deviceType: "Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
-  { deviceType: "Standing Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
+  // 製品名は「Standing Circulator Fan」だが、/devices のdeviceTypeは「Standing Fan」。
+  { deviceType: "Standing Fan", action: "climate", operations: CIRCULATOR_FAN },
   { deviceType: "Battery Circulator Fan 2 Pro", action: "climate", operations: CIRCULATOR_FAN_2_PRO },
   { deviceType: "Smart Lock", action: "security", operations: SMART_LOCK },
   { deviceType: "Lock", action: "security", operations: SMART_LOCK },
@@ -228,7 +251,12 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Lock Vision", action: "security", operations: LOCK_VISION },
   { deviceType: "Lock Vision Pro", action: "security", operations: LOCK_VISION },
   { deviceType: "Garage Door Opener", action: "security", operations: GARAGE_DOOR },
-  { deviceType: "Video Doorbell", action: "security", operations: VIDEO_DOORBELL }
+  { deviceType: "Video Doorbell", action: "security", operations: VIDEO_DOORBELL },
+  { deviceType: "Curtain", action: "curtains-blinds", operations: CURTAIN },
+  // 製品名は「Curtain 3」だが、/devices が返すdeviceTypeは空白なしの「Curtain3」なのでAPI値を使用する。
+  { deviceType: "Curtain3", action: "curtains-blinds", operations: CURTAIN },
+  { deviceType: "Blind Tilt", action: "curtains-blinds", operations: BLIND_TILT },
+  { deviceType: "Roller Shade", action: "curtains-blinds", operations: ROLLER_SHADE }
 ];
 
 /** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */

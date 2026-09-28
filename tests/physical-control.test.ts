@@ -166,19 +166,23 @@ describe("Lighting physical control", () => {
 
 
 describe("Climate physical control", () => {
+  it("製品名ではなく公式APIのdeviceTypeでClimateデバイスを判定する", () => {
+    expect(supportsPhysicalAction("Humidifier2", "climate")).toBe(true);
+    expect(supportsPhysicalAction("Evaporative Humidifier", "climate")).toBe(false);
+    expect(supportsPhysicalAction("Evaporative Humidifier (Auto-refill)", "climate")).toBe(false);
+    expect(supportsPhysicalAction("Standing Fan", "climate")).toBe(true);
+    expect(supportsPhysicalAction("Standing Circulator Fan", "climate")).toBe(false);
+  });
   it.each([
     ["Humidifier", ["turn-on", "turn-off", "mode-auto", "mode-34", "mode-67", "mode-100", "target-humidity"]],
-    ["Humidifier2", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
-    ["Evaporative Humidifier", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
-    ["Evaporative Humidifier (Auto-refill)", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
-    ["Air Purifier VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
+    ["Humidifier2", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],    ["Air Purifier VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier Table VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier Table PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Smart Radiator Thermostat", ["turn-on", "turn-off", "schedule", "manual", "off-mode", "eco", "comfort", "quick-heat", "manual-temperature"]],
     ["Battery Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
     ["Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
-    ["Standing Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
+    ["Standing Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
     ["Battery Circulator Fan 2 Pro", ["turn-on", "turn-off", "night-light-off", "night-light-bright", "night-light-soft", "wind-direct", "wind-natural", "wind-sleep", "wind-hurricane", "wind-speed"]]
   ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
     const definition = physicalDeviceDefinition(deviceType);
@@ -299,5 +303,65 @@ describe("Security physical control", () => {
     expect(supportsPhysicalAction("Pan/Tilt Cam", "security")).toBe(false);
     expect(supportsPhysicalAction("Keypad", "security")).toBe(false);
     expect(supportsPhysicalAction("Keypad Touch", "security")).toBe(false);
+  });
+});
+
+describe("Curtains & Blinds physical control", () => {
+  it.each([
+    ["Curtain", ["open", "close", "pause", "set-position"]],
+    ["Curtain3", ["open", "close", "pause", "set-position"]],
+    ["Blind Tilt", ["fully-open", "close-up", "close-down", "set-position-up", "set-position-down"]],
+    ["Roller Shade", ["set-position"]]
+  ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
+    const definition = physicalDeviceDefinition(deviceType);
+    expect(definition?.action).toBe("curtains-blinds");
+    expect(definition?.operations.map(operation => operation.id)).toEqual(operationIds);
+    expect(supportsPhysicalAction(deviceType, "curtains-blinds")).toBe(true);
+  });
+
+  it("APIが返すCurtain3を対応Deviceとして認識し、表示名のCurtain 3は推測で受け入れない", () => {
+    expect(supportsPhysicalAction("Curtain3", "curtains-blinds")).toBe(true);
+    expect(supportsPhysicalAction("Curtain 3", "curtains-blinds")).toBe(false);
+  });
+
+  it.each([
+    ["Curtain", "open", undefined, "turnOn", "default"],
+    ["Curtain3", "close", undefined, "turnOff", "default"],
+    ["Curtain3", "pause", undefined, "pause", "default"],
+    ["Curtain", "set-position", 80, "setPosition", "0,ff,80"],
+    ["Blind Tilt", "fully-open", undefined, "fullyOpen", "default"],
+    ["Blind Tilt", "close-up", undefined, "closeUp", "default"],
+    ["Blind Tilt", "close-down", undefined, "closeDown", "default"],
+    ["Blind Tilt", "set-position-up", 48, "setPosition", "up;48"],
+    ["Blind Tilt", "set-position-down", 36, "setPosition", "down;36"],
+    ["Roller Shade", "set-position", 75, "setPosition", "75"]
+  ])("%sの%sを公式wire parameterへ変換する", (deviceType, operationId, value, command, parameter) => {
+    const built = buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "COVER-001", deviceType, operationId,
+      ...(value === undefined ? {} : { operationParameters: { value } })
+    });
+    expect(built.command).toMatchObject({ command, parameter, commandType: "command" });
+  });
+
+  it("Blind Tiltのpositionは0-100の偶数だけを許可する", () => {
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "BLIND-001", deviceType: "Blind Tilt",
+      operationId: "set-position-up", operationParameters: { value: 47 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "BLIND-001", deviceType: "Blind Tilt",
+      operationId: "set-position-down", operationParameters: { value: 102 }
+    }).error).toBe("invalid-parameter");
+  });
+
+  it("CurtainとRoller Shadeのpositionは0-100の範囲外をfail closedする", () => {
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "CURTAIN-001", deviceType: "Curtain",
+      operationId: "set-position", operationParameters: { value: -1 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "SHADE-001", deviceType: "Roller Shade",
+      operationId: "set-position", operationParameters: { value: 101 }
+    }).error).toBe("invalid-parameter");
   });
 });
