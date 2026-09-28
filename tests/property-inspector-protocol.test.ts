@@ -67,7 +67,7 @@ describe("Property Inspector protocol", () => {
           { label: "Bot", value: "bot-1", deviceType: "Bot" },
           { label: "Broken", value: "broken" }
         ],
-        operations: [{ label: "Press", value: "press" }],
+        operations: [{ label: "Press", value: "press", requestBody: "{\\\"command\\\":\\\"press\\\"}" }],
         refreshFailed: false
       })).toEqual({
         event: "physicalControlCatalog",
