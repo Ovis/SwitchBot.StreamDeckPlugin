@@ -166,19 +166,23 @@ describe("Lighting physical control", () => {
 
 
 describe("Climate physical control", () => {
+  it("製品名ではなく公式APIのdeviceTypeでClimateデバイスを判定する", () => {
+    expect(supportsPhysicalAction("Humidifier2", "climate")).toBe(true);
+    expect(supportsPhysicalAction("Evaporative Humidifier", "climate")).toBe(false);
+    expect(supportsPhysicalAction("Evaporative Humidifier (Auto-refill)", "climate")).toBe(false);
+    expect(supportsPhysicalAction("Standing Fan", "climate")).toBe(true);
+    expect(supportsPhysicalAction("Standing Circulator Fan", "climate")).toBe(false);
+  });
   it.each([
     ["Humidifier", ["turn-on", "turn-off", "mode-auto", "mode-34", "mode-67", "mode-100", "target-humidity"]],
-    ["Humidifier2", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
-    ["Evaporative Humidifier", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
-    ["Evaporative Humidifier (Auto-refill)", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
-    ["Air Purifier VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
+    ["Humidifier2", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],    ["Air Purifier VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier Table VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier Table PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Smart Radiator Thermostat", ["turn-on", "turn-off", "schedule", "manual", "off-mode", "eco", "comfort", "quick-heat", "manual-temperature"]],
     ["Battery Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
     ["Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
-    ["Standing Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
+    ["Standing Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
     ["Battery Circulator Fan 2 Pro", ["turn-on", "turn-off", "night-light-off", "night-light-bright", "night-light-soft", "wind-direct", "wind-natural", "wind-sleep", "wind-hurricane", "wind-speed"]]
   ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
     const definition = physicalDeviceDefinition(deviceType);
