@@ -17,13 +17,11 @@ const success: ExecutionResult = {
 };
 
 describe("execution diagnostics", () => {
-  it("Action instanceごとに最新結果だけを保持し削除できる", () => {
+  it("Action instanceごとに最新結果だけを保持する", () => {
     const store = new ExecutionDiagnosticsStore();
     store.set("a", success);
     expect(store.get("a")).toBe(success);
     expect(store.get("b")).toBeUndefined();
-    store.delete("a");
-    expect(store.get("a")).toBeUndefined();
   });
 
   it("PI表示モデルへ認証ヘッダーを含めず変換する", () => {

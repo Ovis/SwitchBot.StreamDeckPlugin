@@ -22,7 +22,7 @@ export class GetStatusAction extends AuthenticatedAction {
     private readonly catalogStore: DeviceCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
     globalSettings: GlobalSettingsStore,
-    executionDiagnostics?: ExecutionDiagnosticsStore,
+    executionDiagnostics: ExecutionDiagnosticsStore,
     locale?: string
   ) {
     super(executor, globalSettings, executionDiagnostics);

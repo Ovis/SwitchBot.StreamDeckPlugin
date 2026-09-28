@@ -17,9 +17,4 @@ export class ExecutionDiagnosticsStore {
   get(actionId: string): ExecutionResult | undefined {
     return this.latestResults.get(actionId);
   }
-
-  /** Action instance消失時に保持している診断情報を破棄する。 */
-  delete(actionId: string): void {
-    this.latestResults.delete(actionId);
-  }
 }

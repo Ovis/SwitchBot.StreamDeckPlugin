@@ -32,7 +32,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     private readonly sceneCatalogStore: SceneCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
     globalSettings: GlobalSettingsStore,
-    executionDiagnostics?: ExecutionDiagnosticsStore,
+    executionDiagnostics: ExecutionDiagnosticsStore,
     locale?: string
   ) {
     super(executor, globalSettings, executionDiagnostics);

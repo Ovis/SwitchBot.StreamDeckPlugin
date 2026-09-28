@@ -16,7 +16,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
   protected constructor(
     private readonly authExecutor: RequestExecutor,
     private readonly globalSettings: GlobalSettingsStore,
-    private readonly executionDiagnostics?: ExecutionDiagnosticsStore
+    private readonly executionDiagnostics: ExecutionDiagnosticsStore
   ) {
     super();
   }
@@ -27,7 +27,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
 
     if (message?.event === "getExecutionDiagnostics") {
       const actionId = ev.context;
-      const result = actionId ? this.executionDiagnostics?.get(actionId) : undefined;
+      const result = actionId ? this.executionDiagnostics.get(actionId) : undefined;
       const response: ExecutionDiagnosticsMessage = result
         ? { event: "executionDiagnostics", available: true, ...executionDiagnosticsView(result) }
         : { event: "executionDiagnostics", available: false };
@@ -63,7 +63,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
 
   /** Action instanceの最新実行結果をPI診断表示用に記録する。 */
   protected recordExecutionDiagnostics(actionId: string, result: ExecutionResult): void {
-    this.executionDiagnostics?.set(actionId, result);
+    this.executionDiagnostics.set(actionId, result);
     const message: ExecutionDiagnosticsMessage = {
       event: "executionDiagnostics",
       available: true,
