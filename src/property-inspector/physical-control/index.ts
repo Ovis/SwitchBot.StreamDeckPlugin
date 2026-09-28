@@ -3,6 +3,7 @@ import "../shared/authentication.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
+import { shouldResyncInitialSelection } from "./initial-selection-resync.js";
 
 function escapeHtml(value: string): string {
   const replacements: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -107,10 +108,12 @@ document.addEventListener("DOMContentLoaded", () => {
       // PIを開いた直後は、SDKのsettings復元より先に最初のcatalog要求がPluginへ届くことがある。
       // その場合、応答時点では保存済みDeviceを復元できてもOperationだけが空になるため、
       // 実在する保存済みDeviceを一度だけ明示して再要求し、手動Refreshを不要にする。
-      if (selectedDevice !== ""
-        && message.devices.some(item => item.value === selectedDevice)
-        && message.selectedDeviceId !== selectedDevice
-        && initialSelectionRetryDeviceId !== selectedDevice) {
+      if (shouldResyncInitialSelection(
+        selectedDevice,
+        message.devices.map(item => item.value),
+        message.selectedDeviceId,
+        initialSelectionRetryDeviceId
+      )) {
         initialSelectionRetryDeviceId = selectedDevice;
         sendCatalog(false, selectedDevice);
       }
