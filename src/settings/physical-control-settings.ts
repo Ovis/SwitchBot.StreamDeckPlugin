@@ -6,6 +6,7 @@ const PhysicalControlSettingsSchema = z.object({
   deviceId: z.string().catch("").default(""),
   deviceType: z.string().catch("").default(""),
   operationId: z.string().catch("").default(""),
+  skipUnlockConfirmation: z.boolean().catch(false).default(false),
   operationParameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).catch({}).default({})
 });
 

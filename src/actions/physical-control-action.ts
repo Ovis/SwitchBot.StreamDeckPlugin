@@ -15,6 +15,7 @@ import { propertyInspectorMessage } from "../settings/property-inspector-message
 import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage } from "../protocol/property-inspector-protocol.js";
 import { physicalDeviceDefinition, supportsPhysicalAction, type PhysicalControlActionId } from "../physical-control/physical-control-catalog.js";
 import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/physical-command-builder.js";
+import { PhysicalControlConfirmationGate } from "../physical-control/physical-control-confirmation-gate.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 
@@ -29,6 +30,19 @@ const SUCCESS_TITLE_MS = 3_000;
 const FAILURE_TITLE_MS = 5_000;
 
 /**
+ * 危険操作の確認を省略できるかを判定する。
+ *
+ * ユーザー設定で省略可能なのは通常のunlockだけに限定し、deadboltやnight latch、
+ * Garage Doorなど他の確認必須操作へ設定が波及しないよう明示的に判定する。
+ */
+export function shouldSkipPhysicalControlConfirmation(
+  skipUnlockConfirmation: boolean,
+  operationId: string
+): boolean {
+  return skipUnlockConfirmation && operationId === "unlock";
+}
+
+/**
  * SwitchBot物理デバイスの日常操作に共通する実行・Catalog・feedback処理を提供する。
  *
  * 製品カテゴリ固有のActionはこのクラスへPhysicalControlActionIdを渡すだけに留め、
@@ -38,6 +52,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   private readonly commandQueue: ActionInstanceFifo<QueuedPhysicalCommand>;
   private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly confirmationGate = new PhysicalControlConfirmationGate();
 
   constructor(
     private readonly physicalActionId: PhysicalControlActionId,
@@ -68,6 +83,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<PhysicalControlSettingsV1>): Promise<void> {
+    this.confirmationGate.clear(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
     await this.updateNormalTitle(ev.action, normalizePhysicalControlSettings(ev.payload.settings));
   }
@@ -177,6 +193,24 @@ export class PhysicalControlAction extends AuthenticatedAction {
     }
 
     const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
+    const skipConfirmation = shouldSkipPhysicalControlConfirmation(
+      settings.skipUnlockConfirmation === true,
+      settings.operationId
+    );
+    if (operation?.confirmationRequired && !skipConfirmation) {
+      const confirmationKey = `${settings.deviceId}:${settings.deviceType}:${settings.operationId}`;
+      if (this.confirmationGate.confirm(ev.action.id, confirmationKey) === "required") {
+        await this.showTemporaryTitle(
+          ev.action.id,
+          ev.action,
+          this.locale === "ja" ? "再押下で\n実行" : "Press again\nto confirm",
+          3_000
+        );
+        return;
+      }
+      this.clearTemporaryTitle(ev.action.id);
+    }
+
     const displayText = operation
       ? (this.locale === "ja" ? operation.label.ja : operation.label.en)
       : built.displayText ?? settings.operationId;
@@ -187,6 +221,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   }
 
   override onWillDisappear(ev: WillDisappearEvent<PhysicalControlSettingsV1>): void {
+    this.confirmationGate.clear(ev.action.id);
     this.commandQueue.dispose(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
   }

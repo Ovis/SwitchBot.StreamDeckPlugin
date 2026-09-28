@@ -23,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   attachExecutionDiagnostics(streamDeckClient);
   const device = queryRequired<SdpiValueElement>("#device");
   const operation = queryRequired<SdpiValueElement>("#operation");
+  const unlockConfirmationItem = queryRequired<HTMLElement>("#unlock-confirmation-item");
+  const skipUnlockConfirmation = queryRequired<SdpiValueElement>("#skip-unlock-confirmation");
   let devices = new Map<string, PhysicalControlDeviceItem>();
   let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
@@ -73,6 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateRequestPreview(): void {
     queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
+  }
+
+  function syncOperationOptions(): void {
+    // PI初期表示ではsettings復元とcatalog応答の順序が一定ではないため、
+    // Operation選択に従属するUIはvaluechangeだけに依存せず、catalog同期のたびに確定状態から再評価する。
+    unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
   }
 
   function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
@@ -156,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
         device.value = message.devices.some(item => item.value === selectedDevice) ? selectedDevice : "";
         operation.value = message.operations.some(item => item.value === selectedOperation) ? selectedOperation : "";
+        syncOperationOptions();
       } finally {
         suppress = false;
       }
@@ -213,6 +222,10 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-heading").textContent = translate("Request Body", "リクエスト本文");
     queryRequired<HTMLElement>("#advanced-note").textContent =
       translate("Use API Request for advanced operations and configuration changes.", "高度な操作や設定変更には「APIリクエスト」を使用してください");
+    unlockConfirmationItem.setAttribute(
+      "label",
+      translate("Skip double-press confirmation when unlocking", "解錠時の二度押し確認をしない")
+    );
     queryRequired<HTMLElement>("#execution-diagnostics-heading").textContent =
       translate("Latest execution result", "最新の実行結果");
   }

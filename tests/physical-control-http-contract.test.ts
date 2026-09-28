@@ -155,6 +155,35 @@ describe("Physical Control HTTP contract", () => {
     expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
   });
 
+  it.each([
+    ["Smart Lock Pro", "lock", "lock"],
+    ["Smart Lock Pro", "unlock", "unlock"],
+    ["Smart Lock Pro", "deadbolt", "deadbolt"],
+    ["Smart Lock Pro Wifi", "night-latch-unlock", "nightLatchUnlock"],
+    ["Garage Door Opener", "open", "turnOn"],
+    ["Video Doorbell", "motion-detection-off", "disableMotionDetection"]
+  ])("%sの%sを正しいSecurity HTTP requestとして送信する", async (deviceType, operationId, command) => {
+    const fetchMock = vi.fn<FetchLike>(async () => new Response(
+      JSON.stringify({ statusCode: 100, message: "success", body: {} }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    const executor = new RequestExecutor(new SwitchBotClient(undefined, fetchMock), {
+      getCredentials: async () => CREDENTIALS
+    });
+    const built = buildPhysicalCommand({
+      action: "security", deviceId: "LOCK-PRO-001", deviceType, operationId
+    });
+    expect(built.request).toBeDefined();
+
+    const result = await executor.execute(built.request!);
+
+    expect(result.success).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/LOCK-PRO-001/commands");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({ command, parameter: "default", commandType: "command" }));
+  });
+
   it("fail closedしたPhysical ControlはHTTP境界へ到達しない", async () => {
     const fetchMock = vi.fn<FetchLike>();
     const client = new SwitchBotClient(undefined, fetchMock);
