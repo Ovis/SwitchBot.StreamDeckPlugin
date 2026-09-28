@@ -151,7 +151,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const synchronize = (): void => {
       const parameters: Record<string, string> = {};
       inputs.forEach((input, index) => {
-        const raw = valueOf(fields[index]).trim();
+        const field = fields[index];
+        if (!field) return;
+        const raw = valueOf(field).trim();
         if (raw !== "") parameters[input.key] = raw;
         queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = isInvalid(input, raw)
           ? validationMessage
