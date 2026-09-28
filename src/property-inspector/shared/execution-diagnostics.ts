@@ -7,7 +7,7 @@ import {
 interface DiagnosticsClient {
   send(event: string, payload?: unknown): Promise<unknown> | void;
   sendToPropertyInspector: {
-    subscribe(handler: (event: { payload: unknown }) => void): void;
+    subscribe(handler: (event: { payload?: unknown }) => void | Promise<void>): void;
   };
 }
 
