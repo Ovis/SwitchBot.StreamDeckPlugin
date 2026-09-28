@@ -48,6 +48,7 @@ export interface ScenesRequest extends ProtocolJsonObject {
 export interface PhysicalControlCatalogRequest extends ProtocolJsonObject {
   event: "getPhysicalControlCatalog";
   isRefresh?: boolean;
+  deviceId?: string;
 }
 
 export interface InfraredRemotesRequest extends ProtocolJsonObject {
@@ -200,10 +201,17 @@ export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyI
   }
   if (value.event === "getApiEndpoints") return { event: "getApiEndpoints" };
   if (value.event === "getExecutionDiagnostics") return { event: "getExecutionDiagnostics" };
-  if (value.event === "getDevices" || value.event === "getScenes" || value.event === "getInfraredRemotes" || value.event === "getPhysicalControlCatalog") {
+  if (value.event === "getDevices" || value.event === "getScenes" || value.event === "getInfraredRemotes") {
     return {
       event: value.event,
       ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {})
+    };
+  }
+  if (value.event === "getPhysicalControlCatalog") {
+    return {
+      event: "getPhysicalControlCatalog",
+      ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {}),
+      ...(typeof value.deviceId === "string" ? { deviceId: value.deviceId } : {})
     };
   }
   return undefined;
