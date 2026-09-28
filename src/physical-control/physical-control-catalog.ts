@@ -152,8 +152,11 @@ const securityOperation = (
 
 const SMART_LOCK: readonly PhysicalOperationDefinition[] = [
   securityOperation("lock", "Lock", "施錠", "lock"),
-  securityOperation("unlock", "Unlock", "解錠", "unlock", true),
-  securityOperation("deadbolt", "Engage Deadbolt", "デッドボルトを作動", "deadbolt")
+  securityOperation("unlock", "Unlock", "解錠", "unlock", true)
+];
+const SMART_LOCK_WITH_DEADBOLT: readonly PhysicalOperationDefinition[] = [
+  ...SMART_LOCK,
+  securityOperation("deadbolt", "Disengage Deadbolt / Latch", "デッドボルト / ラッチを解除", "deadbolt", true)
 ];
 const SMART_LOCK_LITE: readonly PhysicalOperationDefinition[] = [
   securityOperation("lock", "Lock", "施錠", "lock"),
@@ -214,12 +217,12 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Battery Circulator Fan 2 Pro", action: "climate", operations: CIRCULATOR_FAN_2_PRO },
   { deviceType: "Smart Lock", action: "security", operations: SMART_LOCK },
   { deviceType: "Lock", action: "security", operations: SMART_LOCK },
-  { deviceType: "Smart Lock Pro", action: "security", operations: SMART_LOCK },
-  { deviceType: "Lock Pro", action: "security", operations: SMART_LOCK },
+  { deviceType: "Smart Lock Pro", action: "security", operations: SMART_LOCK_WITH_DEADBOLT },
+  { deviceType: "Lock Pro", action: "security", operations: SMART_LOCK_WITH_DEADBOLT },
   { deviceType: "Smart Lock Lite", action: "security", operations: SMART_LOCK_LITE },
   { deviceType: "Lock Lite", action: "security", operations: SMART_LOCK_LITE },
-  { deviceType: "Smart Lock Ultra", action: "security", operations: SMART_LOCK },
-  { deviceType: "Lock Ultra", action: "security", operations: SMART_LOCK },
+  { deviceType: "Smart Lock Ultra", action: "security", operations: SMART_LOCK_WITH_DEADBOLT },
+  { deviceType: "Lock Ultra", action: "security", operations: SMART_LOCK_WITH_DEADBOLT },
   { deviceType: "Smart Lock Pro Wifi", action: "security", operations: SMART_LOCK_PRO_WIFI },
   { deviceType: "Lock Pro Matter Enabled", action: "security", operations: SMART_LOCK_PRO_WIFI },
   { deviceType: "Lock Vision", action: "security", operations: LOCK_VISION },
