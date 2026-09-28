@@ -175,7 +175,11 @@ describe("Climate physical control", () => {
     ["Air Purifier PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier Table VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
     ["Air Purifier Table PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
-    ["Smart Radiator Thermostat", ["turn-on", "turn-off", "schedule", "manual", "off-mode", "eco", "comfort", "quick-heat", "manual-temperature"]]
+    ["Smart Radiator Thermostat", ["turn-on", "turn-off", "schedule", "manual", "off-mode", "eco", "comfort", "quick-heat", "manual-temperature"]],
+    ["Battery Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
+    ["Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
+    ["Standing Circulator Fan", ["turn-on", "turn-off", "toggle", "night-light-off", "night-light-bright", "night-light-dim", "wind-direct", "wind-natural", "wind-sleep", "wind-baby", "wind-speed", "close-delay"]],
+    ["Battery Circulator Fan 2 Pro", ["turn-on", "turn-off", "night-light-off", "night-light-bright", "night-light-soft", "wind-direct", "wind-natural", "wind-sleep", "wind-hurricane", "wind-speed"]]
   ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
     const definition = physicalDeviceDefinition(deviceType);
     expect(definition?.action).toBe("climate");
@@ -198,7 +202,11 @@ describe("Climate physical control", () => {
     ["Air Purifier VOC", "sleep", undefined, "setMode", '{"mode":3}'],
     ["Air Purifier VOC", "child-lock-off", undefined, "setChildLock", "0"],
     ["Smart Radiator Thermostat", "eco", undefined, "setMode", "3"],
-    ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"]
+    ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"],
+    ["Battery Circulator Fan", "wind-baby", undefined, "setWindMode", "baby"],
+    ["Battery Circulator Fan", "close-delay", 36000, "closeDelay", "36000"],
+    ["Battery Circulator Fan 2 Pro", "night-light-bright", undefined, "setNightLightMode", "0"],
+    ["Battery Circulator Fan 2 Pro", "wind-hurricane", undefined, "setWindMode", "hurricane"]
   ])("%sの%sを公式wire parameterへ変換する", (deviceType, operationId, value, command, parameter) => {
     const built = buildPhysicalCommand({
       action: "climate", deviceId: "CLIMATE-001", deviceType, operationId,
@@ -219,6 +227,14 @@ describe("Climate physical control", () => {
     expect(buildPhysicalCommand({
       action: "climate", deviceId: "C3", deviceType: "Smart Radiator Thermostat", operationId: "manual-temperature",
       operationParameters: { value: 3 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "climate", deviceId: "C4", deviceType: "Battery Circulator Fan", operationId: "close-delay",
+      operationParameters: { value: 36001 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "climate", deviceId: "C5", deviceType: "Battery Circulator Fan 2 Pro", operationId: "wind-speed",
+      operationParameters: { value: 0 }
     }).error).toBe("invalid-parameter");
   });
 });
