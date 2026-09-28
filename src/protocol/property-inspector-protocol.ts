@@ -157,10 +157,10 @@ export interface PhysicalControlDeviceItem extends PropertyInspectorSelectItem {
   deviceType: string;
 }
 
-export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
+export interface PhysicalControlOperationItem extends PropertyInspectorSelectItem {\n  requestBody: string;\n}\n\nexport interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
   event: "physicalControlCatalog";
   devices: PhysicalControlDeviceItem[];
-  operations: PropertyInspectorSelectItem[];
+  operations: PhysicalControlOperationItem[];
   refreshFailed?: boolean;
 }
 
@@ -267,7 +267,7 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
   if (value.event === "physicalControlCatalog") {
     if (!Array.isArray(value.devices) || !Array.isArray(value.operations)) return undefined;
     const devices = value.devices.map(protocolPhysicalControlDevice).filter(protocolDefined);
-    const operations = value.operations.map(protocolSelectItem).filter(protocolDefined);
+    const operations = value.operations.map(protocolPhysicalControlOperation).filter(protocolDefined);
     return { event: "physicalControlCatalog", devices, operations, ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}) };
   }
 
@@ -300,6 +300,12 @@ function protocolEndpoint(value: unknown): ApiEndpointPropertyInspectorDefinitio
     ...(value.parameter ? { parameter: value.parameter } : {}),
     ...(typeof value.defaultBody === "string" ? { defaultBody: value.defaultBody } : {})
   };
+}
+
+function protocolPhysicalControlOperation(value: unknown): PhysicalControlOperationItem | undefined {
+  const item = protocolSelectItem(value);
+  if (!item || !protocolRecord(value) || typeof value.requestBody !== "string") return undefined;
+  return { ...item, requestBody: value.requestBody };
 }
 
 function protocolPhysicalControlDevice(value: unknown): PhysicalControlDeviceItem | undefined {
