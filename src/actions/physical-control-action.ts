@@ -180,13 +180,14 @@ export class PhysicalControlAction extends AuthenticatedAction {
     }
 
     const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
-    if (operation?.confirmationRequired) {
+    const skipConfirmation = settings.skipUnlockConfirmation === true && settings.operationId === "unlock";
+    if (operation?.confirmationRequired && !skipConfirmation) {
       const confirmationKey = `${settings.deviceId}:${settings.deviceType}:${settings.operationId}`;
       if (this.confirmationGate.confirm(ev.action.id, confirmationKey) === "required") {
         await this.showTemporaryTitle(
           ev.action.id,
           ev.action,
-          this.locale === "ja" ? "再押下で実行" : "Press again to confirm",
+          this.locale === "ja" ? "再押下で\n実行" : "Press again\nto confirm",
           3_000
         );
         return;
