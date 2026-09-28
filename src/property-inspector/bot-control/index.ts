@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
     void patchSettings(settings => { settings.operationId = valueOf(operation); });
+    updateRequestPreview();
   });
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
