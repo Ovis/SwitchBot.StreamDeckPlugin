@@ -301,3 +301,59 @@ describe("Security physical control", () => {
     expect(supportsPhysicalAction("Keypad Touch", "security")).toBe(false);
   });
 });
+
+
+describe("Curtains & Blinds physical control", () => {
+  it.each([
+    ["Curtain", ["open", "close", "pause", "set-position"]],
+    ["Curtain 3", ["open", "close", "pause", "set-position"]],
+    ["Blind Tilt", ["fully-open", "close-up", "close-down", "set-position-up", "set-position-down"]],
+    ["Roller Shade", ["set-position"]]
+  ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
+    const definition = physicalDeviceDefinition(deviceType);
+    expect(definition?.action).toBe("curtains-blinds");
+    expect(definition?.operations.map(operation => operation.id)).toEqual(operationIds);
+    expect(supportsPhysicalAction(deviceType, "curtains-blinds")).toBe(true);
+  });
+
+  it.each([
+    ["Curtain", "open", undefined, "turnOn", "default"],
+    ["Curtain 3", "close", undefined, "turnOff", "default"],
+    ["Curtain 3", "pause", undefined, "pause", "default"],
+    ["Curtain", "set-position", 80, "setPosition", "0,ff,80"],
+    ["Blind Tilt", "fully-open", undefined, "fullyOpen", "default"],
+    ["Blind Tilt", "close-up", undefined, "closeUp", "default"],
+    ["Blind Tilt", "close-down", undefined, "closeDown", "default"],
+    ["Blind Tilt", "set-position-up", 48, "setPosition", "up;48"],
+    ["Blind Tilt", "set-position-down", 36, "setPosition", "down;36"],
+    ["Roller Shade", "set-position", 75, "setPosition", "75"]
+  ])("%sの%sを公式wire parameterへ変換する", (deviceType, operationId, value, command, parameter) => {
+    const built = buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "COVER-001", deviceType, operationId,
+      ...(value === undefined ? {} : { operationParameters: { value } })
+    });
+    expect(built.command).toMatchObject({ command, parameter, commandType: "command" });
+  });
+
+  it("Blind Tiltのpositionは0-100の偶数だけを許可する", () => {
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "BLIND-001", deviceType: "Blind Tilt",
+      operationId: "set-position-up", operationParameters: { value: 47 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "BLIND-001", deviceType: "Blind Tilt",
+      operationId: "set-position-down", operationParameters: { value: 102 }
+    }).error).toBe("invalid-parameter");
+  });
+
+  it("CurtainとRoller Shadeのpositionは0-100の範囲外をfail closedする", () => {
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "CURTAIN-001", deviceType: "Curtain",
+      operationId: "set-position", operationParameters: { value: -1 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "curtains-blinds", deviceId: "SHADE-001", deviceType: "Roller Shade",
+      operationId: "set-position", operationParameters: { value: 101 }
+    }).error).toBe("invalid-parameter");
+  });
+});
