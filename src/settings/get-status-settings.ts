@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nestedRecord, normalizeVersionedSettings, recordOf } from "./settings-lifecycle.js";
 
 const OutputSchema = z.object({
   showStatusOnKey: z.boolean().catch(true).default(true),
@@ -16,22 +17,17 @@ const GetStatusSettingsSchema = z.object({
 export type GetStatusSettingsV1 = z.infer<typeof GetStatusSettingsSchema>;
 
 export function normalizeGetStatusSettings(value: unknown): GetStatusSettingsV1 {
-  if (isFutureVersion(value)) return defaults();
-  const source = isRecord(value) ? value : {};
-  return GetStatusSettingsSchema.parse({
+  const source = recordOf(value);
+  return normalizeVersionedSettings({
     ...source,
-    output: OutputSchema.parse(isRecord(source.output) ? source.output : {})
+    output: OutputSchema.parse(nestedRecord(source, "output"))
+  }, {
+    currentVersion: 1,
+    schema: GetStatusSettingsSchema,
+    defaults
   });
 }
 
 function defaults(): GetStatusSettingsV1 {
   return GetStatusSettingsSchema.parse({ output: OutputSchema.parse({}) });
-}
-
-function isFutureVersion(value: unknown): boolean {
-  return isRecord(value) && value.version !== undefined && value.version !== 1;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
