@@ -133,12 +133,17 @@ export class PhysicalControlAction extends AuthenticatedAction {
       operations: operations.map(operation => ({
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
         value: operation.id,
+        input: operation.input ? {
+          ...operation.input,
+          label: this.locale === "ja" ? operation.input.label.ja : operation.input.label.en
+        } : undefined,
         requestBody: (() => {
           const built = buildPhysicalCommand({
             action: this.physicalActionId,
             deviceId: selectedDeviceId,
             deviceType: effectiveDeviceType,
-            operationId: operation.id
+            operationId: operation.id,
+            operationParameters: request.operationId === operation.id ? request.operationParameters : {}
           });
           return built.command ? physicalCommandBody(built.command, true) : "";
         })()
