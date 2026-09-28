@@ -11,8 +11,8 @@ export interface PhysicalOperationDefinition {
   parameter: string;
   commandType: "command";
   input?: PhysicalOperationParameter;
-  /** 単一入力値を公式APIの複合parameterへ埋め込むための宣言的template。 */
-  parameterTemplate?: string;
+  /** 検証済み数値を公式APIのJSON parameterへ埋め込む場合の宣言的な形式。 */
+  parameterFormat?: { kind: "json-number-field"; prefix: string; suffix: string };
 }
 
 export interface PhysicalDeviceDefinition {
@@ -69,11 +69,11 @@ const fixed = (id: string, en: string, ja: string, command: string, parameter: s
   ({ id, label: { en, ja }, command, parameter, commandType: "command" });
 const numeric = (
   id: string, en: string, ja: string, command: string, min: number, max: number, step: number,
-  inputEn: string, inputJa: string, unit?: string, parameterTemplate?: string
+  inputEn: string, inputJa: string, unit?: string, parameterFormat?: PhysicalOperationDefinition["parameterFormat"]
 ): PhysicalOperationDefinition => ({
   id, label: { en, ja }, command, parameter: "", commandType: "command",
   input: { kind: "number", key: "value", label: { en: inputEn, ja: inputJa }, min, max, step, ...(unit ? { unit } : {}) },
-  ...(parameterTemplate ? { parameterTemplate } : {})
+  ...(parameterFormat ? { parameterFormat } : {})
 });
 
 const HUMIDIFIER: readonly PhysicalOperationDefinition[] = [
@@ -90,7 +90,7 @@ const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
   fixed("level-3", "Level 3", "レベル3", "setMode", '{"mode":2,"targetHumidify":0}'),
   fixed("level-2", "Level 2", "レベル2", "setMode", '{"mode":3,"targetHumidify":0}'),
   fixed("level-1", "Level 1", "レベル1", "setMode", '{"mode":4,"targetHumidify":0}'),
-  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", '{"mode":5,"targetHumidify":{{value}}}'),
+  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { kind: "json-number-field", prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
   fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":6,"targetHumidify":0}'),
   fixed("auto", "Auto", "自動", "setMode", '{"mode":7,"targetHumidify":0}'),
   fixed("drying", "Drying", "乾燥", "setMode", '{"mode":8,"targetHumidify":0}'),
@@ -99,7 +99,7 @@ const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
 ];
 const AIR_PURIFIER: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, '{"mode":1,"fanGear":{{value}}}'),
+  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { kind: "json-number-field", prefix: '{"mode":1,"fanGear":', suffix: "}" }),
   fixed("auto", "Auto", "自動", "setMode", '{"mode":2}'),
   fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":3}'),
   fixed("pet", "Pet", "ペット", "setMode", '{"mode":4}'),
