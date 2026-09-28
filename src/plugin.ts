@@ -2,6 +2,7 @@ import streamDeck from "@elgato/streamdeck";
 import { ApiRequestAction } from "./actions/api-request-action.js";
 import { GetStatusAction } from "./actions/get-status-action.js";
 import { InfraredRemoteAction } from "./actions/infrared-remote-action.js";
+import { BotControlAction } from "./actions/bot-control-action.js";
 import { SwitchBotClient } from "./api/switchbot-client.js";
 import { RequestExecutor } from "./execution/request-executor.js";
 import { ClipboardOutput } from "./output/clipboard-output.js";
@@ -22,6 +23,9 @@ const sceneCatalogStore = new SceneCatalogStore(globalSettings);
 const catalogRefresh = new CatalogRefreshService(executor, deviceCatalogStore, sceneCatalogStore);
 const executionDiagnostics = new ExecutionDiagnosticsStore();
 
+streamDeck.actions.registerAction(new BotControlAction(
+  executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
+));
 streamDeck.actions.registerAction(new ApiRequestAction(
   executor, output, deviceCatalogStore, sceneCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
 ));

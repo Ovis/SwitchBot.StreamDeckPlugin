@@ -8,6 +8,7 @@ const files = [
   ["api-request/index.html", "api-request.html"],
   ["get-status/index.html", "get-status.html"],
   ["infrared-remote/index.html", "infrared-remote.html"],
+  ["bot-control/index.html", "bot-control.html"],
   ["shared/authentication.css", "authentication.css"],
   ["shared/vendor/sdpi-components.js", "sdpi-components.js"]
 ];
