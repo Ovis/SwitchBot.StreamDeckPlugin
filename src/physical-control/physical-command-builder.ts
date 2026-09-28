@@ -1,5 +1,5 @@
 import type { ExecutionRequest } from "../execution/execution-request.js";
-import { physicalDeviceDefinition, type PhysicalControlActionId } from "./physical-control-catalog.js";
+import { physicalDeviceDefinition, type PhysicalControlActionId, type PhysicalJsonParameterValue, type PhysicalOperationDefinition, type PhysicalOperationParameter } from "./physical-control-catalog.js";
 
 export interface PhysicalCommandSettings {
   action: PhysicalControlActionId;
@@ -51,13 +51,13 @@ export function physicalCommandBody(command: PhysicalCommand, pretty = false): s
  *
  * deviceTypeやoperationが未知の場合は推測せずfail closedし、別製品へ誤送信しない。
  */
-function operationInputs(operation: ReturnType<typeof physicalDeviceDefinition>["operations"][number]): readonly import("./physical-control-catalog.js").PhysicalOperationParameter[] {
+function operationInputs(operation: PhysicalOperationDefinition): readonly PhysicalOperationParameter[] {
   if (operation.inputs) return operation.inputs;
   return operation.input ? [operation.input] : [];
 }
 
 function validatedParameterValues(
-  inputs: readonly import("./physical-control-catalog.js").PhysicalOperationParameter[],
+  inputs: readonly PhysicalOperationParameter[],
   parameters: PhysicalCommandSettings["operationParameters"]
 ): Map<string, string | number> | undefined {
   const values = new Map<string, string | number>();
@@ -89,7 +89,7 @@ function validatedParameterValues(
 }
 
 function resolveJsonParameter(
-  value: import("./physical-control-catalog.js").PhysicalJsonParameterValue,
+  value: PhysicalJsonParameterValue,
   parameters: ReadonlyMap<string, string | number>
 ): unknown {
   if (value === null || typeof value !== "object") return value;
