@@ -7,7 +7,8 @@ describe("Physical Control settings", () => {
       version: 1,
       deviceId: "",
       deviceType: "",
-      operationId: ""
+      operationId: "",
+      operationParameters: {}
     });
   });
 
@@ -16,12 +17,14 @@ describe("Physical Control settings", () => {
       version: 1,
       deviceId: "bot-1",
       deviceType: "Bot",
-      operationId: "press"
+      operationId: "press",
+      operationParameters: {}
     })).toEqual({
       version: 1,
       deviceId: "bot-1",
       deviceType: "Bot",
-      operationId: "press"
+      operationId: "press",
+      operationParameters: {}
     });
   });
 
@@ -30,12 +33,14 @@ describe("Physical Control settings", () => {
       version: 2,
       deviceId: "bot-1",
       deviceType: "Bot",
-      operationId: "press"
+      operationId: "press",
+      operationParameters: {}
     })).toEqual({
       version: 1,
       deviceId: "",
       deviceType: "",
-      operationId: ""
+      operationId: "",
+      operationParameters: {}
     });
   });
 });
