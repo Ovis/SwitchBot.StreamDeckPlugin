@@ -5,7 +5,7 @@ import {
 } from "../../protocol/property-inspector-protocol.js";
 
 interface DiagnosticsClient {
-  sendToPlugin(payload: unknown): void;
+  send(event: string, payload?: unknown): Promise<unknown> | void;
   sendToPropertyInspector: {
     subscribe(handler: (event: { payload: unknown }) => void): void;
   };
@@ -47,5 +47,5 @@ export function attachExecutionDiagnostics(streamDeckClient: DiagnosticsClient):
     if (message?.event === "executionDiagnostics") render(message);
   });
 
-  streamDeckClient.sendToPlugin({ event: "getExecutionDiagnostics" });
+  void streamDeckClient.send("sendToPlugin", { event: "getExecutionDiagnostics" });
 }
