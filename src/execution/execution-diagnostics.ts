@@ -41,6 +41,10 @@ export function executionDiagnosticsView(result: ExecutionResult): ExecutionDiag
 
 /** JSONとして解釈済みのBodyは読みやすく整形し、非JSONはrawBodyを保持する。 */
 export function formatResponseBody(body: unknown, rawBody: string): string {
+  // SwitchBotClientはJSONとして解釈できない本文をbodyとrawBodyの両方へ同じ文字列で保持する。
+  // この場合はJSON文字列化すると引用符が追加されるため、受信した本文をそのまま表示する。
+  if (typeof body === "string" && body === rawBody) return rawBody;
+
   if (body !== undefined) {
     try {
       return JSON.stringify(body, null, 2);

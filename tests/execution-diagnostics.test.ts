@@ -56,6 +56,10 @@ describe("execution diagnostics", () => {
   });
 
   it("非JSONレスポンスはrawBodyを保持する", () => {
-    expect(formatResponseBody(undefined, "plain text")).toBe("plain text");
+    expect(formatResponseBody("plain text", "plain text")).toBe("plain text");
+  });
+
+  it("JSON文字列レスポンスはJSONとして整形する", () => {
+    expect(formatResponseBody("value", "\"value\"")).toBe("\"value\"");
   });
 });
