@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let devices = new Map<string, PhysicalControlDeviceItem>();
   let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
+  let requestedDeviceId = "";
+  let initialSelectionRetryDeviceId = "";
 
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
     const settings = settingsRecord(await streamDeckClient.getSettings());
@@ -32,13 +34,14 @@ document.addEventListener("DOMContentLoaded", () => {
     await streamDeckClient.setSettings(settings);
   }
 
-  function sendCatalog(isRefresh = false): void {
+  function sendCatalog(isRefresh = false, deviceId = valueOf(device)): void {
     // Plugin側が保存settingsの反映タイミングだけに依存すると、PI上の選択とOperation一覧がずれる可能性がある。
     // 現在選択中のdeviceIdも送り、catalogの実データを基準にOperationを解決させる。
+    requestedDeviceId = deviceId;
     streamDeckClient.send("sendToPlugin", {
       event: "getPhysicalControlCatalog",
       isRefresh,
-      deviceId: valueOf(device)
+      deviceId
     });
   }
 
@@ -102,6 +105,18 @@ document.addEventListener("DOMContentLoaded", () => {
         suppress = false;
       }
       updateRequestPreview();
+
+      // PIを開いた直後は、SDKのsettings復元より先に最初のcatalog要求がPluginへ届くことがある。
+      // その場合、応答時点では保存済みDeviceを復元できてもOperationだけが空になるため、
+      // 実在する保存済みDeviceを一度だけ明示して再要求し、手動Refreshを不要にする。
+      if (selectedDevice !== ""
+        && message.devices.some(item => item.value === selectedDevice)
+        && requestedDeviceId !== selectedDevice
+        && initialSelectionRetryDeviceId !== selectedDevice) {
+        initialSelectionRetryDeviceId = selectedDevice;
+        sendCatalog(false, selectedDevice);
+      }
+
       const statusMessages = [
         message.configurationInvalid
           ? window.SwitchBotI18n?.t(
