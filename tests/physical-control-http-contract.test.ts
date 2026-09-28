@@ -185,7 +185,7 @@ describe("Physical Control HTTP contract", () => {
   });
 
   it.each([
-    ["Curtain 3", "set-position", 80, "setPosition", "0,ff,80"],
+    ["Curtain3", "set-position", 80, "setPosition", "0,ff,80"],
     ["Blind Tilt", "set-position-up", 48, "setPosition", "up;48"],
     ["Roller Shade", "set-position", 75, "setPosition", "75"]
   ])("%sの%sを正しいCurtains & Blinds HTTP requestとして送信する", async (deviceType, operationId, value, command, parameter) => {
