@@ -40,3 +40,26 @@
   line-height: 16px;
   text-align: center;
 }
+
+
+.authentication-section {
+  margin: 16px 8px 8px;
+  padding-top: 8px;
+  border-top: 1px solid #555;
+}
+
+.authentication-section > summary {
+  box-sizing: border-box;
+  padding: 6px 8px;
+  color: #d8d8d8;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.authentication-content {
+  padding-top: 4px;
+}

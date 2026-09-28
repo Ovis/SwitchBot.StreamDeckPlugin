@@ -18,8 +18,7 @@
   </style>
 </head>
 <body>
-  <div id="switchbot-authentication"></div>
-  <sdpi-item label="__MSG_device__">
+<sdpi-item label="__MSG_device__">
     <sdpi-select id="device" loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__"></sdpi-select>
   </sdpi-item>
   <sdpi-item>
@@ -28,6 +27,8 @@
   <sdpi-item label="__MSG_operation__">
     <sdpi-select id="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
   </sdpi-item>
+  <div id="operation-parameters"></div>
+  <div id="parameter-status" class="status invalid" aria-live="polite"></div>
   <div id="catalog-status" class="status invalid" aria-live="polite"></div>
   <div id="request-heading" class="section-heading"></div>
   <pre id="request-preview" class="preview"></pre>
@@ -37,5 +38,6 @@
     <pre id="execution-diagnostics-summary" class="preview"></pre>
     <pre id="execution-diagnostics-response" class="preview"></pre>
   </div>
+  <div id="switchbot-authentication"></div>
 </body>
 </html>

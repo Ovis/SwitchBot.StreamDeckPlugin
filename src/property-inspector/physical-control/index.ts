@@ -27,6 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
   let initialSelectionRetryDeviceId = "";
+  let parameterPreviewResyncKey = "";
+  let renderedParameterOperationId = "";
 
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
     const settings = settingsRecord(await streamDeckClient.getSettings());
@@ -34,13 +36,20 @@ document.addEventListener("DOMContentLoaded", () => {
     await streamDeckClient.setSettings(settings);
   }
 
-  function sendCatalog(isRefresh = false, deviceId = valueOf(device)): void {
+  function sendCatalog(
+    isRefresh = false,
+    deviceId = valueOf(device),
+    operationId = valueOf(operation),
+    operationParameters: Record<string, string | number | boolean | null> = {}
+  ): void {
     // Plugin側が保存settingsの反映タイミングだけに依存すると、PI上の選択とOperation一覧がずれる可能性がある。
     // 現在選択中のdeviceIdも送り、catalogの実データを基準にOperationを解決させる。
     streamDeckClient.send("sendToPlugin", {
       event: "getPhysicalControlCatalog",
       isRefresh,
-      deviceId
+      deviceId,
+      operationId,
+      operationParameters
     });
   }
 
@@ -66,6 +75,50 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
   }
 
+  function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
+    if (min === undefined || max === undefined || step === undefined || raw.trim() === "") return false;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= min && value <= max
+      && Math.abs((value - min) / step - Math.round((value - min) / step)) <= 1e-9;
+  }
+
+  function isValidRgb(raw: string): boolean {
+    const parts = raw.split(":");
+    return parts.length === 3 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255);
+  }
+
+  function renderOperationParameters(saved: Record<string, unknown> = {}): void {
+    const host = queryRequired<HTMLElement>("#operation-parameters");
+    const selected = operations.get(valueOf(operation));
+    const input = selected?.input;
+    host.innerHTML = "";
+    renderedParameterOperationId = selected?.value ?? "";
+    queryRequired<HTMLElement>("#parameter-status").textContent = "";
+    if (!input) return;
+
+    const initial = saved[input.key];
+    const placeholder = input.kind === "rgb" ? "255:0:0" : `${input.min}–${input.max}${input.unit ?? ""}`;
+    host.innerHTML = `<sdpi-item label="${escapeHtml(input.label)}"><sdpi-textfield id="operation-parameter" placeholder="${escapeHtml(placeholder)}"></sdpi-textfield></sdpi-item>`;
+    const field = queryRequired<SdpiValueElement>("#operation-parameter");
+    field.value = typeof initial === "string" || typeof initial === "number" ? String(initial) : "";
+    field.addEventListener("valuechange", () => {
+      const raw = valueOf(field).trim();
+      const parameters = raw === "" ? {} : { [input.key]: raw };
+      void patchSettings(settings => { settings.operationParameters = parameters; });
+      const invalid = raw !== "" && (
+        input.kind === "rgb"
+          ? !isValidRgb(raw)
+          : !isValidNumberParameter(raw, input.min, input.max, input.step)
+      );
+      queryRequired<HTMLElement>("#parameter-status").textContent = invalid
+        ? (window.SwitchBotI18n?.t("Enter a value within the displayed range.", "表示された範囲内の値を入力してください") ?? "")
+        : "";
+      // 入力欄自体は再生成せずpreviewだけを更新する。catalog応答で同じparameter UIを
+      // 作り直すと、入力中にフォーカスやキャレット位置が失われるためである。
+      sendCatalog(false, valueOf(device), valueOf(operation), parameters);
+    });
+  }
+
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
     void patchSettings(settings => {
@@ -73,7 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.operationId = valueOf(operation);
       settings.operationParameters = {};
     });
-    updateRequestPreview();
+    renderOperationParameters();
+    sendCatalog(false, valueOf(device), valueOf(operation), {});
   });
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
@@ -85,6 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
+      const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
+        ? settings.operationParameters as Record<string, unknown> : {};
       suppress = true;
       try {
         const devicePlaceholder = window.SwitchBotI18n?.t("Select a device", "デバイスを選択") ?? "Select a device";
@@ -103,7 +159,25 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppress = false;
       }
+      const parameterField = document.querySelector<SdpiValueElement>("#operation-parameter");
+      const currentOperationId = valueOf(operation);
+      const currentInput = operations.get(currentOperationId)?.input;
+      // parameter変更に対するpreview応答では既存入力欄を維持する。
+      // Operationが変わった場合は入力種別が同じでも制約が異なり得るため必ず作り直す。
+      if (renderedParameterOperationId !== currentOperationId || (currentInput && !parameterField)) {
+        renderOperationParameters(savedParameters);
+      }
       updateRequestPreview();
+
+      // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
+      // parameter付きOperationを復元した場合だけ一度再要求し、実送信と同じbuilderでpreviewを再生成する。
+      const selectedOperationItem = operations.get(selectedOperation);
+      const parameterPreviewKey = selectedOperationItem?.input && Object.keys(savedParameters).length > 0
+        ? `${selectedDevice}:${selectedOperation}:${JSON.stringify(savedParameters)}` : "";
+      if (parameterPreviewKey && parameterPreviewKey !== parameterPreviewResyncKey) {
+        parameterPreviewResyncKey = parameterPreviewKey;
+        sendCatalog(false, selectedDevice, selectedOperation, savedParameters as Record<string, string | number | boolean | null>);
+      }
 
       // PIを開いた直後は、SDKのsettings復元より先に最初のcatalog要求がPluginへ届くことがある。
       // その場合、応答時点では保存済みDeviceを復元できてもOperationだけが空になるため、

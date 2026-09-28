@@ -34,17 +34,21 @@ function testConnectionResult(value: unknown): TestConnectionResultMessage | und
 function render(): void {
   const host = queryRequired<HTMLElement>("#switchbot-authentication");
   host.innerHTML = `
-    <div id="switchbot-auth-heading" class="section-heading">${t("Authentication", "認証")}</div>
-    <sdpi-item id="switchbot-token-item" label="__MSG_token__">
-      <sdpi-password id="switchbot-token"></sdpi-password>
-    </sdpi-item>
-    <sdpi-item id="switchbot-secret-item" label="__MSG_secret__">
-      <sdpi-password id="switchbot-secret"></sdpi-password>
-    </sdpi-item>
-    <sdpi-item>
-      <sdpi-button id="switchbot-test-connection">${t("Test Connection", "接続テスト")}</sdpi-button>
-    </sdpi-item>
-    <div id="switchbot-auth-status" class="auth-status" aria-live="polite"></div>`;
+    <details id="switchbot-auth-details" class="authentication-section">
+      <summary id="switchbot-auth-heading">${t("Authentication", "認証")}</summary>
+      <div class="authentication-content">
+        <sdpi-item id="switchbot-token-item" label="__MSG_token__">
+          <sdpi-password id="switchbot-token"></sdpi-password>
+        </sdpi-item>
+        <sdpi-item id="switchbot-secret-item" label="__MSG_secret__">
+          <sdpi-password id="switchbot-secret"></sdpi-password>
+        </sdpi-item>
+        <sdpi-item>
+          <sdpi-button id="switchbot-test-connection">${t("Test Connection", "接続テスト")}</sdpi-button>
+        </sdpi-item>
+        <div id="switchbot-auth-status" class="auth-status" aria-live="polite"></div>
+      </div>
+    </details>`;
 }
 
 function localizeAuthentication(): void {
