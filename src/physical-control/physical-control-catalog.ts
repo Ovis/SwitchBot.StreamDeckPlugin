@@ -1,4 +1,4 @@
-export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security";
+export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security" | "curtains-blinds";
 
 export type PhysicalOperationParameter =
   | { kind: "number"; key: string; label: { en: string; ja: string }; min: number; max: number; step: number; unit?: string }
@@ -12,7 +12,7 @@ export interface PhysicalOperationDefinition {
   commandType: "command";
   input?: PhysicalOperationParameter;
   /** 検証済み数値を公式APIのJSON parameterへ埋め込む場合の宣言的な形式。 */
-  parameterFormat?: { kind: "json-number-field"; prefix: string; suffix: string };
+  parameterFormat?: { kind: "json-number-field" | "number-template"; prefix: string; suffix: string };
   /** 誤操作で物理的なアクセス状態を変え得る操作は、キー上で再押下確認を必須にする。 */
   confirmationRequired?: boolean;
 }
@@ -182,6 +182,31 @@ const VIDEO_DOORBELL: readonly PhysicalOperationDefinition[] = [
   securityOperation("motion-detection-off", "Disable Motion Detection", "動体検知 OFF", "disableMotionDetection")
 ];
 
+
+const CURTAIN: readonly PhysicalOperationDefinition[] = [
+  fixed("open", "Open", "開く", "turnOn", "default"),
+  fixed("close", "Close", "閉じる", "turnOff", "default"),
+  fixed("pause", "Pause", "一時停止", "pause", "default"),
+  numeric("set-position", "Set Position", "位置を設定", "setPosition", 0, 100, 1, "Closed Position", "閉じ具合", "%", {
+    kind: "number-template", prefix: "0,ff,", suffix: ""
+  })
+];
+const BLIND_TILT: readonly PhysicalOperationDefinition[] = [
+  fixed("fully-open", "Fully Open", "全開", "fullyOpen", "default"),
+  fixed("close-up", "Close Up", "上向きに閉じる", "closeUp", "default"),
+  fixed("close-down", "Close Down", "下向きに閉じる", "closeDown", "default"),
+  // Blind Tiltは方向もwire parameterの一部なので、方向ごとにOperationを分けて単一数値入力の契約を維持する。
+  numeric("set-position-up", "Set Position (Up)", "位置を設定（上向き）", "setPosition", 0, 100, 2, "Open Position", "開き具合", "%", {
+    kind: "number-template", prefix: "up;", suffix: ""
+  }),
+  numeric("set-position-down", "Set Position (Down)", "位置を設定（下向き）", "setPosition", 0, 100, 2, "Open Position", "開き具合", "%", {
+    kind: "number-template", prefix: "down;", suffix: ""
+  })
+];
+const ROLLER_SHADE: readonly PhysicalOperationDefinition[] = [
+  numeric("set-position", "Set Position", "位置を設定", "setPosition", 0, 100, 1, "Closed Position", "閉じ具合", "%")
+];
+
 const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
@@ -228,7 +253,11 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Lock Vision", action: "security", operations: LOCK_VISION },
   { deviceType: "Lock Vision Pro", action: "security", operations: LOCK_VISION },
   { deviceType: "Garage Door Opener", action: "security", operations: GARAGE_DOOR },
-  { deviceType: "Video Doorbell", action: "security", operations: VIDEO_DOORBELL }
+  { deviceType: "Video Doorbell", action: "security", operations: VIDEO_DOORBELL },
+  { deviceType: "Curtain", action: "curtains-blinds", operations: CURTAIN },
+  { deviceType: "Curtain 3", action: "curtains-blinds", operations: CURTAIN },
+  { deviceType: "Blind Tilt", action: "curtains-blinds", operations: BLIND_TILT },
+  { deviceType: "Roller Shade", action: "curtains-blinds", operations: ROLLER_SHADE }
 ];
 
 /** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
