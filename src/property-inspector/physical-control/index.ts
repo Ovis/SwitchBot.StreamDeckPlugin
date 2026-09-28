@@ -25,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let devices = new Map<string, PhysicalControlDeviceItem>();
   let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
-  let requestedDeviceId = "";
   let initialSelectionRetryDeviceId = "";
 
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
@@ -37,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function sendCatalog(isRefresh = false, deviceId = valueOf(device)): void {
     // Plugin側が保存settingsの反映タイミングだけに依存すると、PI上の選択とOperation一覧がずれる可能性がある。
     // 現在選択中のdeviceIdも送り、catalogの実データを基準にOperationを解決させる。
-    requestedDeviceId = deviceId;
     streamDeckClient.send("sendToPlugin", {
       event: "getPhysicalControlCatalog",
       isRefresh,
@@ -111,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // 実在する保存済みDeviceを一度だけ明示して再要求し、手動Refreshを不要にする。
       if (selectedDevice !== ""
         && message.devices.some(item => item.value === selectedDevice)
-        && requestedDeviceId !== selectedDevice
+        && message.selectedDeviceId !== selectedDevice
         && initialSelectionRetryDeviceId !== selectedDevice) {
         initialSelectionRetryDeviceId = selectedDevice;
         sendCatalog(false, selectedDevice);
