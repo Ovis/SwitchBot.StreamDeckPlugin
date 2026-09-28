@@ -122,6 +122,37 @@ describe("Physical Control HTTP contract", () => {
     expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
   });
 
+  it.each([
+    ["Humidifier", "target-humidity", 50, "setMode", "50"],
+    ["Humidifier2", "target-humidity", 60, "setMode", '{"mode":5,"targetHumidify":60}'],
+    ["Air Purifier VOC", "normal", 2, "setMode", '{"mode":1,"fanGear":2}'],
+    ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"]
+  ])("%sの%sをparameter付きHTTP requestとして送信する", async (deviceType, operationId, value, command, parameter) => {
+    const fetchMock = vi.fn<FetchLike>(async () => new Response(
+      JSON.stringify({ statusCode: 100, message: "success", body: {} }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    const executor = new RequestExecutor(new SwitchBotClient(undefined, fetchMock), {
+      getCredentials: async () => CREDENTIALS
+    });
+    const built = buildPhysicalCommand({
+      action: "climate",
+      deviceId: "CLIMATE-001",
+      deviceType,
+      operationId,
+      operationParameters: { value }
+    });
+    expect(built.request).toBeDefined();
+
+    const result = await executor.execute(built.request!);
+
+    expect(result.success).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/CLIMATE-001/commands");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
+  });
+
   it("fail closedしたPhysical ControlはHTTP境界へ到達しない", async () => {
     const fetchMock = vi.fn<FetchLike>();
     const client = new SwitchBotClient(undefined, fetchMock);
