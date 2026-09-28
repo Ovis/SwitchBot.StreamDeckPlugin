@@ -365,3 +365,120 @@ describe("Curtains & Blinds physical control", () => {
     }).error).toBe("invalid-parameter");
   });
 });
+
+
+describe("Cleaning physical control", () => {
+  const legacy = ["Robot Vacuum Cleaner S1", "Robot Vacuum Cleaner S1 Plus", "K10+", "K10+ Pro"] as const;
+  const s10 = ["Robot Vacuum Cleaner S10", "Robot Vacuum Cleaner S20"] as const;
+  const combo = ["Robot Vacuum Cleaner K10+ Pro Combo", "Robot Vacuum Cleaner K20 Plus Pro", "Robot Vacuum Cleaner K11+"] as const;
+
+  it.each([...legacy, ...s10, ...combo])("%sをCleaningの正確なdeviceTypeとして公開する", deviceType => {
+    expect(physicalDeviceDefinition(deviceType)?.action).toBe("cleaning");
+    expect(supportsPhysicalAction(deviceType, "cleaning")).toBe(true);
+  });
+
+  it.each(["Floor Cleaning Robot S10", "S20", "K20+ Pro", "K11+"])("%sという推測aliasを受理しない", deviceType => {
+    expect(supportsPhysicalAction(deviceType, "cleaning")).toBe(false);
+    expect(physicalDeviceDefinition(deviceType)).toBeUndefined();
+  });
+
+  it.each(legacy)("Legacy %sの公開Operationを固定する", deviceType => {
+    expect(physicalDeviceDefinition(deviceType)?.operations.map(operation => operation.id)).toEqual([
+      "start-cleaning", "stop", "return-to-dock", "set-suction-power"
+    ]);
+  });
+
+  it.each(s10)("S10/S20 %sの公開Operationを固定する", deviceType => {
+    expect(physicalDeviceDefinition(deviceType)?.operations.map(operation => operation.id)).toEqual([
+      "start-cleaning", "pause", "return-to-dock", "set-volume", "wash-mop", "dry", "stop-self-cleaning"
+    ]);
+  });
+
+  it.each(combo)("Combo %sの公開Operationを固定する", deviceType => {
+    expect(physicalDeviceDefinition(deviceType)?.operations.map(operation => operation.id)).toEqual([
+      "start-cleaning", "pause", "return-to-dock", "set-volume"
+    ]);
+  });
+
+  it("Legacyの吸引力を公式0-3へ変換する", () => {
+    expect(buildPhysicalCommand({
+      action: "cleaning", deviceId: "C1", deviceType: "K10+ Pro", operationId: "set-suction-power",
+      operationParameters: { value: "0" }
+    }).command?.parameter).toBe("0");
+    expect(buildPhysicalCommand({
+      action: "cleaning", deviceId: "C1", deviceType: "K10+ Pro", operationId: "set-suction-power",
+      operationParameters: { value: "4" }
+    }).error).toBe("invalid-parameter");
+  });
+
+  it("S10/S20のStart Cleaningを型付きJSONへ変換する", () => {
+    const built = buildPhysicalCommand({
+      action: "cleaning", deviceId: "S10", deviceType: "Robot Vacuum Cleaner S10", operationId: "start-cleaning",
+      operationParameters: { mode: "sweep_mop", fanLevel: "2", waterLevel: "1", times: 3 }
+    });
+    expect(built.command?.command).toBe("startClean");
+    expect(JSON.parse(built.command?.parameter ?? "")).toEqual({
+      action: "sweep_mop", param: { fanLevel: 2, waterLevel: 1, times: 3 }
+    });
+  });
+
+  it("Combo familyのStart Cleaningを型付きJSONへ変換する", () => {
+    const built = buildPhysicalCommand({
+      action: "cleaning", deviceId: "K20", deviceType: "Robot Vacuum Cleaner K20 Plus Pro", operationId: "start-cleaning",
+      operationParameters: { mode: "mop", fanLevel: "2", times: 3 }
+    });
+    expect(JSON.parse(built.command?.parameter ?? "")).toEqual({
+      action: "mop", param: { fanLevel: 2, times: 3 }
+    });
+  });
+
+  it("familyをまたぐCleaning Modeをfail closedする", () => {
+    expect(buildPhysicalCommand({
+      action: "cleaning", deviceId: "S10", deviceType: "Robot Vacuum Cleaner S10", operationId: "start-cleaning",
+      operationParameters: { mode: "mop", fanLevel: "2", waterLevel: "1", times: 1 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "cleaning", deviceId: "K20", deviceType: "Robot Vacuum Cleaner K20 Plus Pro", operationId: "start-cleaning",
+      operationParameters: { mode: "sweep_mop", fanLevel: "2", times: 1 }
+    }).error).toBe("invalid-parameter");
+  });
+
+  it.each([
+    [1, undefined],
+    [2_639_999, undefined],
+    [0, "invalid-parameter"],
+    [2_639_999.5, "invalid-parameter"],
+    [2_640_000, "invalid-parameter"]
+  ] as const)("Cleaning Cycles %sの境界を検証する", (times, error) => {
+    const built = buildPhysicalCommand({
+      action: "cleaning", deviceId: "S10", deviceType: "Robot Vacuum Cleaner S10", operationId: "start-cleaning",
+      operationParameters: { mode: "sweep", fanLevel: "1", waterLevel: "1", times }
+    });
+    expect(built.error).toBe(error);
+  });
+
+  it.each([
+    [0, undefined],
+    [100, undefined],
+    [-1, "invalid-parameter"],
+    [0.5, "invalid-parameter"],
+    [100.5, "invalid-parameter"],
+    [101, "invalid-parameter"]
+  ] as const)("Volume %sの境界を検証する", (value, error) => {
+    const built = buildPhysicalCommand({
+      action: "cleaning", deviceId: "S20", deviceType: "Robot Vacuum Cleaner S20", operationId: "set-volume",
+      operationParameters: { value }
+    });
+    expect(built.error).toBe(error);
+  });
+
+  it("必須の複数入力が一つでも欠ければrequestを構築しない", () => {
+    const built = buildPhysicalCommand({
+      action: "cleaning", deviceId: "S10", deviceType: "Robot Vacuum Cleaner S10", operationId: "start-cleaning",
+      operationParameters: { mode: "sweep", fanLevel: "1", times: 1 }
+    });
+    expect(built.command).toBeUndefined();
+    expect(built.request).toBeUndefined();
+    expect(built.error).toBe("invalid-parameter");
+  });
+});
