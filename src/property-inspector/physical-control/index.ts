@@ -23,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   attachExecutionDiagnostics(streamDeckClient);
   const device = queryRequired<SdpiValueElement>("#device");
   const operation = queryRequired<SdpiValueElement>("#operation");
+  const unlockConfirmationItem = queryRequired<HTMLElement>("#unlock-confirmation-item");
+  const skipUnlockConfirmation = queryRequired<SdpiValueElement>("#skip-unlock-confirmation");
   let devices = new Map<string, PhysicalControlDeviceItem>();
   let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
@@ -119,6 +121,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  skipUnlockConfirmation.addEventListener("valuechange", () => {
+    void patchSettings(settings => {
+      settings.skipUnlockConfirmation = valueOf(skipUnlockConfirmation) === "true";
+    });
+  });
+
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
     void patchSettings(settings => {
@@ -139,6 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
+      const skipUnlock = settings.skipUnlockConfirmation === true;
+      unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
+      skipUnlockConfirmation.value = skipUnlock ? "true" : "false";
       const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
         ? settings.operationParameters as Record<string, unknown> : {};
       suppress = true;
@@ -213,6 +224,8 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-heading").textContent = translate("Request Body", "リクエスト本文");
     queryRequired<HTMLElement>("#advanced-note").textContent =
       translate("Use API Request for advanced operations and configuration changes.", "高度な操作や設定変更には「APIリクエスト」を使用してください");
+    skipUnlockConfirmation.textContent =
+      translate("Do not require confirmation when unlocking", "解錠時の二度押し確認をしない");
     queryRequired<HTMLElement>("#execution-diagnostics-heading").textContent =
       translate("Latest execution result", "最新の実行結果");
   }
