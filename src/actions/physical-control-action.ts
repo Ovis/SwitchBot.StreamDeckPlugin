@@ -114,11 +114,20 @@ export class PhysicalControlAction extends AuthenticatedAction {
     if (selectedCatalogDevice && !selectedCatalogDevice.deleted
       && supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)
       && (settings.deviceId !== selectedDeviceId || settings.deviceType === "")) {
+      const deviceChanged = settings.deviceId !== selectedDeviceId;
+      const requestedOperationId = request.operationId?.trim() || settings.operationId;
+      const requestedOperationSupported = physicalDeviceDefinition(selectedCatalogDevice.deviceType)
+        ?.operations.some(operation => operation.id === requestedOperationId) === true;
       settings = {
         ...settings,
         deviceId: selectedDeviceId,
         deviceType: selectedCatalogDevice.deviceType,
-        ...(settings.deviceId !== selectedDeviceId ? { operationId: "", operationParameters: {} } : {})
+        // Device変更ではparameterを必ず破棄する一方、同じOperation IDが新Deviceでも有効なら維持する。
+        // 先頭Operationへの自動fallbackは行わず、非対応なら未選択へ戻してfail closedする。
+        ...(deviceChanged ? {
+          operationId: requestedOperationSupported ? requestedOperationId : "",
+          operationParameters: {}
+        } : {})
       };
       if (actionInstance) await actionInstance.setSettings(settings);
     }
