@@ -69,7 +69,9 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
         return { error: "invalid-parameter" };
       }
       const normalized = String(value);
-      parameter = operation.parameterTemplate?.replace("{{value}}", normalized) ?? normalized;
+      parameter = operation.parameterFormat?.kind === "json-number-field"
+        ? `${operation.parameterFormat.prefix}${normalized}${operation.parameterFormat.suffix}`
+        : normalized;
     } else {
       if (typeof raw !== "string") return { error: "invalid-parameter" };
       const parts = raw.split(":");
