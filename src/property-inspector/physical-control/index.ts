@@ -77,12 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
     if (message?.event !== "physicalControlCatalog") return;
-    console.info("[Physical Control] catalog received", {
-      devices: message.devices.map(item => ({ value: item.value, deviceType: item.deviceType })),
-      operations: message.operations.map(item => item.value),
-      configurationInvalid: message.configurationInvalid,
-      refreshFailed: message.refreshFailed
-    });
     void (async () => {
       devices = new Map(message.devices.map(item => [item.value, item]));
       operations = new Map(message.operations.map(item => [item.value, item]));
@@ -91,10 +85,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
       suppress = true;
       try {
-        device.innerHTML = '<option value=""></option>' + message.devices.map(item =>
+        const devicePlaceholder = window.SwitchBotI18n?.t("Select a device", "デバイスを選択") ?? "Select a device";
+        const operationPlaceholder = window.SwitchBotI18n?.t("Select an operation", "操作を選択") ?? "Select an operation";
+        // sdpi-selectは動的optionを差し替えた際、空optionを先頭候補として扱わず
+        // 実際には未選択でも最初のDeviceが選択済みに見えることがある。
+        // value=""のplaceholderを明示し、表示状態と永続settingsを一致させる。
+        device.innerHTML = `<option value="">${escapeHtml(devicePlaceholder)}</option>` + message.devices.map(item =>
           `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`
         ).join("");
-        operation.innerHTML = '<option value=""></option>' + message.operations.map(item =>
+        operation.innerHTML = `<option value="">${escapeHtml(operationPlaceholder)}</option>` + message.operations.map(item =>
           `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`
         ).join("");
         device.value = message.devices.some(item => item.value === selectedDevice) ? selectedDevice : "";
