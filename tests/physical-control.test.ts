@@ -215,6 +215,16 @@ describe("Climate physical control", () => {
     expect(built.command).toMatchObject({ command, parameter, commandType: "command" });
   });
 
+  it("複合parameterも検証済み数値からのみ生成する", () => {
+    const built = buildPhysicalCommand({
+      action: "climate", deviceId: "C0", deviceType: "Humidifier2", operationId: "target-humidity",
+      operationParameters: { value: "55x" }
+    });
+    expect(built.error).toBe("invalid-parameter");
+    expect(built.command).toBeUndefined();
+    expect(built.request).toBeUndefined();
+  });
+
   it("Climateの入力範囲をfail closedする", () => {
     expect(buildPhysicalCommand({
       action: "climate", deviceId: "C1", deviceType: "Humidifier", operationId: "target-humidity",
