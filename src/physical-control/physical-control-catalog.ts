@@ -79,9 +79,9 @@ const numeric = (
 const HUMIDIFIER: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
   fixed("mode-auto", "Auto", "自動", "setMode", "auto"),
-  fixed("mode-34", "Preset 34%", "プリセット 34%", "setMode", "101"),
-  fixed("mode-67", "Preset 67%", "プリセット 67%", "setMode", "102"),
-  fixed("mode-100", "Preset 100%", "プリセット 100%", "setMode", "103"),
+  fixed("mode-34", "Atomization 34%", "噴霧量 34%", "setMode", "101"),
+  fixed("mode-67", "Atomization 67%", "噴霧量 67%", "setMode", "102"),
+  fixed("mode-100", "Atomization 100%", "噴霧量 100%", "setMode", "103"),
   numeric("target-humidity", "Set Target Humidity", "目標湿度を設定", "setMode", 0, 100, 1, "Humidity", "湿度", "%")
 ];
 const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
