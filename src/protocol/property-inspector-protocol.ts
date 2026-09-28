@@ -49,6 +49,8 @@ export interface PhysicalControlCatalogRequest extends ProtocolJsonObject {
   event: "getPhysicalControlCatalog";
   isRefresh?: boolean;
   deviceId?: string;
+  operationId?: string;
+  operationParameters?: Record<string, string | number | boolean | null>;
 }
 
 export interface InfraredRemotesRequest extends ProtocolJsonObject {
@@ -158,8 +160,19 @@ export interface PhysicalControlDeviceItem extends PropertyInspectorSelectItem {
   deviceType: string;
 }
 
+export interface PhysicalControlOperationParameterItem extends ProtocolJsonObject {
+  kind: "number" | "rgb";
+  key: string;
+  label: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+}
+
 export interface PhysicalControlOperationItem extends PropertyInspectorSelectItem {
   requestBody: string;
+  input?: PhysicalControlOperationParameterItem;
 }
 
 export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
@@ -212,7 +225,9 @@ export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyI
     return {
       event: "getPhysicalControlCatalog",
       ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {}),
-      ...(typeof value.deviceId === "string" ? { deviceId: value.deviceId } : {})
+      ...(typeof value.deviceId === "string" ? { deviceId: value.deviceId } : {}),
+      ...(typeof value.operationId === "string" ? { operationId: value.operationId } : {}),
+      ...(protocolPrimitiveRecord(value.operationParameters) ? { operationParameters: value.operationParameters } : {})
     };
   }
   return undefined;
@@ -326,7 +341,22 @@ function protocolEndpoint(value: unknown): ApiEndpointPropertyInspectorDefinitio
 function protocolPhysicalControlOperation(value: unknown): PhysicalControlOperationItem | undefined {
   const item = protocolSelectItem(value);
   if (!item || !protocolRecord(value) || typeof value.requestBody !== "string") return undefined;
-  return { ...item, requestBody: value.requestBody };
+  const input = protocolPhysicalControlParameter(value.input);
+  if (value.input !== undefined && !input) return undefined;
+  return { ...item, requestBody: value.requestBody, ...(input ? { input } : {}) };
+}
+
+function protocolPhysicalControlParameter(value: unknown): PhysicalControlOperationParameterItem | undefined {
+  if (!protocolRecord(value) || (value.kind !== "number" && value.kind !== "rgb")
+    || typeof value.key !== "string" || typeof value.label !== "string") return undefined;
+  if (value.kind === "number" && (typeof value.min !== "number" || typeof value.max !== "number" || typeof value.step !== "number")) return undefined;
+  return {
+    kind: value.kind, key: value.key, label: value.label,
+    ...(typeof value.min === "number" ? { min: value.min } : {}),
+    ...(typeof value.max === "number" ? { max: value.max } : {}),
+    ...(typeof value.step === "number" ? { step: value.step } : {}),
+    ...(typeof value.unit === "string" ? { unit: value.unit } : {})
+  };
 }
 
 function protocolPhysicalControlDevice(value: unknown): PhysicalControlDeviceItem | undefined {
@@ -359,6 +389,11 @@ function protocolErrorCategory(value: unknown): PropertyInspectorErrorCategory |
 
 function protocolDefined<T>(value: T | undefined): value is T {
   return value !== undefined;
+}
+
+function protocolPrimitiveRecord(value: unknown): value is Record<string, string | number | boolean | null> {
+  return protocolRecord(value) && Object.values(value).every(item =>
+    typeof item === "string" || typeof item === "number" || typeof item === "boolean" || item === null);
 }
 
 function protocolRecord(value: unknown): value is Record<string, unknown> {
