@@ -11,8 +11,8 @@ export interface PhysicalOperationDefinition {
   parameter: string;
   commandType: "command";
   input?: PhysicalOperationParameter;
-  /** 検証済み数値を公式APIのJSON parameterへ埋め込む場合の宣言的な形式。 */
-  parameterFormat?: { kind: "json-number-field" | "number-template"; prefix: string; suffix: string };
+  /** 検証済み数値を公式APIのparameter文字列へ埋め込むための宣言的な形式。 */
+  parameterFormat?: { prefix: string; suffix: string };
   /** 誤操作で物理的なアクセス状態を変え得る操作は、キー上で再押下確認を必須にする。 */
   confirmationRequired?: boolean;
 }
@@ -92,7 +92,7 @@ const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
   fixed("level-3", "Level 3", "レベル3", "setMode", '{"mode":2,"targetHumidify":0}'),
   fixed("level-2", "Level 2", "レベル2", "setMode", '{"mode":3,"targetHumidify":0}'),
   fixed("level-1", "Level 1", "レベル1", "setMode", '{"mode":4,"targetHumidify":0}'),
-  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { kind: "json-number-field", prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
+  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
   fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":6,"targetHumidify":0}'),
   fixed("auto", "Auto", "自動", "setMode", '{"mode":7,"targetHumidify":0}'),
   fixed("drying", "Drying", "乾燥", "setMode", '{"mode":8,"targetHumidify":0}'),
@@ -101,7 +101,7 @@ const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
 ];
 const AIR_PURIFIER: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { kind: "json-number-field", prefix: '{"mode":1,"fanGear":', suffix: "}" }),
+  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { prefix: '{"mode":1,"fanGear":', suffix: "}" }),
   fixed("auto", "Auto", "自動", "setMode", '{"mode":2}'),
   fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":3}'),
   fixed("pet", "Pet", "ペット", "setMode", '{"mode":4}'),
@@ -181,7 +181,6 @@ const VIDEO_DOORBELL: readonly PhysicalOperationDefinition[] = [
   securityOperation("motion-detection-on", "Enable Motion Detection", "動体検知 ON", "enableMotionDetection"),
   securityOperation("motion-detection-off", "Disable Motion Detection", "動体検知 OFF", "disableMotionDetection")
 ];
-
 
 const CURTAIN: readonly PhysicalOperationDefinition[] = [
   fixed("open", "Open", "開く", "turnOn", "default"),
