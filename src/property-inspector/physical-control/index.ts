@@ -40,11 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
     void (async () => {
       if (suppress) return;
       const selected = devices.get(valueOf(device));
-      if (!selected) return;
       await patchSettings(settings => {
-        settings.deviceId = selected.value;
-        settings.deviceType = selected.deviceType;
+        settings.version = 1;
+        settings.deviceId = selected?.value ?? "";
+        settings.deviceType = selected?.deviceType ?? "";
         settings.operationId = "";
+        settings.operationParameters = {};
       });
       operation.value = "";
       sendCatalog();
@@ -59,7 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
-    void patchSettings(settings => { settings.operationId = valueOf(operation); });
+    void patchSettings(settings => {
+      settings.version = 1;
+      settings.operationId = valueOf(operation);
+      settings.operationParameters = {};
+    });
     updateRequestPreview();
   });
 
