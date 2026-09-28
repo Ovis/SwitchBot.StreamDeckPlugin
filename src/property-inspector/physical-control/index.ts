@@ -77,6 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
     if (message?.event !== "physicalControlCatalog") return;
+    console.info("[Physical Control] catalog received", {
+      devices: message.devices.map(item => ({ value: item.value, deviceType: item.deviceType })),
+      operations: message.operations.map(item => item.value),
+      configurationInvalid: message.configurationInvalid,
+      refreshFailed: message.refreshFailed
+    });
     void (async () => {
       devices = new Map(message.devices.map(item => [item.value, item]));
       operations = new Map(message.operations.map(item => [item.value, item]));
