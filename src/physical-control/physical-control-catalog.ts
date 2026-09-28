@@ -1,4 +1,4 @@
-export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate";
+export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security";
 
 export type PhysicalOperationParameter =
   | { kind: "number"; key: string; label: { en: string; ja: string }; min: number; max: number; step: number; unit?: string }
@@ -13,6 +13,8 @@ export interface PhysicalOperationDefinition {
   input?: PhysicalOperationParameter;
   /** 検証済み数値を公式APIのJSON parameterへ埋め込む場合の宣言的な形式。 */
   parameterFormat?: { kind: "json-number-field"; prefix: string; suffix: string };
+  /** 誤操作で物理的なアクセス状態を変え得る操作は、キー上で再押下確認を必須にする。 */
+  confirmationRequired?: boolean;
 }
 
 export interface PhysicalDeviceDefinition {
@@ -141,6 +143,42 @@ const RADIATOR_THERMOSTAT: readonly PhysicalOperationDefinition[] = [
   numeric("manual-temperature", "Set Manual Temperature", "手動温度を設定", "setManualModeTemperature", 4, 35, 1, "Temperature", "温度", "°C")
 ];
 
+const securityOperation = (
+  id: string, en: string, ja: string, command: string, confirmationRequired = false
+): PhysicalOperationDefinition => ({
+  id, label: { en, ja }, command, parameter: "default", commandType: "command",
+  ...(confirmationRequired ? { confirmationRequired: true } : {})
+});
+
+const SMART_LOCK: readonly PhysicalOperationDefinition[] = [
+  securityOperation("lock", "Lock", "施錠", "lock"),
+  securityOperation("unlock", "Unlock", "解錠", "unlock", true),
+  securityOperation("deadbolt", "Disengage Deadbolt / Latch", "デッドボルト / ラッチを解除", "deadbolt", true)
+];
+const SMART_LOCK_LITE: readonly PhysicalOperationDefinition[] = [
+  securityOperation("lock", "Lock", "施錠", "lock"),
+  securityOperation("unlock", "Unlock", "解錠", "unlock", true)
+];
+const SMART_LOCK_PRO_WIFI: readonly PhysicalOperationDefinition[] = [
+  securityOperation("lock", "Lock", "施錠", "lock"),
+  securityOperation("unlock", "Unlock", "解錠", "unlock", true),
+  securityOperation("night-latch-unlock", "Unlock Night Latch", "ナイトラッチを解錠", "nightLatchUnlock", true),
+  securityOperation("deadbolt", "Disengage Deadbolt / Latch", "デッドボルト / ラッチを解除", "deadbolt", true)
+];
+const LOCK_VISION: readonly PhysicalOperationDefinition[] = [
+  // passcode管理は資格情報と非同期結果を扱うため、日常操作用Physical Controlから意図的に除外する。
+  securityOperation("lock", "Lock", "施錠", "lock"),
+  securityOperation("unlock", "Unlock", "解錠", "unlock", true)
+];
+const GARAGE_DOOR: readonly PhysicalOperationDefinition[] = [
+  securityOperation("open", "Open", "開く", "turnOn", true),
+  securityOperation("close", "Close", "閉じる", "turnOff", true)
+];
+const VIDEO_DOORBELL: readonly PhysicalOperationDefinition[] = [
+  securityOperation("motion-detection-on", "Enable Motion Detection", "動体検知 ON", "enableMotionDetection"),
+  securityOperation("motion-detection-off", "Disable Motion Detection", "動体検知 OFF", "disableMotionDetection")
+];
+
 const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
@@ -173,7 +211,21 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Battery Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
   { deviceType: "Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
   { deviceType: "Standing Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
-  { deviceType: "Battery Circulator Fan 2 Pro", action: "climate", operations: CIRCULATOR_FAN_2_PRO }
+  { deviceType: "Battery Circulator Fan 2 Pro", action: "climate", operations: CIRCULATOR_FAN_2_PRO },
+  { deviceType: "Smart Lock", action: "security", operations: SMART_LOCK },
+  { deviceType: "Lock", action: "security", operations: SMART_LOCK },
+  { deviceType: "Smart Lock Pro", action: "security", operations: SMART_LOCK },
+  { deviceType: "Lock Pro", action: "security", operations: SMART_LOCK },
+  { deviceType: "Smart Lock Lite", action: "security", operations: SMART_LOCK_LITE },
+  { deviceType: "Lock Lite", action: "security", operations: SMART_LOCK_LITE },
+  { deviceType: "Smart Lock Ultra", action: "security", operations: SMART_LOCK },
+  { deviceType: "Lock Ultra", action: "security", operations: SMART_LOCK },
+  { deviceType: "Smart Lock Pro Wifi", action: "security", operations: SMART_LOCK_PRO_WIFI },
+  { deviceType: "Lock Pro Matter Enabled", action: "security", operations: SMART_LOCK_PRO_WIFI },
+  { deviceType: "Lock Vision", action: "security", operations: LOCK_VISION },
+  { deviceType: "Lock Vision Pro", action: "security", operations: LOCK_VISION },
+  { deviceType: "Garage Door Opener", action: "security", operations: GARAGE_DOOR },
+  { deviceType: "Video Doorbell", action: "security", operations: VIDEO_DOORBELL }
 ];
 
 /** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
