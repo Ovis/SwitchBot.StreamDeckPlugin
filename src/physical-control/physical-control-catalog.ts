@@ -106,6 +106,30 @@ const AIR_PURIFIER: readonly PhysicalOperationDefinition[] = [
   fixed("child-lock-on", "Child Lock On", "チャイルドロック ON", "setChildLock", "1"),
   fixed("child-lock-off", "Child Lock Off", "チャイルドロック OFF", "setChildLock", "0")
 ];
+const CIRCULATOR_FAN: readonly PhysicalOperationDefinition[] = [
+  ...ON_OFF_TOGGLE,
+  fixed("night-light-off", "Night Light Off", "ナイトライト OFF", "setNightLightMode", "off"),
+  fixed("night-light-bright", "Night Light Bright", "ナイトライト 明", "setNightLightMode", "1"),
+  fixed("night-light-dim", "Night Light Dim", "ナイトライト 暗", "setNightLightMode", "2"),
+  fixed("wind-direct", "Direct Wind", "直風", "setWindMode", "direct"),
+  fixed("wind-natural", "Natural Wind", "自然風", "setWindMode", "natural"),
+  fixed("wind-sleep", "Sleep Wind", "睡眠風", "setWindMode", "sleep"),
+  fixed("wind-baby", "Ultra Quiet Wind", "超静音風", "setWindMode", "baby"),
+  numeric("wind-speed", "Set Wind Speed", "風速を設定", "setWindSpeed", 1, 100, 1, "Wind Speed", "風速", "%"),
+  numeric("close-delay", "Set Auto-off Timer", "自動OFFタイマーを設定", "closeDelay", 1, 36000, 1, "Seconds", "秒", "s")
+];
+const CIRCULATOR_FAN_2_PRO: readonly PhysicalOperationDefinition[] = [
+  ...ON_OFF,
+  fixed("night-light-off", "Night Light Off", "ナイトライト OFF", "setNightLightMode", "off"),
+  fixed("night-light-bright", "Night Light Bright", "ナイトライト 明", "setNightLightMode", "0"),
+  fixed("night-light-soft", "Night Light Soft", "ナイトライト 柔", "setNightLightMode", "1"),
+  fixed("wind-direct", "Direct Wind", "直風", "setWindMode", "direct"),
+  fixed("wind-natural", "Natural Wind", "自然風", "setWindMode", "natural"),
+  fixed("wind-sleep", "Sleep Wind", "睡眠風", "setWindMode", "sleep"),
+  fixed("wind-hurricane", "Hurricane Wind", "強風", "setWindMode", "hurricane"),
+  numeric("wind-speed", "Set Wind Speed", "風速を設定", "setWindSpeed", 1, 100, 1, "Wind Speed", "風速", "%")
+];
+
 const RADIATOR_THERMOSTAT: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
   fixed("schedule", "Schedule Mode", "スケジュール", "setMode", "0"),
@@ -145,7 +169,11 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Air Purifier PM2.5", action: "climate", operations: AIR_PURIFIER },
   { deviceType: "Air Purifier Table VOC", action: "climate", operations: AIR_PURIFIER },
   { deviceType: "Air Purifier Table PM2.5", action: "climate", operations: AIR_PURIFIER },
-  { deviceType: "Smart Radiator Thermostat", action: "climate", operations: RADIATOR_THERMOSTAT }
+  { deviceType: "Smart Radiator Thermostat", action: "climate", operations: RADIATOR_THERMOSTAT },
+  { deviceType: "Battery Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
+  { deviceType: "Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
+  { deviceType: "Standing Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
+  { deviceType: "Battery Circulator Fan 2 Pro", action: "climate", operations: CIRCULATOR_FAN_2_PRO }
 ];
 
 /** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
