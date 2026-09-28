@@ -14,7 +14,7 @@
           "Image": "imgs/key"
         }
       ],
-      "PropertyInspectorPath": "ui/bot-control.html"
+      "PropertyInspectorPath": "ui/physical-control.html"
     },
     {
       "Name": "Get Status",
