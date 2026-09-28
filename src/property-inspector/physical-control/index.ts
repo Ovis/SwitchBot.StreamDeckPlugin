@@ -77,6 +77,13 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
   }
 
+  function syncOperationOptions(settings: Record<string, unknown>): void {
+    // PI初期表示ではsettings復元とcatalog応答の順序が一定ではないため、
+    // Operation選択に従属するUIはvaluechangeだけに依存せず、catalog同期のたびに確定状態から再評価する。
+    unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
+    skipUnlockConfirmation.value = settings.skipUnlockConfirmation === true ? "true" : "false";
+  }
+
   function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
     if (min === undefined || max === undefined || step === undefined || raw.trim() === "") return false;
     const value = Number(raw);
@@ -147,9 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
-      const skipUnlock = settings.skipUnlockConfirmation === true;
-      unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
-      skipUnlockConfirmation.value = skipUnlock ? "true" : "false";
       const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
         ? settings.operationParameters as Record<string, unknown> : {};
       suppress = true;
@@ -178,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (renderedParameterOperationId !== currentOperationId || (currentInput && !parameterField)) {
         renderOperationParameters(savedParameters);
       }
+      syncOperationOptions(settings);
       updateRequestPreview();
 
       // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
