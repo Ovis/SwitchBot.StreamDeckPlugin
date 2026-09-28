@@ -185,7 +185,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
 
   private async showTemporaryTitle(
     actionId: string,
-    actionInstance: Action<PhysicalControlSettingsV1>,
+    actionInstance: KeyDownEvent<PhysicalControlSettingsV1>["action"],
     title: string,
     durationMs: number
   ): Promise<void> {
