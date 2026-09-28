@@ -8,10 +8,41 @@ export interface PhysicalCommandSettings {
   operationId: string;
 }
 
+/**
+ * SwitchBot Control Command APIへ送信する論理コマンド。
+ *
+ * PIのプレビューと実送信で同じ中間表現を共有し、表示内容と実際のrequestが乖離しないようにする。
+ */
+export interface PhysicalCommand {
+  deviceId: string;
+  command: string;
+  parameter: string;
+  commandType: "command";
+}
+
 export interface BuiltPhysicalCommand {
+  command?: PhysicalCommand;
   request?: ExecutionRequest;
   displayText?: string;
   error?: "missing-device" | "device-type-mismatch" | "unsupported-operation";
+}
+
+/** PhysicalCommandをSwitchBot OpenAPIのExecutionRequestへ変換する。 */
+export function physicalCommandRequest(command: PhysicalCommand): ExecutionRequest {
+  return {
+    method: "POST",
+    path: `/v1.1/devices/${encodeURIComponent(command.deviceId)}/commands`,
+    body: physicalCommandBody(command)
+  };
+}
+
+/** PhysicalCommandのrequest bodyを生成する。PIのプレビューにも同じ変換を使用する。 */
+export function physicalCommandBody(command: PhysicalCommand, pretty = false): string {
+  return JSON.stringify({
+    command: command.command,
+    parameter: command.parameter,
+    commandType: command.commandType
+  }, null, pretty ? 2 : undefined);
 }
 
 /**
@@ -26,16 +57,16 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
   if (!definition || definition.action !== settings.action) return { error: "device-type-mismatch" };
   const operation = definition.operations.find(candidate => candidate.id === settings.operationId);
   if (!operation) return { error: "unsupported-operation" };
+
+  const command: PhysicalCommand = {
+    deviceId,
+    command: operation.command,
+    parameter: operation.parameter,
+    commandType: operation.commandType
+  };
   return {
-    request: {
-      method: "POST",
-      path: `/v1.1/devices/${encodeURIComponent(deviceId)}/commands`,
-      body: JSON.stringify({
-        command: operation.command,
-        parameter: operation.parameter,
-        commandType: operation.commandType
-      })
-    },
+    command,
+    request: physicalCommandRequest(command),
     displayText: operation.label.en
   };
 }
