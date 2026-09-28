@@ -16,7 +16,11 @@ const CREDENTIALS: SwitchBotCredentials = {
  * 乖離していないことをCIで固定するため、fetchだけをテスト境界として差し替える。
  */
 describe("Physical Control HTTP contract", () => {
-  it("Bot PressをControl Command APIの正しいPOSTへ変換する", async () => {
+  it.each([
+    ["turn-on", "turnOn"],
+    ["turn-off", "turnOff"],
+    ["press", "press"]
+  ])("Botの%sをControl Command APIの正しいPOSTへ変換する", async (operationId, command) => {
     const fetchMock = vi.fn<FetchLike>(async () => new Response(
       JSON.stringify({ statusCode: 100, message: "success", body: {} }),
       { status: 200, headers: { "Content-Type": "application/json" } }
@@ -30,7 +34,7 @@ describe("Physical Control HTTP contract", () => {
       action: "bot",
       deviceId: "BOT 001",
       deviceType: "Bot",
-      operationId: "press"
+      operationId
     });
     expect(built.request).toBeDefined();
 
@@ -42,7 +46,7 @@ describe("Physical Control HTTP contract", () => {
     expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/BOT%20001/commands");
     expect(init?.method).toBe("POST");
     expect(init?.body).toBe(JSON.stringify({
-      command: "press",
+      command,
       parameter: "default",
       commandType: "command"
     }));
