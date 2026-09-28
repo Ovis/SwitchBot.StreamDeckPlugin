@@ -302,7 +302,6 @@ describe("Security physical control", () => {
   });
 });
 
-
 describe("Curtains & Blinds physical control", () => {
   it.each([
     ["Curtain", ["open", "close", "pause", "set-position"]],
