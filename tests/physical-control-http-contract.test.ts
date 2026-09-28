@@ -90,6 +90,38 @@ describe("Physical Control HTTP contract", () => {
     }));
   });
 
+  it.each([
+    ["Color Bulb", "set-brightness", "50", "setBrightness"],
+    ["Color Bulb", "set-color", "255:0:0", "setColor"],
+    ["Color Bulb", "set-color-temperature", "4000", "setColorTemperature"],
+    ["RGBICWW Ceiling Light", "set-main-light-brightness", "75", "setMainLightBrightness"],
+    ["RGBICWW Ceiling Light", "set-color-light-rgb", "1:2:3", "setColorLightRGB"]
+  ])("%sの%sをparameter付きHTTP requestとして送信する", async (deviceType, operationId, parameter, command) => {
+    const fetchMock = vi.fn<FetchLike>(async () => new Response(
+      JSON.stringify({ statusCode: 100, message: "success", body: {} }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    const executor = new RequestExecutor(new SwitchBotClient(undefined, fetchMock), {
+      getCredentials: async () => CREDENTIALS
+    });
+    const built = buildPhysicalCommand({
+      action: "lighting",
+      deviceId: "LIGHT-001",
+      deviceType,
+      operationId,
+      operationParameters: { value: parameter }
+    });
+    expect(built.request).toBeDefined();
+
+    const result = await executor.execute(built.request!);
+
+    expect(result.success).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/LIGHT-001/commands");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
+  });
+
   it("fail closedしたPhysical ControlはHTTP境界へ到達しない", async () => {
     const fetchMock = vi.fn<FetchLike>();
     const client = new SwitchBotClient(undefined, fetchMock);
