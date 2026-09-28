@@ -92,8 +92,15 @@ describe("Lighting physical control", () => {
     ["Color Bulb", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
     ["Strip Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color"]],
     ["Floor Lamp", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
+    ["Strip Light 3", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
+    ["RGBICWW Strip Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
+    ["RGBICWW Floor Lamp", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
+    ["RGBIC Neon Wire Rope Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color"]],
     ["RGBIC Neon Rope Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color"]],
+    ["Permanent Outdoor Lights", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
     ["Ceiling Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color-temperature"]],
+    ["Ceiling Light Pro", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color-temperature"]],
+    ["RGBICWW Ceiling Light", ["turn-on", "turn-off", "toggle", "turn-on-main-light", "turn-off-main-light", "turn-on-color-light", "turn-off-color-light", "set-main-light-brightness", "set-main-light-color-temperature", "set-color-light-brightness", "set-color-light-rgb"]],
     ["Candle Warmer Lamp", ["turn-on", "turn-off", "toggle", "set-brightness"]]
   ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
     const definition = physicalDeviceDefinition(deviceType);
