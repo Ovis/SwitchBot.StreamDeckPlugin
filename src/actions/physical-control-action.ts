@@ -86,6 +86,13 @@ export class PhysicalControlAction extends AuthenticatedAction {
       loadCached: () => this.catalogStore.get(),
       refresh: () => this.catalogRefresh.refreshDevices()
     });
+    const selectedCatalogDevice = result.catalog?.devices.find(device => device.deviceId === settings.deviceId);
+    const configurationInvalid = settings.deviceId !== "" && (
+      !selectedCatalogDevice
+      || selectedCatalogDevice.deleted
+      || selectedCatalogDevice.deviceType !== settings.deviceType
+      || !supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)
+    );
     const devices = (result.catalog?.devices ?? [])
       .filter(device => supportsPhysicalAction(device.deviceType, this.physicalActionId))
       .filter(device => !device.deleted || device.deviceId === settings.deviceId)
@@ -94,7 +101,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
         value: device.deviceId,
         deviceType: device.deviceType
       }));
-    const operations = physicalDeviceDefinition(settings.deviceType)?.operations ?? [];
+    const operations = configurationInvalid ? [] : (physicalDeviceDefinition(settings.deviceType)?.operations ?? []);
     const message: PhysicalControlCatalogMessage = {
       event: "physicalControlCatalog",
       devices,
@@ -111,7 +118,8 @@ export class PhysicalControlAction extends AuthenticatedAction {
           return built.command ? physicalCommandBody(built.command, true) : "";
         })()
       })),
-      refreshFailed: result.refreshFailed
+      refreshFailed: result.refreshFailed,
+      configurationInvalid
     };
     await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
