@@ -32,8 +32,9 @@ describe("Property Inspector protocol", () => {
     it("Physical Control catalog要求を判別する", () => {
       expect(parsePropertyInspectorToPluginMessage({
         event: "getPhysicalControlCatalog",
-        isRefresh: true
-      })).toEqual({ event: "getPhysicalControlCatalog", isRefresh: true });
+        isRefresh: true,
+        deviceId: "bot-1"
+      })).toEqual({ event: "getPhysicalControlCatalog", isRefresh: true, deviceId: "bot-1" });
     });
 
     it("未知eventと不正な認証情報をfail closedする", () => {
