@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -21,12 +21,12 @@ interface QueuedBotCommand {
   action: KeyDownEvent<BotControlSettingsV1>["action"];
 }
 
-const MAX_QUEUED_COMMANDS = 5;
+const MAX_QUEUED_COMMANDS = 5;\nconst TEMPORARY_TITLE_MS = 3_000;
 
 @action({ UUID: "com.esheep.switchbot.bot-control" })
 export class BotControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
-  private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;
+  private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;\n  private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly executor: RequestExecutor,
@@ -49,6 +49,15 @@ export class BotControlAction extends AuthenticatedAction {
         });
       }
     );
+  }
+
+  override async onWillAppear(ev: WillAppearEvent<BotControlSettingsV1>): Promise<void> {
+    await this.updateNormalTitle(ev.action, normalizeBotControlSettings(ev.payload.settings));
+  }
+
+  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<BotControlSettingsV1>): Promise<void> {
+    this.clearTemporaryTitle(ev.action.id);
+    await this.updateNormalTitle(ev.action, normalizeBotControlSettings(ev.payload.settings));
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {
@@ -91,7 +100,7 @@ export class BotControlAction extends AuthenticatedAction {
     const settings = normalizeBotControlSettings(await ev.action.getSettings());
     const catalog = await this.catalogStore.get();
     const selected = catalog?.devices.find(device => device.deviceId === settings.deviceId);
-    if (!selected || selected.deviceType !== settings.deviceType || !supportsPhysicalAction(selected.deviceType, "bot")) {
+    if (!selected || selected.deleted || selected.deviceType !== settings.deviceType || !supportsPhysicalAction(selected.deviceType, "bot")) {
       streamDeck.logger.error("Bot Control failed", { category: "configuration", reason: "device-type-mismatch" });
       await ev.action.showAlert();
       return;
@@ -104,7 +113,7 @@ export class BotControlAction extends AuthenticatedAction {
       return;
     }
 
-    if (this.commandQueue.enqueue(ev.action.id, { request: built.request, action: ev.action }) === "full") {
+    if (this.commandQueue.enqueue(ev.action.id, { request: built.request, displayText: built.displayText ?? settings.operationId, action: ev.action }) === "full") {
       streamDeck.logger.warn("Bot Control command queue is full", { actionId: ev.action.id, limit: MAX_QUEUED_COMMANDS });
       await ev.action.showAlert();
     }
