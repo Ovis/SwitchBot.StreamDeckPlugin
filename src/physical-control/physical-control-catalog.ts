@@ -254,7 +254,8 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Garage Door Opener", action: "security", operations: GARAGE_DOOR },
   { deviceType: "Video Doorbell", action: "security", operations: VIDEO_DOORBELL },
   { deviceType: "Curtain", action: "curtains-blinds", operations: CURTAIN },
-  { deviceType: "Curtain 3", action: "curtains-blinds", operations: CURTAIN },
+  // 製品名は「Curtain 3」だが、/devices が返すdeviceTypeは空白なしの「Curtain3」なのでAPI値を使用する。
+  { deviceType: "Curtain3", action: "curtains-blinds", operations: CURTAIN },
   { deviceType: "Blind Tilt", action: "curtains-blinds", operations: BLIND_TILT },
   { deviceType: "Roller Shade", action: "curtains-blinds", operations: ROLLER_SHADE }
 ];
