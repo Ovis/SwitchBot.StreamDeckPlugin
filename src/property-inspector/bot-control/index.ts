@@ -53,7 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   queryRequired<HTMLElement>("#refresh-catalog").addEventListener("click", () => sendCatalog(true));
 
-  function updateRequestPreview(): void {\n    queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";\n  }\n\n  operation.addEventListener("valuechange", () => {
+  function updateRequestPreview(): void {
+    queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
+  }
+
+  operation.addEventListener("valuechange", () => {
     if (suppress) return;
     void patchSettings(settings => { settings.operationId = valueOf(operation); });
   });
