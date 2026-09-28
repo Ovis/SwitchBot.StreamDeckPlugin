@@ -157,7 +157,11 @@ export interface PhysicalControlDeviceItem extends PropertyInspectorSelectItem {
   deviceType: string;
 }
 
-export interface PhysicalControlOperationItem extends PropertyInspectorSelectItem {\n  requestBody: string;\n}\n\nexport interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
+export interface PhysicalControlOperationItem extends PropertyInspectorSelectItem {
+  requestBody: string;
+}
+
+export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
   event: "physicalControlCatalog";
   devices: PhysicalControlDeviceItem[];
   operations: PhysicalControlOperationItem[];
