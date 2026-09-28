@@ -75,6 +75,18 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
   }
 
+  function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
+    if (min === undefined || max === undefined || step === undefined || raw.trim() === "") return false;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= min && value <= max
+      && Math.abs((value - min) / step - Math.round((value - min) / step)) <= 1e-9;
+  }
+
+  function isValidRgb(raw: string): boolean {
+    const parts = raw.split(":");
+    return parts.length === 3 && parts.every(part => /^\\d{1,3}$/.test(part) && Number(part) <= 255);
+  }
+
   function renderOperationParameters(saved: Record<string, unknown> = {}): void {
     const host = queryRequired<HTMLElement>("#operation-parameters");
     const selected = operations.get(valueOf(operation));
@@ -93,6 +105,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const raw = valueOf(field).trim();
       const parameters = raw === "" ? {} : { [input.key]: raw };
       void patchSettings(settings => { settings.operationParameters = parameters; });
+      const invalid = raw !== "" && (
+        input.kind === "rgb"
+          ? !isValidRgb(raw)
+          : !isValidNumberParameter(raw, input.min, input.max, input.step)
+      );
+      queryRequired<HTMLElement>("#parameter-status").textContent = invalid
+        ? (window.SwitchBotI18n?.t("Enter a value within the displayed range.", "表示された範囲内の値を入力してください") ?? "")
+        : "";
       // 入力欄自体は再生成せずpreviewだけを更新する。catalog応答で同じparameter UIを
       // 作り直すと、入力中にフォーカスやキャレット位置が失われるためである。
       sendCatalog(false, valueOf(device), valueOf(operation), parameters);
