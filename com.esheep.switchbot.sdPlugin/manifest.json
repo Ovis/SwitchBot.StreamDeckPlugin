@@ -47,6 +47,21 @@
       "PropertyInspectorPath": "ui/physical-control.html"
     },
     {
+      "Name": "Climate",
+      "Tooltip": "Control SwitchBot climate devices.",
+      "UUID": "com.esheep.switchbot.climate",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ],
+      "PropertyInspectorPath": "ui/physical-control.html"
+    },
+    {
       "Name": "Infrared Remote",
       "Tooltip": "Send commands to a SwitchBot virtual infrared remote.",
       "UUID": "com.esheep.switchbot.infrared-remote",

@@ -68,7 +68,10 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
         || Math.abs((value - operation.input.min) / operation.input.step - Math.round((value - operation.input.min) / operation.input.step)) > 1e-9) {
         return { error: "invalid-parameter" };
       }
-      parameter = String(value);
+      const normalized = String(value);
+      parameter = operation.parameterFormat?.kind === "json-number-field"
+        ? `${operation.parameterFormat.prefix}${normalized}${operation.parameterFormat.suffix}`
+        : normalized;
     } else {
       if (typeof raw !== "string") return { error: "invalid-parameter" };
       const parts = raw.split(":");
