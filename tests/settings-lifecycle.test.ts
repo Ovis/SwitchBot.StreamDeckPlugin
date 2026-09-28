@@ -43,6 +43,26 @@ describe("settings lifecycle", () => {
     expect(result).toEqual({ version: 2, name: "migrated", enabled: true });
   });
 
+  it("migrationが例外を投げてもfail closedする", () => {
+    expect(normalizeVersionedSettings({ version: 1, name: "Bot" }, {
+      currentVersion: 2,
+      schema: V2Schema,
+      defaults,
+      migrations: {
+        1: () => { throw new Error("broken migration"); }
+      }
+    })).toEqual(defaults());
+  });
+
+  it("normalizeが例外を投げてもfail closedする", () => {
+    expect(normalizeVersionedSettings({ version: 2, name: "Bot", enabled: true }, {
+      currentVersion: 2,
+      schema: V2Schema,
+      defaults,
+      normalize: () => { throw new Error("broken normalization"); }
+    })).toEqual(defaults());
+  });
+
   it("migrationが欠けている旧versionはfail closedする", () => {
     expect(normalizeVersionedSettings({ version: 1, name: "Bot" }, {
       currentVersion: 2,

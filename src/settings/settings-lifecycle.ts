@@ -25,17 +25,23 @@ export function normalizeVersionedSettings<T>(
   const version = settingsVersion(source);
   if (version === undefined || version > options.currentVersion) return options.defaults();
 
-  let migrated: unknown = source;
-  for (let current = version; current < options.currentVersion; current += 1) {
-    const migration = options.migrations?.[current];
-    if (!migration || !isRecord(migrated)) return options.defaults();
-    migrated = migration(migrated);
-  }
+  try {
+    let migrated: unknown = source;
+    for (let current = version; current < options.currentVersion; current += 1) {
+      const migration = options.migrations?.[current];
+      if (!migration || !isRecord(migrated)) return options.defaults();
+      migrated = migration(migrated);
+    }
 
-  if (!isRecord(migrated)) return options.defaults();
-  const normalized = options.normalize ? options.normalize(migrated) : migrated;
-  const parsed = options.schema.safeParse(normalized);
-  return parsed.success ? parsed.data : options.defaults();
+    if (!isRecord(migrated)) return options.defaults();
+    const normalized = options.normalize ? options.normalize(migrated) : migrated;
+    const parsed = options.schema.safeParse(normalized);
+    return parsed.success ? parsed.data : options.defaults();
+  } catch {
+    // 永続設定はユーザー操作や旧version由来で壊れている可能性がある。
+    // migration/normalizationの想定外入力でAction全体を停止させず、安全な既定値へ戻す。
+    return options.defaults();
+  }
 }
 
 /** settingsとして扱えるplain objectだけを返す。 */
