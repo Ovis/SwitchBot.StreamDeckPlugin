@@ -69,17 +69,16 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       available: true,
       ...executionDiagnosticsView(result)
     };
-    void streamDeck.ui.sendToPropertyInspector({ ...message }).catch(error => {
-      streamDeck.logger.warn("Failed to send execution diagnostics to Property Inspector", {
-        actionId,
-        errorName: error instanceof Error ? error.name : "UnknownError"
+    // sendToPropertyInspectorは現在表示中のPI宛てなので、別Actionの結果を誤表示しないよう
+    // 現在のPIがこのAction instanceを編集している場合だけpushする。
+    if (streamDeck.ui.action?.id === actionId) {
+      void streamDeck.ui.sendToPropertyInspector({ ...message }).catch(error => {
+        streamDeck.logger.warn("Failed to send execution diagnostics to Property Inspector", {
+          actionId,
+          errorName: error instanceof Error ? error.name : "UnknownError"
+        });
       });
-    });
-  }
-
-  /** Action消失時にメモリ内の診断結果を破棄する。 */
-  protected clearExecutionDiagnostics(actionId: string): void {
-    this.executionDiagnostics?.delete(actionId);
+    }
   }
 
   private async saveCredentials(credentials: PropertyInspectorCredentials): Promise<void> {

@@ -44,7 +44,6 @@ export class GetStatusAction extends AuthenticatedAction {
 
   override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
     this.clearRestoreTimer(ev.action.id);
-    this.clearExecutionDiagnostics(ev.action.id);
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {
