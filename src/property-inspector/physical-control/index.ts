@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let suppress = false;
   let initialSelectionRetryDeviceId = "";
   let parameterPreviewResyncKey = "";
+  let renderedParameterOperationId = "";
 
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
     const settings = settingsRecord(await streamDeckClient.getSettings());
@@ -79,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const selected = operations.get(valueOf(operation));
     const input = selected?.input;
     host.innerHTML = "";
+    renderedParameterOperationId = selected?.value ?? "";
     queryRequired<HTMLElement>("#parameter-status").textContent = "";
     if (!input) return;
 
@@ -138,10 +140,13 @@ document.addEventListener("DOMContentLoaded", () => {
         suppress = false;
       }
       const parameterField = document.querySelector<SdpiValueElement>("#operation-parameter");
-      const currentInput = operations.get(valueOf(operation))?.input;
+      const currentOperationId = valueOf(operation);
+      const currentInput = operations.get(currentOperationId)?.input;
       // parameter変更に対するpreview応答では既存入力欄を維持する。
-      // Device/Operation変更や初期表示で必要な場合だけrendererを作り直す。
-      if (!parameterField || !currentInput) renderOperationParameters(savedParameters);
+      // Operationが変わった場合は入力種別が同じでも制約が異なり得るため必ず作り直す。
+      if (renderedParameterOperationId !== currentOperationId || (currentInput && !parameterField)) {
+        renderOperationParameters(savedParameters);
+      }
       updateRequestPreview();
 
       // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
