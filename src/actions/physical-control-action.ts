@@ -5,7 +5,7 @@ import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { ExecutionErrorCategory } from "../execution/execution-result.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
-import type { DeviceCatalogEntry } from "../settings/device-catalog.js";
+import type { DeviceCatalog } from "../settings/device-catalog.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { ActionInstanceFifo } from "../execution/action-instance-fifo.js";
@@ -189,9 +189,9 @@ export class PhysicalControlAction extends AuthenticatedAction {
   }
 
   private isAvailableSelectedDevice(
-    device: DeviceCatalogEntry | undefined,
+    device: DeviceCatalog["devices"][number] | undefined,
     settings: PhysicalControlSettingsV1
-  ): device is DeviceCatalogEntry {
+  ): device is DeviceCatalog["devices"][number] {
     return device !== undefined
       && !device.deleted
       && device.deviceType === settings.deviceType
