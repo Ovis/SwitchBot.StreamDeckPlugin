@@ -1,11 +1,11 @@
-import type { ExecutionResult } from "./execution-result.js";
+import type { ExecutionErrorCategory, ExecutionResult } from "./execution-result.js";
 
 export interface ExecutionDiagnosticsView {
   executedAt: string;
   method: string;
   path: string;
   success: boolean;
-  errorCategory?: string;
+  errorCategory?: ExecutionErrorCategory;
   errorMessage?: string;
   httpStatus?: number;
   switchBotStatusCode?: number;
@@ -32,8 +32,8 @@ export function executionDiagnosticsView(result: ExecutionResult): ExecutionDiag
     } : {}),
     ...(response ? {
       httpStatus: response.httpStatus,
-      switchBotStatusCode: response.switchBot?.statusCode,
-      switchBotMessage: response.switchBot?.message,
+      ...(response.switchBot?.statusCode !== undefined ? { switchBotStatusCode: response.switchBot.statusCode } : {}),
+      ...(response.switchBot?.message !== undefined ? { switchBotMessage: response.switchBot.message } : {}),
       responseBody: formatResponseBody(response.body, response.rawBody)
     } : {})
   };
