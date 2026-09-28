@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nestedRecord, normalizeVersionedSettings } from "./settings-lifecycle.js";
 
 const OverrideSchema = z.object({
   enabled: z.boolean().catch(false).default(false),
@@ -35,18 +36,23 @@ const InfraredRemoteSettingsSchema = z.object({
 export type InfraredRemoteSettingsV1 = z.infer<typeof InfraredRemoteSettingsSchema>;
 
 export function normalizeInfraredRemoteSettings(value: unknown): InfraredRemoteSettingsV1 {
-  if (isFutureVersion(value)) return defaults();
-  const source = isRecord(value) ? value : {};
-  const overrides = isRecord(source.overrides) ? source.overrides : {};
-  return InfraredRemoteSettingsSchema.parse({
-    ...source,
-    airConditioner: isRecord(source.airConditioner) ? source.airConditioner : {},
-    overrides: {
-      command: OverrideSchema.parse(isRecord(overrides.command) ? overrides.command : {}),
-      parameter: OverrideSchema.parse(isRecord(overrides.parameter) ? overrides.parameter : {}),
-      commandType: OverrideSchema.parse(isRecord(overrides.commandType) ? overrides.commandType : {})
-    },
-    output: OutputSchema.parse(isRecord(source.output) ? source.output : {})
+  return normalizeVersionedSettings(value, {
+    currentVersion: 1,
+    schema: InfraredRemoteSettingsSchema,
+    defaults,
+    normalize: source => {
+      const overrides = nestedRecord(source, "overrides");
+      return {
+        ...source,
+        airConditioner: nestedRecord(source, "airConditioner"),
+        overrides: {
+          command: OverrideSchema.parse(nestedRecord(overrides, "command")),
+          parameter: OverrideSchema.parse(nestedRecord(overrides, "parameter")),
+          commandType: OverrideSchema.parse(nestedRecord(overrides, "commandType"))
+        },
+        output: OutputSchema.parse(nestedRecord(source, "output"))
+      };
+    }
   });
 }
 
@@ -67,12 +73,4 @@ function defaults(): InfraredRemoteSettingsV1 {
     overrides: { command: {}, parameter: {}, commandType: {} },
     output: {}
   });
-}
-
-function isFutureVersion(value: unknown): boolean {
-  return isRecord(value) && value.version !== undefined && value.version !== 1;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

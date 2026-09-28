@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { API_ENDPOINT_IDS } from "../api/api-endpoints.js";
+import { nestedRecord, normalizeVersionedSettings } from "./settings-lifecycle.js";
 
 export const DEFAULT_API_REQUEST_BODY = `{
   "command": "",
@@ -26,22 +27,17 @@ const ApiRequestSettingsSchema = z.object({
 export type ApiRequestSettingsV1 = z.infer<typeof ApiRequestSettingsSchema>;
 
 export function normalizeApiRequestSettings(value: unknown): ApiRequestSettingsV1 {
-  if (isFutureVersion(value)) return defaults();
-  const source = isRecord(value) ? value : {};
-  return ApiRequestSettingsSchema.parse({
-    ...source,
-    output: OutputSchema.parse(isRecord(source.output) ? source.output : {})
+  return normalizeVersionedSettings(value, {
+    currentVersion: 1,
+    schema: ApiRequestSettingsSchema,
+    defaults,
+    normalize: source => ({
+      ...source,
+      output: OutputSchema.parse(nestedRecord(source, "output"))
+    })
   });
 }
 
 function defaults(): ApiRequestSettingsV1 {
   return ApiRequestSettingsSchema.parse({ output: OutputSchema.parse({}) });
-}
-
-function isFutureVersion(value: unknown): boolean {
-  return isRecord(value) && value.version !== undefined && value.version !== 1;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
