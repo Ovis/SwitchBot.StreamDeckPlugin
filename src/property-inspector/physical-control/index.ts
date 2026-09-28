@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function isValidRgb(raw: string): boolean {
     const parts = raw.split(":");
-    return parts.length === 3 && parts.every(part => /^\\d{1,3}$/.test(part) && Number(part) <= 255);
+    return parts.length === 3 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255);
   }
 
   function renderOperationParameters(saved: Record<string, unknown> = {}): void {
