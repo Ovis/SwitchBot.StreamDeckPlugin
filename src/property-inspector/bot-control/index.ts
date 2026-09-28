@@ -1,6 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
+import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem } from "../../protocol/property-inspector-protocol.js";
 
 function escapeHtml(value: string): string {
@@ -18,6 +19,7 @@ function settingsRecord(value: unknown): Record<string, unknown> {
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
+  attachExecutionDiagnostics(streamDeckClient);
   const device = queryRequired<SdpiValueElement>("#device");
   const operation = queryRequired<SdpiValueElement>("#operation");
   let devices = new Map<string, PhysicalControlDeviceItem>();
@@ -47,6 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
       sendCatalog();
     })();
   });
+
+  queryRequired<HTMLElement>("#refresh-catalog").addEventListener("click", () => sendCatalog(true));
 
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
@@ -80,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
+  queryRequired<HTMLElement>("#refresh-catalog").textContent = window.SwitchBotI18n?.t("Refresh", "更新") ?? "Refresh";
   queryRequired<HTMLElement>("#advanced-note").textContent =
     window.SwitchBotI18n?.t("Use API Request for advanced operations and configuration changes.", "高度な操作や設定変更には「APIリクエスト」を使用してください") ?? "";
   sendCatalog();
