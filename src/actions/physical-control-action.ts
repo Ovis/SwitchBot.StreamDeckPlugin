@@ -146,15 +146,22 @@ export class PhysicalControlAction extends AuthenticatedAction {
       event: "physicalControlCatalog",
       devices,
       selectedDeviceId,
-      operations: operations.map(operation => ({
+      operations: operations.map(operation => {
+        const localizeInput = (input: NonNullable<typeof operation.input>) => ({
+          ...input,
+          label: this.locale === "ja" ? input.label.ja : input.label.en,
+          ...(input.kind === "select" ? {
+            options: input.options.map(option => ({
+              label: this.locale === "ja" ? option.label.ja : option.label.en,
+              value: option.value
+            }))
+          } : {})
+        });
+        return {
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
         value: operation.id,
-        ...(operation.input ? {
-          input: {
-            ...operation.input,
-            label: this.locale === "ja" ? operation.input.label.ja : operation.input.label.en
-          }
-        } : {}),
+        ...(operation.input ? { input: localizeInput(operation.input) } : {}),
+        ...(operation.inputs ? { inputs: operation.inputs.map(localizeInput) } : {}),
         requestBody: (() => {
           const operationParameters = request.operationId === operation.id ? request.operationParameters : undefined;
           const built = buildPhysicalCommand({
@@ -166,7 +173,8 @@ export class PhysicalControlAction extends AuthenticatedAction {
           });
           return built.command ? physicalCommandBody(built.command, true) : "";
         })()
-      })),
+      };
+      }),
       refreshFailed: result.refreshFailed,
       configurationInvalid
     };
