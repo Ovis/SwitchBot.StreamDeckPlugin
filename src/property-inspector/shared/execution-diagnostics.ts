@@ -18,10 +18,15 @@ interface DiagnosticsClient {
  */
 export function attachExecutionDiagnostics(streamDeckClient: DiagnosticsClient): void {
   const container = queryRequired<HTMLElement>("#execution-diagnostics");
+  const heading = queryRequired<HTMLElement>("#execution-diagnostics-heading");
   const summary = queryRequired<HTMLElement>("#execution-diagnostics-summary");
   const response = queryRequired<HTMLElement>("#execution-diagnostics-response");
 
+  let latestMessage: ExecutionDiagnosticsMessage | undefined;
+
   function render(message: ExecutionDiagnosticsMessage): void {
+    latestMessage = message;
+    heading.textContent = window.SwitchBotI18n?.t("Latest execution result", "最新の実行結果") ?? "Latest execution result";
     if (!message.available) {
       summary.textContent = window.SwitchBotI18n?.t("No execution result yet.", "まだ実行結果はありません。") ?? "No execution result yet.";
       response.textContent = "";
@@ -30,7 +35,7 @@ export function attachExecutionDiagnostics(streamDeckClient: DiagnosticsClient):
     }
 
     const lines = [
-      `${message.success ? "Success" : "Failed"}: ${message.method ?? ""} ${message.path ?? ""}`,
+      `${message.success ? (window.SwitchBotI18n?.t("Success", "成功") ?? "Success") : (window.SwitchBotI18n?.t("Failed", "失敗") ?? "Failed")}: ${message.method} ${message.path}`,
       message.httpStatus !== undefined ? `HTTP: ${message.httpStatus}` : "",
       message.switchBotStatusCode !== undefined
         ? `SwitchBot: ${message.switchBotStatusCode}${message.switchBotMessage ? ` (${message.switchBotMessage})` : ""}`
@@ -45,6 +50,10 @@ export function attachExecutionDiagnostics(streamDeckClient: DiagnosticsClient):
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
     if (message?.event === "executionDiagnostics") render(message);
+  });
+
+  document.addEventListener("switchbot-locale-changed", () => {
+    if (latestMessage) render(latestMessage);
   });
 
   void streamDeckClient.send("sendToPlugin", { event: "getExecutionDiagnostics" });
