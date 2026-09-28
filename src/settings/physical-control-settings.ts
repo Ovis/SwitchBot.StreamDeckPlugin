@@ -6,7 +6,7 @@ const PhysicalControlSettingsSchema = z.object({
   deviceId: z.string().catch("").default(""),
   deviceType: z.string().catch("").default(""),
   operationId: z.string().catch("").default(""),
-  operationParameters: z.record(z.string(), z.unknown()).catch({}).default({})
+  operationParameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).catch({}).default({})
 });
 
 export type PhysicalControlSettingsV1 = z.infer<typeof PhysicalControlSettingsSchema>;
