@@ -59,15 +59,17 @@ document.addEventListener("DOMContentLoaded", () => {
     void (async () => {
       if (suppress) return;
       const selected = devices.get(valueOf(device));
+      const previousOperationId = valueOf(operation);
       await patchSettings(settings => {
         settings.version = 1;
         settings.deviceId = selected?.value ?? "";
         settings.deviceType = selected?.deviceType ?? "";
-        settings.operationId = "";
+        // 新Deviceでも同じOperation IDが有効かはPlugin側のcatalogで確定する。
+        // ここでは候補を維持してparametersだけを消去し、未検証のfallbackは行わない。
+        settings.operationId = previousOperationId;
         settings.operationParameters = {};
       });
-      operation.value = "";
-      sendCatalog();
+      sendCatalog(false, selected?.value ?? "", previousOperationId, {});
     })();
   });
 
@@ -95,36 +97,63 @@ document.addEventListener("DOMContentLoaded", () => {
     return parts.length === 3 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255);
   }
 
+  function operationInputs(item: PhysicalControlOperationItem | undefined) {
+    if (item?.inputs) return item.inputs;
+    return item?.input ? [item.input] : [];
+  }
+
   function renderOperationParameters(saved: Record<string, unknown> = {}): void {
     const host = queryRequired<HTMLElement>("#operation-parameters");
     const selected = operations.get(valueOf(operation));
-    const input = selected?.input;
+    const inputs = operationInputs(selected);
     host.innerHTML = "";
     renderedParameterOperationId = selected?.value ?? "";
     queryRequired<HTMLElement>("#parameter-status").textContent = "";
-    if (!input) return;
+    if (inputs.length === 0) return;
 
-    const initial = saved[input.key];
-    const placeholder = input.kind === "rgb" ? "255:0:0" : `${input.min}–${input.max}${input.unit ?? ""}`;
-    host.innerHTML = `<sdpi-item label="${escapeHtml(input.label)}"><sdpi-textfield id="operation-parameter" placeholder="${escapeHtml(placeholder)}"></sdpi-textfield></sdpi-item>`;
-    const field = queryRequired<SdpiValueElement>("#operation-parameter");
-    field.value = typeof initial === "string" || typeof initial === "number" ? String(initial) : "";
-    field.addEventListener("valuechange", () => {
-      const raw = valueOf(field).trim();
-      const parameters = raw === "" ? {} : { [input.key]: raw };
+    host.innerHTML = inputs.map((input, index) => {
+      const fieldId = `operation-parameter-${index}`;
+      const statusId = `parameter-status-${index}`;
+      if (input.kind === "select") {
+        const placeholder = window.SwitchBotI18n?.t("Select a value", "値を選択") ?? "Select a value";
+        const options = (input.options ?? []).map(option =>
+          `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`
+        ).join("");
+        return `<sdpi-item label="${escapeHtml(input.label)}"><sdpi-select id="${fieldId}" placeholder="${escapeHtml(placeholder)}"><option value="">${escapeHtml(placeholder)}</option>${options}</sdpi-select></sdpi-item><div id="${statusId}"></div>`;
+      }
+      const placeholder = input.kind === "rgb" ? "255:0:0" : `${input.min}–${input.max}${input.unit ?? ""}`;
+      return `<sdpi-item label="${escapeHtml(input.label)}"><sdpi-textfield id="${fieldId}" placeholder="${escapeHtml(placeholder)}"></sdpi-textfield></sdpi-item><div id="${statusId}"></div>`;
+    }).join("");
+
+    const fields = inputs.map((input, index) => {
+      const field = queryRequired<SdpiValueElement>(`#operation-parameter-${index}`);
+      const initial = saved[input.key];
+      field.value = typeof initial === "string" || typeof initial === "number" ? String(initial) : "";
+      return field;
+    });
+
+    const synchronize = (): void => {
+      const parameters: Record<string, string> = {};
+      inputs.forEach((input, index) => {
+        const raw = valueOf(fields[index]).trim();
+        if (raw !== "") parameters[input.key] = raw;
+        const invalid = raw !== "" && (
+          input.kind === "rgb"
+            ? !isValidRgb(raw)
+            : input.kind === "number"
+              ? !isValidNumberParameter(raw, input.min, input.max, input.step)
+              : !(input.options ?? []).some(option => option.value === raw)
+        );
+        queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = invalid
+          ? (window.SwitchBotI18n?.t("Enter or select a valid value.", "有効な値を入力または選択してください") ?? "")
+          : "";
+      });
       void patchSettings(settings => { settings.operationParameters = parameters; });
-      const invalid = raw !== "" && (
-        input.kind === "rgb"
-          ? !isValidRgb(raw)
-          : !isValidNumberParameter(raw, input.min, input.max, input.step)
-      );
-      queryRequired<HTMLElement>("#parameter-status").textContent = invalid
-        ? (window.SwitchBotI18n?.t("Enter a value within the displayed range.", "表示された範囲内の値を入力してください") ?? "")
-        : "";
       // 入力欄自体は再生成せずpreviewだけを更新する。catalog応答で同じparameter UIを
       // 作り直すと、入力中にフォーカスやキャレット位置が失われるためである。
       sendCatalog(false, valueOf(device), valueOf(operation), parameters);
-    });
+    };
+    fields.forEach(field => field.addEventListener("valuechange", synchronize));
   }
 
   operation.addEventListener("valuechange", () => {
@@ -168,12 +197,12 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppress = false;
       }
-      const parameterField = document.querySelector<SdpiValueElement>("#operation-parameter");
       const currentOperationId = valueOf(operation);
-      const currentInput = operations.get(currentOperationId)?.input;
+      const currentInputs = operationInputs(operations.get(currentOperationId));
+      const renderedFields = document.querySelectorAll("[id^='operation-parameter-']");
       // parameter変更に対するpreview応答では既存入力欄を維持する。
       // Operationが変わった場合は入力種別が同じでも制約が異なり得るため必ず作り直す。
-      if (renderedParameterOperationId !== currentOperationId || (currentInput && !parameterField)) {
+      if (renderedParameterOperationId !== currentOperationId || renderedFields.length !== currentInputs.length) {
         renderOperationParameters(savedParameters);
       }
       updateRequestPreview();
@@ -181,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
       // parameter付きOperationを復元した場合だけ一度再要求し、実送信と同じbuilderでpreviewを再生成する。
       const selectedOperationItem = operations.get(selectedOperation);
-      const parameterPreviewKey = selectedOperationItem?.input && Object.keys(savedParameters).length > 0
+      const parameterPreviewKey = operationInputs(selectedOperationItem).length > 0 && Object.keys(savedParameters).length > 0
         ? `${selectedDevice}:${selectedOperation}:${JSON.stringify(savedParameters)}` : "";
       if (parameterPreviewKey && parameterPreviewKey !== parameterPreviewResyncKey) {
         parameterPreviewResyncKey = parameterPreviewKey;
