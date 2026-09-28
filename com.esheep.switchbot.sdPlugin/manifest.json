@@ -4,7 +4,7 @@
     {
       "Name": "Bot",
       "Tooltip": "Control a SwitchBot Bot.",
-      "UUID": "com.esheep.switchbot.bot-control",
+      "UUID": "com.esheep.switchbot.bot",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
