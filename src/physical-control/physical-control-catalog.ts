@@ -153,7 +153,7 @@ const securityOperation = (
 const SMART_LOCK: readonly PhysicalOperationDefinition[] = [
   securityOperation("lock", "Lock", "施錠", "lock"),
   securityOperation("unlock", "Unlock", "解錠", "unlock", true),
-  securityOperation("deadbolt", "Disengage Deadbolt / Latch", "デッドボルト / ラッチを解除", "deadbolt", true)
+  securityOperation("deadbolt", "Engage Deadbolt", "デッドボルトを作動", "deadbolt")
 ];
 const SMART_LOCK_LITE: readonly PhysicalOperationDefinition[] = [
   securityOperation("lock", "Lock", "施錠", "lock"),
