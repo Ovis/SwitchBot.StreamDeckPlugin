@@ -88,7 +88,7 @@ describe("Property Inspector protocol", () => {
         errorCategory: "http",
         errorMessage: "HTTP 500",
         httpStatus: 500,
-        responseBody: "{\\n  \\"error\\": true\\n}"
+        responseBody: `{\n  "error": true\n}`
       })).toEqual({
         event: "executionDiagnostics",
         available: true,
@@ -99,7 +99,7 @@ describe("Property Inspector protocol", () => {
         errorCategory: "http",
         errorMessage: "HTTP 500",
         httpStatus: 500,
-        responseBody: "{\\n  \\"error\\": true\\n}"
+        responseBody: `{\n  "error": true\n}`
       });
       expect(parsePluginToPropertyInspectorMessage({
         event: "executionDiagnostics",
