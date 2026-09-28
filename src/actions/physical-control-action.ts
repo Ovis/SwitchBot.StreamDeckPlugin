@@ -125,6 +125,23 @@ export class PhysicalControlAction extends AuthenticatedAction {
     const operations = configurationInvalid || selectedDeviceId === ""
       ? []
       : (physicalDeviceDefinition(effectiveDeviceType)?.operations ?? []);
+
+    // Physical Control PIの初期実機確認中に、Deviceは表示されるがOperationが空になる経路を切り分ける。
+    // 認証情報やcommand本文は記録せず、選択状態とCatalog解決結果だけをInformationへ残す。
+    streamDeck.logger.info("Physical Control PI catalog resolved", {
+      actionId: typeof ev.context === "string" ? ev.context : undefined,
+      physicalActionId: this.physicalActionId,
+      requestedDeviceId: request.deviceId,
+      selectedDeviceId,
+      savedDeviceId: settings.deviceId,
+      savedDeviceType: settings.deviceType,
+      catalogDeviceType: selectedCatalogDevice?.deviceType,
+      catalogDeviceDeleted: selectedCatalogDevice?.deleted,
+      effectiveDeviceType,
+      configurationInvalid,
+      operationIds: operations.map(operation => operation.id)
+    });
+
     const message: PhysicalControlCatalogMessage = {
       event: "physicalControlCatalog",
       devices,
