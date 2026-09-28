@@ -85,3 +85,74 @@ describe("Power physical control", () => {
     expect(supportsPhysicalAction("Relay Switch 2PM", "power")).toBe(false);
   });
 });
+
+
+describe("Lighting physical control", () => {
+  it.each([
+    ["Color Bulb", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
+    ["Strip Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color"]],
+    ["Floor Lamp", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color", "set-color-temperature"]],
+    ["RGBIC Neon Rope Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color"]],
+    ["Ceiling Light", ["turn-on", "turn-off", "toggle", "set-brightness", "set-color-temperature"]],
+    ["Candle Warmer Lamp", ["turn-on", "turn-off", "toggle", "set-brightness"]]
+  ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
+    const definition = physicalDeviceDefinition(deviceType);
+    expect(definition?.action).toBe("lighting");
+    expect(definition?.operations.map(operation => operation.id)).toEqual(operationIds);
+  });
+
+  it("明るさのdeviceType別範囲を検証する", () => {
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-brightness",
+      operationParameters: { value: 0 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-brightness",
+      operationParameters: { value: 1 }
+    }).command?.parameter).toBe("1");
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L2", deviceType: "Floor Lamp", operationId: "set-brightness",
+      operationParameters: { value: 0 }
+    }).command?.parameter).toBe("0");
+  });
+
+  it("RGBを0-255の3成分として正規化する", () => {
+    const built = buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-color",
+      operationParameters: { value: "255:000:7" }
+    });
+    expect(built.command?.parameter).toBe("255:0:7");
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-color",
+      operationParameters: { value: "256:0:0" }
+    }).error).toBe("invalid-parameter");
+  });
+
+  it("色温度を2700-6500Kに制限する", () => {
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-color-temperature",
+      operationParameters: { value: 2700 }
+    }).command?.parameter).toBe("2700");
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-color-temperature",
+      operationParameters: { value: 6501 }
+    }).error).toBe("invalid-parameter");
+  });
+
+  it("RGBICWW Ceiling LightのMain/Color Light固有commandを構築する", () => {
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L3", deviceType: "RGBICWW Ceiling Light",
+      operationId: "set-main-light-brightness", operationParameters: { value: 50 }
+    }).command).toMatchObject({ command: "setMainLightBrightness", parameter: "50" });
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L3", deviceType: "RGBICWW Ceiling Light",
+      operationId: "set-color-light-rgb", operationParameters: { value: "1:2:3" }
+    }).command).toMatchObject({ command: "setColorLightRGB", parameter: "1:2:3" });
+  });
+
+  it("parameter必須Operationは未入力をfail closedする", () => {
+    expect(buildPhysicalCommand({
+      action: "lighting", deviceId: "L1", deviceType: "Color Bulb", operationId: "set-brightness"
+    }).error).toBe("invalid-parameter");
+  });
+});
