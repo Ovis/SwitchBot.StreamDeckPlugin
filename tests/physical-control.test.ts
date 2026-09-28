@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPhysicalCommand } from "../src/physical-control/physical-command-builder.js";
+import { buildPhysicalCommand, physicalCommandBody, physicalCommandRequest } from "../src/physical-control/physical-command-builder.js";
 import { physicalDeviceDefinition, supportsPhysicalAction } from "../src/physical-control/physical-control-catalog.js";
 
 describe("Bot physical control", () => {
@@ -20,6 +20,17 @@ describe("Bot physical control", () => {
       path: "/v1.1/devices/AA%20BB/commands",
       body: JSON.stringify({ command, parameter: "default", commandType: "command" })
     });
+  });
+
+  it("PIプレビューと実送信で同じPhysicalCommand変換を使用できる", () => {
+    const built = buildPhysicalCommand({ action: "bot", deviceId: "bot-1", deviceType: "Bot", operationId: "press" });
+    expect(built.command).toBeDefined();
+    expect(physicalCommandBody(built.command!, true)).toBe(JSON.stringify({
+      command: "press",
+      parameter: "default",
+      commandType: "command"
+    }, null, 2));
+    expect(physicalCommandRequest(built.command!)).toEqual(built.request);
   });
 
   it("未知deviceTypeと未知operationはfail closedする", () => {
