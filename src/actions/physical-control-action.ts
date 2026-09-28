@@ -87,20 +87,33 @@ export class PhysicalControlAction extends AuthenticatedAction {
       loadCached: () => this.catalogStore.get(),
       refresh: () => this.catalogRefresh.refreshDevices()
     });
-    const selectedCatalogDevice = result.catalog?.devices.find(device => device.deviceId === settings.deviceId);
+    // PIが現在選択しているDeviceを優先する。setSettings直後のSDK反映タイミングに依存せず、
+    // catalog上の実データからdeviceTypeとOperationを決定するためである。
+    const selectedDeviceId = request.deviceId?.trim() || settings.deviceId;
+    const selectedCatalogDevice = result.catalog?.devices.find(device => device.deviceId === selectedDeviceId);
 
     // PR開発途中などdeviceType導入前に保存された設定は、deviceIdだけが残っている場合がある。
     // /devicesで同じIDの対応デバイスを確認できた場合に限ってtypeを補完し、
     // 未知typeや既存typeの不一致を推測で上書きすることはしない。
-    if (actionInstance && settings.deviceId !== "" && settings.deviceType === ""
-      && selectedCatalogDevice && !selectedCatalogDevice.deleted
-      && supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)) {
-      settings = { ...settings, deviceType: selectedCatalogDevice.deviceType };
-      await actionInstance.setSettings(settings);
+    if (selectedCatalogDevice && !selectedCatalogDevice.deleted
+      && supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)
+      && (settings.deviceId !== selectedDeviceId || settings.deviceType === "")) {
+      settings = {
+        ...settings,
+        deviceId: selectedDeviceId,
+        deviceType: selectedCatalogDevice.deviceType,
+        ...(settings.deviceId !== selectedDeviceId ? { operationId: "", operationParameters: {} } : {})
+      };
+      if (actionInstance) await actionInstance.setSettings(settings);
     }
 
-    const configurationInvalid = settings.deviceId !== ""
-      && !this.isAvailableSelectedDevice(selectedCatalogDevice, settings);
+    const effectiveDeviceType = selectedCatalogDevice?.deviceType ?? settings.deviceType;
+    const configurationInvalid = selectedDeviceId !== "" && (
+      !selectedCatalogDevice
+      || selectedCatalogDevice.deleted
+      || !supportsPhysicalAction(effectiveDeviceType, this.physicalActionId)
+      || (settings.deviceType !== "" && settings.deviceId === selectedDeviceId && settings.deviceType !== effectiveDeviceType)
+    );
     const devices = (result.catalog?.devices ?? [])
       .filter(device => supportsPhysicalAction(device.deviceType, this.physicalActionId))
       .filter(device => !device.deleted || device.deviceId === settings.deviceId)
@@ -109,7 +122,9 @@ export class PhysicalControlAction extends AuthenticatedAction {
         value: device.deviceId,
         deviceType: device.deviceType
       }));
-    const operations = configurationInvalid ? [] : (physicalDeviceDefinition(settings.deviceType)?.operations ?? []);
+    const operations = configurationInvalid || selectedDeviceId === ""
+      ? []
+      : (physicalDeviceDefinition(effectiveDeviceType)?.operations ?? []);
     const message: PhysicalControlCatalogMessage = {
       event: "physicalControlCatalog",
       devices,
@@ -119,8 +134,8 @@ export class PhysicalControlAction extends AuthenticatedAction {
         requestBody: (() => {
           const built = buildPhysicalCommand({
             action: this.physicalActionId,
-            deviceId: settings.deviceId,
-            deviceType: settings.deviceType,
+            deviceId: selectedDeviceId,
+            deviceType: effectiveDeviceType,
             operationId: operation.id
           });
           return built.command ? physicalCommandBody(built.command, true) : "";
