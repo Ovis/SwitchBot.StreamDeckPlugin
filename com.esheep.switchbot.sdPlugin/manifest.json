@@ -32,6 +32,21 @@
       "PropertyInspectorPath": "ui/physical-control.html"
     },
     {
+      "Name": "Lighting",
+      "Tooltip": "Control SwitchBot lights.",
+      "UUID": "com.esheep.switchbot.lighting",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ],
+      "PropertyInspectorPath": "ui/physical-control.html"
+    },
+    {
       "Name": "Infrared Remote",
       "Tooltip": "Send commands to a SwitchBot virtual infrared remote.",
       "UUID": "com.esheep.switchbot.infrared-remote",
