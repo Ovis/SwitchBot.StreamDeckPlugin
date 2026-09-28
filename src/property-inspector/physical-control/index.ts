@@ -224,8 +224,10 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-heading").textContent = translate("Request Body", "リクエスト本文");
     queryRequired<HTMLElement>("#advanced-note").textContent =
       translate("Use API Request for advanced operations and configuration changes.", "高度な操作や設定変更には「APIリクエスト」を使用してください");
-    skipUnlockConfirmation.textContent =
-      translate("Do not require confirmation when unlocking", "解錠時の二度押し確認をしない");
+    unlockConfirmationItem.setAttribute(
+      "label",
+      translate("Skip double-press confirmation when unlocking", "解錠時の二度押し確認をしない")
+    );
     queryRequired<HTMLElement>("#execution-diagnostics-heading").textContent =
       translate("Latest execution result", "最新の実行結果");
   }
