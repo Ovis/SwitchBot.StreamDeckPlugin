@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head lang="en">
+  <meta charset="utf-8" />
+  <title>SwitchBot Physical Control</title>
+  <script src="sdpi-components.js"></script>
+  <script src="physical-control.js"></script>
+  <link rel="stylesheet" href="authentication.css" />
+  <style>
+    [hidden] { display: none !important; }
+    .section-heading { margin: 12px 8px 6px; font-weight: 600; color: #d8d8d8; }
+    .status { margin: 4px 8px 8px 116px; font-size: 11px; white-space: pre-line; }
+    .invalid { color: #e57373; }
+    .notice { color: #e0b66d; }
+    .preview { margin: 6px 8px 10px; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; color: #d8d8d8; }
+    .advanced-note { margin: 6px 8px 10px; color: #bdbdbd; font-size: 11px; }
+    .execution-diagnostics { margin-top: 12px; border-top: 1px solid #555; padding-top: 8px; }
+  </style>
+</head>
+<body>
+  <div id="switchbot-authentication"></div>
+  <sdpi-item label="__MSG_device__">
+    <sdpi-select id="device" loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__"></sdpi-select>
+  </sdpi-item>
+  <sdpi-item>
+    <sdpi-button id="refresh-catalog">Refresh</sdpi-button>
+  </sdpi-item>
+  <sdpi-item label="__MSG_operation__">
+    <sdpi-select id="operation" placeholder="__MSG_selectOperation__"></sdpi-select>
+  </sdpi-item>
+  <div id="catalog-status" class="status invalid" aria-live="polite"></div>
+  <div id="request-heading" class="section-heading">Request Body</div>
+  <pre id="request-preview" class="preview"></pre>
+  <p id="advanced-note" class="advanced-note"></p>
+  <div id="execution-diagnostics" class="execution-diagnostics" hidden>
+    <div id="execution-diagnostics-heading" class="section-heading">Latest execution result</div>
+    <pre id="execution-diagnostics-summary" class="preview"></pre>
+    <pre id="execution-diagnostics-response" class="preview"></pre>
+  </div>
+</body>
+</html>

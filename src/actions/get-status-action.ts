@@ -5,6 +5,7 @@ import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
+import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
@@ -51,9 +52,11 @@ export class GetStatusAction extends AuthenticatedAction {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event === "getDevices") {
       const refresh = request.isRefresh === true;
-      const result = refresh
-        ? await this.catalogRefresh.refreshDevices()
-        : { catalog: await this.catalogStore.get(), refreshed: true };
+      const result = await loadPropertyInspectorCatalog({
+        isRefresh: refresh,
+        loadCached: () => this.catalogStore.get(),
+        refresh: () => this.catalogRefresh.refreshDevices()
+      });
       const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
       const settings = actionInstance
         ? normalizeGetStatusSettings(await actionInstance.getSettings())
@@ -64,7 +67,7 @@ export class GetStatusAction extends AuthenticatedAction {
           label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
           value: device.deviceId
         })),
-        refreshFailed: refresh && !result.refreshed
+        refreshFailed: result.refreshFailed
       };
       await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;

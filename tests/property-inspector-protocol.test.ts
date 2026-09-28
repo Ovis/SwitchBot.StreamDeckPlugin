@@ -29,6 +29,14 @@ describe("Property Inspector protocol", () => {
       })).toEqual({ event: "getDevices", isRefresh: true });
     });
 
+    it("Physical Control catalog要求を判別する", () => {
+      expect(parsePropertyInspectorToPluginMessage({
+        event: "getPhysicalControlCatalog",
+        isRefresh: true,
+        deviceId: "bot-1"
+      })).toEqual({ event: "getPhysicalControlCatalog", isRefresh: true, deviceId: "bot-1" });
+    });
+
     it("未知eventと不正な認証情報をfail closedする", () => {
       expect(parsePropertyInspectorToPluginMessage({ event: "futureEvent" })).toBeUndefined();
       expect(parsePropertyInspectorToPluginMessage({
@@ -50,6 +58,27 @@ describe("Property Inspector protocol", () => {
         items: [{ label: "Bot", value: "device-1" }],
         commandTemplates: { "device-1": "{\"command\":\"press\"}" },
         refreshFailed: false
+      });
+    });
+
+    it("Physical Control catalogのdeviceTypeを検証する", () => {
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "physicalControlCatalog",
+        devices: [
+          { label: "Bot", value: "bot-1", deviceType: "Bot" },
+          { label: "Broken", value: "broken" }
+        ],
+        operations: [{ label: "Press", value: "press", requestBody: "{\\\"command\\\":\\\"press\\\"}" }],
+        selectedDeviceId: "bot-1",
+        refreshFailed: false,
+        configurationInvalid: true
+      })).toEqual({
+        event: "physicalControlCatalog",
+        devices: [{ label: "Bot", value: "bot-1", deviceType: "Bot" }],
+        operations: [{ label: "Press", value: "press", requestBody: "{\\\"command\\\":\\\"press\\\"}" }],
+        selectedDeviceId: "bot-1",
+        refreshFailed: false,
+        configurationInvalid: true
       });
     });
 

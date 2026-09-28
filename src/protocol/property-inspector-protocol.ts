@@ -45,6 +45,12 @@ export interface ScenesRequest extends ProtocolJsonObject {
   isRefresh?: boolean;
 }
 
+export interface PhysicalControlCatalogRequest extends ProtocolJsonObject {
+  event: "getPhysicalControlCatalog";
+  isRefresh?: boolean;
+  deviceId?: string;
+}
+
 export interface InfraredRemotesRequest extends ProtocolJsonObject {
   event: "getInfraredRemotes";
   isRefresh?: boolean;
@@ -57,6 +63,7 @@ export type PropertyInspectorToPluginMessage =
   | DevicesRequest
   | ScenesRequest
   | InfraredRemotesRequest
+  | PhysicalControlCatalogRequest
   | ExecutionDiagnosticsRequest;
 
 export interface PropertyInspectorMessageEnvelope {
@@ -147,6 +154,23 @@ export interface InfraredRemotePropertyInspectorItem extends PropertyInspectorSe
   commands: InfraredCommandPropertyInspectorItem[];
 }
 
+export interface PhysicalControlDeviceItem extends PropertyInspectorSelectItem {
+  deviceType: string;
+}
+
+export interface PhysicalControlOperationItem extends PropertyInspectorSelectItem {
+  requestBody: string;
+}
+
+export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
+  event: "physicalControlCatalog";
+  devices: PhysicalControlDeviceItem[];
+  operations: PhysicalControlOperationItem[];
+  selectedDeviceId: string;
+  refreshFailed?: boolean;
+  configurationInvalid?: boolean;
+}
+
 export interface InfraredRemotesResultMessage extends ProtocolJsonObject {
   event: "getInfraredRemotes";
   items: PropertyInspectorSelectItem[];
@@ -160,6 +184,7 @@ export type PluginToPropertyInspectorMessage =
   | DevicesResultMessage
   | ScenesResultMessage
   | InfraredRemotesResultMessage
+  | PhysicalControlCatalogMessage
   | ExecutionDiagnosticsMessage;
 
 
@@ -181,6 +206,13 @@ export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyI
     return {
       event: value.event,
       ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {})
+    };
+  }
+  if (value.event === "getPhysicalControlCatalog") {
+    return {
+      event: "getPhysicalControlCatalog",
+      ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {}),
+      ...(typeof value.deviceId === "string" ? { deviceId: value.deviceId } : {})
     };
   }
   return undefined;
@@ -246,6 +278,20 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
     return { event: "getApiEndpoints", items: value.items.map(protocolSelectItem).filter(protocolDefined), definitions };
   }
 
+  if (value.event === "physicalControlCatalog") {
+    if (!Array.isArray(value.devices) || !Array.isArray(value.operations) || typeof value.selectedDeviceId !== "string") return undefined;
+    const devices = value.devices.map(protocolPhysicalControlDevice).filter(protocolDefined);
+    const operations = value.operations.map(protocolPhysicalControlOperation).filter(protocolDefined);
+    return {
+      event: "physicalControlCatalog",
+      devices,
+      operations,
+      selectedDeviceId: value.selectedDeviceId,
+      ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}),
+      ...(typeof value.configurationInvalid === "boolean" ? { configurationInvalid: value.configurationInvalid } : {})
+    };
+  }
+
   if (value.event === "getInfraredRemotes") {
     if (!Array.isArray(value.items) || !Array.isArray(value.remotes)) return undefined;
     const remotes = value.remotes.map(protocolInfraredRemote).filter(protocolDefined);
@@ -275,6 +321,18 @@ function protocolEndpoint(value: unknown): ApiEndpointPropertyInspectorDefinitio
     ...(value.parameter ? { parameter: value.parameter } : {}),
     ...(typeof value.defaultBody === "string" ? { defaultBody: value.defaultBody } : {})
   };
+}
+
+function protocolPhysicalControlOperation(value: unknown): PhysicalControlOperationItem | undefined {
+  const item = protocolSelectItem(value);
+  if (!item || !protocolRecord(value) || typeof value.requestBody !== "string") return undefined;
+  return { ...item, requestBody: value.requestBody };
+}
+
+function protocolPhysicalControlDevice(value: unknown): PhysicalControlDeviceItem | undefined {
+  const item = protocolSelectItem(value);
+  if (!item || !protocolRecord(value) || typeof value.deviceType !== "string") return undefined;
+  return { ...item, deviceType: value.deviceType };
 }
 
 function protocolInfraredRemote(value: unknown): InfraredRemotePropertyInspectorItem | undefined {
