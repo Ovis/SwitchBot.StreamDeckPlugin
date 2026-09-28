@@ -33,7 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function sendCatalog(isRefresh = false): void {
-    streamDeckClient.send("sendToPlugin", { event: "getPhysicalControlCatalog", isRefresh });
+    // Plugin側が保存settingsの反映タイミングだけに依存すると、PI上の選択とOperation一覧がずれる可能性がある。
+    // 現在選択中のdeviceIdも送り、catalogの実データを基準にOperationを解決させる。
+    streamDeckClient.send("sendToPlugin", {
+      event: "getPhysicalControlCatalog",
+      isRefresh,
+      deviceId: valueOf(device)
+    });
   }
 
   device.addEventListener("valuechange", () => {
