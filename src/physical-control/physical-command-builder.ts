@@ -75,7 +75,7 @@ function validatedParameterValues(
     if (input.kind === "rgb") {
       if (typeof raw !== "string") return undefined;
       const parts = raw.split(":");
-      if (parts.length !== 3 || parts.some(part => !/^\\d{1,3}$/.test(part)
+      if (parts.length !== 3 || parts.some(part => !/^\d{1,3}$/.test(part)
         || Number(part) < 0 || Number(part) > 255)) return undefined;
       values.set(input.key, parts.map(part => String(Number(part))).join(":"));
       continue;
