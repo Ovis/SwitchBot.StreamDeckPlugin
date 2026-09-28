@@ -91,9 +91,18 @@ document.addEventListener("DOMContentLoaded", () => {
         suppress = false;
       }
       updateRequestPreview();
-      queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
-        ? window.SwitchBotI18n?.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。") ?? ""
-        : "";
+      const statusMessages = [
+        message.configurationInvalid
+          ? window.SwitchBotI18n?.t(
+            "The saved device is no longer available for this action. Select the device again.",
+            "保存済みのデバイスはこの操作では利用できません。デバイスを選択し直してください。"
+          ) ?? ""
+          : "",
+        message.refreshFailed
+          ? window.SwitchBotI18n?.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。") ?? ""
+          : ""
+      ].filter(Boolean);
+      queryRequired<HTMLElement>("#catalog-status").textContent = statusMessages.join("\n");
     })();
   });
 
