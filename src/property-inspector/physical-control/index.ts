@@ -125,10 +125,26 @@ document.addEventListener("DOMContentLoaded", () => {
       return `<sdpi-item label="${escapeHtml(input.label)}"><sdpi-textfield id="${fieldId}" placeholder="${escapeHtml(placeholder)}"></sdpi-textfield></sdpi-item><div id="${statusId}"></div>`;
     }).join("");
 
+    const isInvalid = (input: (typeof inputs)[number], raw: string): boolean => raw !== "" && (
+      input.kind === "rgb"
+        ? !isValidRgb(raw)
+        : input.kind === "number"
+          ? !isValidNumberParameter(raw, input.min, input.max, input.step)
+          : !(input.options ?? []).some(option => option.value === raw)
+    );
+    const validationMessage = window.SwitchBotI18n?.t(
+      "Enter or select a valid value.",
+      "有効な値を入力または選択してください"
+    ) ?? "";
+
     const fields = inputs.map((input, index) => {
       const field = queryRequired<SdpiValueElement>(`#operation-parameter-${index}`);
       const initial = saved[input.key];
-      field.value = typeof initial === "string" || typeof initial === "number" ? String(initial) : "";
+      const raw = typeof initial === "string" || typeof initial === "number" ? String(initial) : "";
+      const invalid = isInvalid(input, raw);
+      // selectの保存値がcatalogから外れていても先頭候補へ補正せず、未選択表示のまま元settingsを保持する。
+      field.value = input.kind === "select" && invalid ? "" : raw;
+      queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = invalid ? validationMessage : "";
       return field;
     });
 
@@ -137,15 +153,8 @@ document.addEventListener("DOMContentLoaded", () => {
       inputs.forEach((input, index) => {
         const raw = valueOf(fields[index]).trim();
         if (raw !== "") parameters[input.key] = raw;
-        const invalid = raw !== "" && (
-          input.kind === "rgb"
-            ? !isValidRgb(raw)
-            : input.kind === "number"
-              ? !isValidNumberParameter(raw, input.min, input.max, input.step)
-              : !(input.options ?? []).some(option => option.value === raw)
-        );
-        queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = invalid
-          ? (window.SwitchBotI18n?.t("Enter or select a valid value.", "有効な値を入力または選択してください") ?? "")
+        queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = isInvalid(input, raw)
+          ? validationMessage
           : "";
       });
       void patchSettings(settings => { settings.operationParameters = parameters; });
