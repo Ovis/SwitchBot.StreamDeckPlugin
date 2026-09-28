@@ -1,6 +1,6 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
-import { queryRequired, valueOf } from "../shared/dom.js";
+import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
 import { shouldResyncInitialSelection } from "./initial-selection-resync.js";
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   skipUnlockConfirmation.addEventListener("valuechange", () => {
     void patchSettings(settings => {
-      settings.skipUnlockConfirmation = valueOf(skipUnlockConfirmation) === "true";
+      settings.skipUnlockConfirmation = checked(skipUnlockConfirmation);
     });
   });
 
