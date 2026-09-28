@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let operations = new Map<string, PhysicalControlOperationItem>();
   let suppress = false;
   let initialSelectionRetryDeviceId = "";
+  let parameterPreviewResyncKey = "";
 
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
     const settings = settingsRecord(await streamDeckClient.getSettings());
@@ -136,6 +137,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       renderOperationParameters(savedParameters);
       updateRequestPreview();
+
+      // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
+      // parameter付きOperationを復元した場合だけ一度再要求し、実送信と同じbuilderでpreviewを再生成する。
+      const selectedOperationItem = operations.get(selectedOperation);
+      const parameterPreviewKey = selectedOperationItem?.input && Object.keys(savedParameters).length > 0
+        ? `${selectedDevice}:${selectedOperation}:${JSON.stringify(savedParameters)}` : "";
+      if (parameterPreviewKey && parameterPreviewKey !== parameterPreviewResyncKey) {
+        parameterPreviewResyncKey = parameterPreviewKey;
+        sendCatalog(false, selectedDevice, selectedOperation, savedParameters as Record<string, string | number | boolean | null>);
+      }
 
       // PIを開いた直後は、SDKのsettings復元より先に最初のcatalog要求がPluginへ届くことがある。
       // その場合、応答時点では保存済みDeviceを復元できてもOperationだけが空になるため、
