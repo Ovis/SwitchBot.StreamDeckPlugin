@@ -3,6 +3,7 @@ import { ApiRequestAction } from "./actions/api-request-action.js";
 import { GetStatusAction } from "./actions/get-status-action.js";
 import { InfraredRemoteAction } from "./actions/infrared-remote-action.js";
 import { BotAction } from "./actions/bot-control-action.js";
+import { PowerAction } from "./actions/power-control-action.js";
 import { SwitchBotClient } from "./api/switchbot-client.js";
 import { RequestExecutor } from "./execution/request-executor.js";
 import { ClipboardOutput } from "./output/clipboard-output.js";
@@ -24,6 +25,9 @@ const catalogRefresh = new CatalogRefreshService(executor, deviceCatalogStore, s
 const executionDiagnostics = new ExecutionDiagnosticsStore();
 
 streamDeck.actions.registerAction(new BotAction(
+  executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
+));
+streamDeck.actions.registerAction(new PowerAction(
   executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
 ));
 streamDeck.actions.registerAction(new ApiRequestAction(

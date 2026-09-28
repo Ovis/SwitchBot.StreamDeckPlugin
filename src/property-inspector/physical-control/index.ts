@@ -133,8 +133,19 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  queryRequired<HTMLElement>("#refresh-catalog").textContent = window.SwitchBotI18n?.t("Refresh", "更新") ?? "Refresh";
-  queryRequired<HTMLElement>("#advanced-note").textContent =
-    window.SwitchBotI18n?.t("Use API Request for advanced operations and configuration changes.", "高度な操作や設定変更には「APIリクエスト」を使用してください") ?? "";
+  function applyLocalizedText(): void {
+    const translate = (en: string, ja: string) => window.SwitchBotI18n?.t(en, ja) ?? en;
+    queryRequired<HTMLElement>("#refresh-catalog").textContent = translate("Refresh", "更新");
+    queryRequired<HTMLElement>("#request-heading").textContent = translate("Request Body", "リクエスト本文");
+    queryRequired<HTMLElement>("#advanced-note").textContent =
+      translate("Use API Request for advanced operations and configuration changes.", "高度な操作や設定変更には「APIリクエスト」を使用してください");
+    queryRequired<HTMLElement>("#execution-diagnostics-heading").textContent =
+      translate("Latest execution result", "最新の実行結果");
+  }
+
+  // localeはStream Deckとのsocket接続時に確定するため、DOMContentLoaded時の初期値だけでなく
+  // locale確定後にも固定文言を再適用し、日本語環境で英語表示が残らないようにする。
+  document.addEventListener("switchbot-locale-changed", applyLocalizedText);
+  applyLocalizedText();
   sendCatalog();
 });
