@@ -166,6 +166,7 @@ export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
   event: "physicalControlCatalog";
   devices: PhysicalControlDeviceItem[];
   operations: PhysicalControlOperationItem[];
+  selectedDeviceId: string;
   refreshFailed?: boolean;
   configurationInvalid?: boolean;
 }
@@ -278,13 +279,14 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
   }
 
   if (value.event === "physicalControlCatalog") {
-    if (!Array.isArray(value.devices) || !Array.isArray(value.operations)) return undefined;
+    if (!Array.isArray(value.devices) || !Array.isArray(value.operations) || typeof value.selectedDeviceId !== "string") return undefined;
     const devices = value.devices.map(protocolPhysicalControlDevice).filter(protocolDefined);
     const operations = value.operations.map(protocolPhysicalControlOperation).filter(protocolDefined);
     return {
       event: "physicalControlCatalog",
       devices,
       operations,
+      selectedDeviceId: value.selectedDeviceId,
       ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}),
       ...(typeof value.configurationInvalid === "boolean" ? { configurationInvalid: value.configurationInvalid } : {})
     };
