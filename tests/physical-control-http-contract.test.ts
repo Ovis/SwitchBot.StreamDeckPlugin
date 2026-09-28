@@ -126,7 +126,9 @@ describe("Physical Control HTTP contract", () => {
     ["Humidifier", "target-humidity", 50, "setMode", "50"],
     ["Humidifier2", "target-humidity", 60, "setMode", '{"mode":5,"targetHumidify":60}'],
     ["Air Purifier VOC", "normal", 2, "setMode", '{"mode":1,"fanGear":2}'],
-    ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"]
+    ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"],
+    ["Battery Circulator Fan", "close-delay", 1800, "closeDelay", "1800"],
+    ["Battery Circulator Fan 2 Pro", "wind-speed", 50, "setWindSpeed", "50"]
   ])("%sの%sをparameter付きHTTP requestとして送信する", async (deviceType, operationId, value, command, parameter) => {
     const fetchMock = vi.fn<FetchLike>(async () => new Response(
       JSON.stringify({ statusCode: 100, message: "success", body: {} }),
