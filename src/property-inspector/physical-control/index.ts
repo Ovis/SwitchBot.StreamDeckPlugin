@@ -35,9 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
     const settings = settingsRecord(await streamDeckClient.getSettings());
     mutator(settings);
-    console.debug("[PhysicalControl PI] setSettings", {
-      skipUnlockConfirmation: settings.skipUnlockConfirmation
-    });
     await streamDeckClient.setSettings(settings);
   }
 
@@ -85,11 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Operation選択に従属するUIはvaluechangeだけに依存せず、catalog同期のたびに確定状態から再評価する。
     unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
     skipUnlockConfirmation.value = settings.skipUnlockConfirmation === true ? "true" : "false";
-    console.debug("[PhysicalControl PI] syncOperationOptions", {
-      operation: valueOf(operation),
-      savedSkipUnlockConfirmation: settings.skipUnlockConfirmation,
-      restoredCheckboxValue: skipUnlockConfirmation.value
-    });
   }
 
   function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
@@ -137,13 +129,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   skipUnlockConfirmation.addEventListener("valuechange", () => {
-    const isChecked = checked(skipUnlockConfirmation);
-    console.debug("[PhysicalControl PI] unlock confirmation valuechange", {
-      rawValue: skipUnlockConfirmation.value,
-      checked: isChecked
-    });
+    // catalog応答から保存値を復元する際にもsdpi-checkboxがvaluechangeを発火し得る。
+    // 復元処理をユーザー操作として再保存すると、古い値で最新設定を上書きする競合になるため抑止する。
+    if (suppress) return;
     void patchSettings(settings => {
-      settings.skipUnlockConfirmation = isChecked;
+      settings.skipUnlockConfirmation = checked(skipUnlockConfirmation);
     });
   });
 
@@ -189,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
         device.value = message.devices.some(item => item.value === selectedDevice) ? selectedDevice : "";
         operation.value = message.operations.some(item => item.value === selectedOperation) ? selectedOperation : "";
+        syncOperationOptions(settings);
       } finally {
         suppress = false;
       }
@@ -200,7 +191,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (renderedParameterOperationId !== currentOperationId || (currentInput && !parameterField)) {
         renderOperationParameters(savedParameters);
       }
-      syncOperationOptions(settings);
       updateRequestPreview();
 
       // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
