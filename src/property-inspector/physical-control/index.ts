@@ -91,6 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const raw = valueOf(field).trim();
       const parameters = raw === "" ? {} : { [input.key]: raw };
       void patchSettings(settings => { settings.operationParameters = parameters; });
+      // 入力欄自体は再生成せずpreviewだけを更新する。catalog応答で同じparameter UIを
+      // 作り直すと、入力中にフォーカスやキャレット位置が失われるためである。
       sendCatalog(false, valueOf(device), valueOf(operation), parameters);
     });
   }
@@ -135,7 +137,11 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppress = false;
       }
-      renderOperationParameters(savedParameters);
+      const parameterField = document.querySelector<SdpiValueElement>("#operation-parameter");
+      const currentInput = operations.get(valueOf(operation))?.input;
+      // parameter変更に対するpreview応答では既存入力欄を維持する。
+      // Device/Operation変更や初期表示で必要な場合だけrendererを作り直す。
+      if (!parameterField || !currentInput) renderOperationParameters(savedParameters);
       updateRequestPreview();
 
       // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
