@@ -87,12 +87,8 @@ export class PhysicalControlAction extends AuthenticatedAction {
       refresh: () => this.catalogRefresh.refreshDevices()
     });
     const selectedCatalogDevice = result.catalog?.devices.find(device => device.deviceId === settings.deviceId);
-    const configurationInvalid = settings.deviceId !== "" && (
-      !selectedCatalogDevice
-      || selectedCatalogDevice.deleted
-      || selectedCatalogDevice.deviceType !== settings.deviceType
-      || !supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)
-    );
+    const configurationInvalid = settings.deviceId !== ""
+      && !this.isAvailableSelectedDevice(selectedCatalogDevice, settings);
     const devices = (result.catalog?.devices ?? [])
       .filter(device => supportsPhysicalAction(device.deviceType, this.physicalActionId))
       .filter(device => !device.deleted || device.deviceId === settings.deviceId)
@@ -128,7 +124,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     const settings = normalizePhysicalControlSettings(await ev.action.getSettings());
     const catalog = await this.catalogStore.get();
     const selected = catalog?.devices.find(device => device.deviceId === settings.deviceId);
-    if (!selected || selected.deleted || selected.deviceType !== settings.deviceType || !supportsPhysicalAction(selected.deviceType, this.physicalActionId)) {
+    if (!this.isAvailableSelectedDevice(selected, settings)) {
       streamDeck.logger.error("Physical Control failed", { category: "configuration", reason: "device-unavailable-or-type-mismatch" });
       await ev.action.showAlert();
       await this.showTemporaryTitle(ev.action.id, ev.action, this.failureTitle("configuration"), FAILURE_TITLE_MS);
@@ -191,6 +187,16 @@ export class PhysicalControlAction extends AuthenticatedAction {
     await this.showTemporaryTitle(actionId, item.action, item.displayText, SUCCESS_TITLE_MS);
   }
 
+  private isAvailableSelectedDevice(
+    device: { deviceType: string; deleted: boolean } | undefined,
+    settings: PhysicalControlSettingsV1
+  ): boolean {
+    return device !== undefined
+      && !device.deleted
+      && device.deviceType === settings.deviceType
+      && supportsPhysicalAction(device.deviceType, this.physicalActionId);
+  }
+
   private async showTemporaryTitle(
     actionId: string,
     actionInstance: KeyDownEvent<PhysicalControlSettingsV1>["action"],
@@ -238,7 +244,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     const catalog = await this.catalogStore.get();
     const device = catalog?.devices.find(candidate => candidate.deviceId === settings.deviceId);
     const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
-    if (!device || !operation) {
+    if (!this.isAvailableSelectedDevice(device, settings) || !operation) {
       await actionInstance.setTitle();
       return;
     }
