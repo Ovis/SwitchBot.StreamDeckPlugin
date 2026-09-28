@@ -2,7 +2,7 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { extname, join } from "node:path";
 
 const root = "com.esheep.switchbot.sdPlugin/ui";
-const pages = ["api-request", "get-status", "infrared-remote", "bot-control"];
+const pages = ["api-request", "get-status", "infrared-remote", "physical-control"];
 
 for (const page of pages) {
   for (const extension of [".html", ".js", ".js.map"]) {
@@ -27,7 +27,7 @@ const allowed = new Set([
   "api-request.html", "api-request.js", "api-request.js.map",
   "get-status.html", "get-status.js", "get-status.js.map",
   "infrared-remote.html", "infrared-remote.js", "infrared-remote.js.map",
-  "bot-control.html", "bot-control.js", "bot-control.js.map",
+  "physical-control.html", "physical-control.js", "physical-control.js.map",
   "authentication.css", "sdpi-components.js"
 ]);
 
