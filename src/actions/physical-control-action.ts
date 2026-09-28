@@ -129,6 +129,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     const message: PhysicalControlCatalogMessage = {
       event: "physicalControlCatalog",
       devices,
+      selectedDeviceId,
       operations: operations.map(operation => ({
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
         value: operation.id,
