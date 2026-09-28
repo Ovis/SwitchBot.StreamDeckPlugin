@@ -248,3 +248,56 @@ describe("Climate physical control", () => {
     }).error).toBe("invalid-parameter");
   });
 });
+
+
+describe("Security physical control", () => {
+  it.each([
+    ["Smart Lock", ["lock", "unlock", "deadbolt"]],
+    ["Lock", ["lock", "unlock", "deadbolt"]],
+    ["Smart Lock Pro", ["lock", "unlock", "deadbolt"]],
+    ["Lock Pro", ["lock", "unlock", "deadbolt"]],
+    ["Smart Lock Lite", ["lock", "unlock"]],
+    ["Lock Lite", ["lock", "unlock"]],
+    ["Smart Lock Ultra", ["lock", "unlock", "deadbolt"]],
+    ["Lock Ultra", ["lock", "unlock", "deadbolt"]],
+    ["Smart Lock Pro Wifi", ["lock", "unlock", "night-latch-unlock", "deadbolt"]],
+    ["Lock Pro Matter Enabled", ["lock", "unlock", "night-latch-unlock", "deadbolt"]],
+    ["Lock Vision", ["lock", "unlock"]],
+    ["Lock Vision Pro", ["lock", "unlock"]],
+    ["Garage Door Opener", ["open", "close"]],
+    ["Video Doorbell", ["motion-detection-on", "motion-detection-off"]]
+  ] as const)("%sではPhysical Control対象の公式Control Commandsだけを公開する", (deviceType, operationIds) => {
+    const definition = physicalDeviceDefinition(deviceType);
+    expect(definition?.action).toBe("security");
+    expect(definition?.operations.map(operation => operation.id)).toEqual(operationIds);
+    expect(supportsPhysicalAction(deviceType, "security")).toBe(true);
+  });
+
+  it.each([
+    ["Smart Lock Pro", "lock", "lock", false],
+    ["Smart Lock Pro", "unlock", "unlock", true],
+    ["Smart Lock Pro", "deadbolt", "deadbolt", true],
+    ["Smart Lock Pro Wifi", "night-latch-unlock", "nightLatchUnlock", true],
+    ["Garage Door Opener", "open", "turnOn", true],
+    ["Garage Door Opener", "close", "turnOff", true],
+    ["Video Doorbell", "motion-detection-on", "enableMotionDetection", false],
+    ["Video Doorbell", "motion-detection-off", "disableMotionDetection", false]
+  ])("%sの%sを正しいcommandと確認要否へ変換する", (deviceType, operationId, command, confirmationRequired) => {
+    const definition = physicalDeviceDefinition(deviceType)!;
+    const operation = definition.operations.find(item => item.id === operationId)!;
+    expect(operation.command).toBe(command);
+    expect(operation.parameter).toBe("default");
+    expect(operation.confirmationRequired === true).toBe(confirmationRequired);
+    expect(buildPhysicalCommand({
+      action: "security", deviceId: "SECURITY-001", deviceType, operationId
+    }).command).toMatchObject({ command, parameter: "default", commandType: "command" });
+  });
+
+  it("read-only cameraとpasscode専用KeypadはSecurity Physical Controlから除外する", () => {
+    expect(supportsPhysicalAction("Outdoor Spotlight Cam", "security")).toBe(false);
+    expect(supportsPhysicalAction("Indoor Cam", "security")).toBe(false);
+    expect(supportsPhysicalAction("Pan/Tilt Cam", "security")).toBe(false);
+    expect(supportsPhysicalAction("Keypad", "security")).toBe(false);
+    expect(supportsPhysicalAction("Keypad Touch", "security")).toBe(false);
+  });
+});
