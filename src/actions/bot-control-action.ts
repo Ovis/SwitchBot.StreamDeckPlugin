@@ -25,7 +25,7 @@ interface QueuedBotCommand {
 const MAX_QUEUED_COMMANDS = 5;
 const TEMPORARY_TITLE_MS = 3_000;
 
-@action({ UUID: "com.esheep.switchbot.bot-control" })
+@action({ UUID: "com.esheep.switchbot.bot" })
 export class BotControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;
