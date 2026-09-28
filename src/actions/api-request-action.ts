@@ -95,7 +95,7 @@ export class ApiRequestAction extends AuthenticatedAction {
           label: sceneLabel(scene.sceneName, scene.sceneId, scene.deleted, this.locale),
           value: scene.sceneId
         }));
-      const message: ScenesResultMessage = { event: "getScenes", items, refreshFailed: refresh && !result.refreshed };
+      const message: ScenesResultMessage = { event: "getScenes", items, refreshFailed: result.refreshFailed };
       await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;
     }
