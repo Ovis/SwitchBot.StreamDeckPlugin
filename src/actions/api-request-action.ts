@@ -10,6 +10,7 @@ import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
+import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
@@ -58,7 +59,11 @@ export class ApiRequestAction extends AuthenticatedAction {
 
     if (event === "getDevices") {
       const refresh = request?.event === "getDevices" && request.isRefresh === true;
-      const result = refresh ? await this.catalogRefresh.refreshDevices() : { catalog: await this.deviceCatalogStore.get(), refreshed: true };
+      const result = await loadPropertyInspectorCatalog({
+        isRefresh: refresh,
+        loadCached: () => this.deviceCatalogStore.get(),
+        refresh: () => this.catalogRefresh.refreshDevices()
+      });
       const selectable = (result.catalog?.devices ?? [])
         .filter(device => supportsControlCommands(device.deviceType))
         .filter(device => !device.deleted || device.deviceId === settings.deviceId);
@@ -72,14 +77,18 @@ export class ApiRequestAction extends AuthenticatedAction {
           return template ? [[device.deviceId, template.body]] : [];
         })
       );
-      const message: DevicesResultMessage = { event: "getDevices", items, commandTemplates, refreshFailed: refresh && !result.refreshed };
+      const message: DevicesResultMessage = { event: "getDevices", items, commandTemplates, refreshFailed: result.refreshFailed };
       await streamDeck.ui.sendToPropertyInspector({ ...message });
       return;
     }
 
     if (event === "getScenes") {
       const refresh = request?.event === "getScenes" && request.isRefresh === true;
-      const result = refresh ? await this.catalogRefresh.refreshScenes() : { catalog: await this.sceneCatalogStore.get(), refreshed: true };
+      const result = await loadPropertyInspectorCatalog({
+        isRefresh: refresh,
+        loadCached: () => this.sceneCatalogStore.get(),
+        refresh: () => this.catalogRefresh.refreshScenes()
+      });
       const items = (result.catalog?.scenes ?? [])
         .filter(scene => !scene.deleted || scene.sceneId === settings.sceneId)
         .map(scene => ({

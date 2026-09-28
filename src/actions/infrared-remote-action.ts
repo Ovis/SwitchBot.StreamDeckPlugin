@@ -5,6 +5,7 @@ import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
+import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
@@ -64,9 +65,11 @@ export class InfraredRemoteAction extends AuthenticatedAction {
     }
 
     const refresh = request.isRefresh === true;
-    const result = refresh
-      ? await this.catalogRefresh.refreshDevices()
-      : { catalog: await this.catalogStore.get(), refreshed: true };
+    const result = await loadPropertyInspectorCatalog({
+      isRefresh: refresh,
+      loadCached: () => this.catalogStore.get(),
+      refresh: () => this.catalogRefresh.refreshDevices()
+    });
     const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
     const settings = actionInstance
       ? normalizeInfraredRemoteSettings(await actionInstance.getSettings())
@@ -93,7 +96,7 @@ export class InfraredRemoteAction extends AuthenticatedAction {
       event: "getInfraredRemotes",
       items: remotes.map(({ label, value }) => ({ label, value })),
       remotes,
-      refreshFailed: refresh && !result.refreshed
+      refreshFailed: result.refreshFailed
     };
     await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
