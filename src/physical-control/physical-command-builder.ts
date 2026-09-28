@@ -121,11 +121,15 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
     // JSON文字列テンプレートの置換では型を保持できないため、検証済みwire値からobjectを組み立てて最後にserializeする。
     parameter = JSON.stringify(resolveJsonParameter(operation.parameterJson, values ?? new Map()));
   } else if (operation.parameterFormat && inputs.length === 1) {
-    const value = values?.get(inputs[0].key);
+    const input = inputs[0];
+    if (!input) return { error: "invalid-parameter" };
+    const value = values?.get(input.key);
     if (value === undefined) return { error: "invalid-parameter" };
     parameter = `${operation.parameterFormat.prefix}${String(value)}${operation.parameterFormat.suffix}`;
   } else if (inputs.length === 1) {
-    const value = values?.get(inputs[0].key);
+    const input = inputs[0];
+    if (!input) return { error: "invalid-parameter" };
+    const value = values?.get(input.key);
     if (value === undefined) return { error: "invalid-parameter" };
     parameter = String(value);
   } else if (inputs.length > 1) {
