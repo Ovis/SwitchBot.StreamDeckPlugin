@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head lang="en">
+  <meta charset="utf-8" />
+  <title>SwitchBot Bot Control</title>
+  <script src="sdpi-components.js"></script>
+  <script src="bot-control.js"></script>
+  <link rel="stylesheet" href="authentication.css" />
+</head>
+<body>
+  <div id="switchbot-authentication"></div>
+  <sdpi-item label="__MSG_device__">
+    <sdpi-select id="device" setting="deviceId" loading="__MSG_loadingDevices__" placeholder="__MSG_selectDevice__" show-refresh></sdpi-select>
+  </sdpi-item>
+  <sdpi-item label="__MSG_operation__">
+    <sdpi-select id="operation" setting="operationId" placeholder="__MSG_selectOperation__"></sdpi-select>
+  </sdpi-item>
+  <div id="catalog-status" aria-live="polite"></div>
+  <p id="advanced-note"></p>
+</body>
+</html>
