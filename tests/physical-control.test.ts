@@ -400,6 +400,22 @@ describe("Cleaning physical control", () => {
     ]);
   });
 
+  it.each([
+    ["Robot Vacuum Cleaner S1", "start-cleaning", "start", "default"],
+    ["Robot Vacuum Cleaner S1", "stop", "stop", "default"],
+    ["Robot Vacuum Cleaner S1", "return-to-dock", "dock", "default"],
+    ["Robot Vacuum Cleaner S10", "pause", "pause", "default"],
+    ["Robot Vacuum Cleaner S10", "return-to-dock", "dock", "default"],
+    ["Robot Vacuum Cleaner S10", "wash-mop", "selfClean", "1"],
+    ["Robot Vacuum Cleaner S10", "dry", "selfClean", "2"],
+    ["Robot Vacuum Cleaner S10", "stop-self-cleaning", "selfClean", "3"],
+    ["Robot Vacuum Cleaner K11+", "pause", "pause", "default"],
+    ["Robot Vacuum Cleaner K11+", "return-to-dock", "dock", "default"]
+  ])("%sの%sを公式command/parameterへ変換する", (deviceType, operationId, command, parameter) => {
+    const built = buildPhysicalCommand({ action: "cleaning", deviceId: "C1", deviceType, operationId });
+    expect(built.command).toMatchObject({ command, parameter, commandType: "command" });
+  });
+
   it("Legacyの吸引力を公式0-3へ変換する", () => {
     expect(buildPhysicalCommand({
       action: "cleaning", deviceId: "C1", deviceType: "K10+ Pro", operationId: "set-suction-power",
