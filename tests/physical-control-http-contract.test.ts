@@ -49,6 +49,43 @@ describe("Physical Control HTTP contract", () => {
     expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json");
   });
 
+  it.each([
+    ["Plug", "turn-on", "turnOn"],
+    ["Plug Mini (US)", "toggle", "toggle"],
+    ["Plug Mini (JP)", "turn-off", "turnOff"],
+    ["Plug Mini (EU)", "turn-on", "turnOn"]
+  ])("%sの%sを正しいHTTP requestとして送信する", async (deviceType, operationId, command) => {
+    const fetchMock = vi.fn<FetchLike>(async () => new Response(
+      JSON.stringify({ statusCode: 100, message: "success", body: {} }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    const client = new SwitchBotClient(undefined, fetchMock);
+    const executor = new RequestExecutor(client, {
+      getCredentials: async () => CREDENTIALS
+    });
+
+    const built = buildPhysicalCommand({
+      action: "power",
+      deviceId: "POWER-001",
+      deviceType,
+      operationId
+    });
+    expect(built.request).toBeDefined();
+
+    const result = await executor.execute(built.request!);
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/POWER-001/commands");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({
+      command,
+      parameter: "default",
+      commandType: "command"
+    }));
+  });
+
   it("fail closedしたPhysical ControlはHTTP境界へ到達しない", async () => {
     const fetchMock = vi.fn<FetchLike>();
     const client = new SwitchBotClient(undefined, fetchMock);
