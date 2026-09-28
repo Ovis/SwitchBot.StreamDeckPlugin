@@ -1,4 +1,4 @@
-import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type Action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -177,12 +177,12 @@ export class BotControlAction extends AuthenticatedAction {
     }
   }
 
-  private async updateNormalTitleFromCurrentSettings(actionInstance: QueuedBotCommand["action"]): Promise<void> {
+  private async updateNormalTitleFromCurrentSettings(actionInstance: Action<BotControlSettingsV1>): Promise<void> {
     await this.updateNormalTitle(actionInstance, normalizeBotControlSettings(await actionInstance.getSettings()));
   }
 
   private async updateNormalTitle(
-    actionInstance: QueuedBotCommand["action"],
+    actionInstance: Action<BotControlSettingsV1>,
     settings: BotControlSettingsV1
   ): Promise<void> {
     if (!actionInstance.isKey()) return;
