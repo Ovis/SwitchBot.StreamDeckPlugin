@@ -8,6 +8,7 @@ describe("Physical Control settings", () => {
       deviceId: "",
       deviceType: "",
       operationId: "",
+      skipUnlockConfirmation: false,
       operationParameters: {}
     });
   });
@@ -18,14 +19,27 @@ describe("Physical Control settings", () => {
       deviceId: "bot-1",
       deviceType: "Bot",
       operationId: "press",
+      skipUnlockConfirmation: false,
       operationParameters: {}
     })).toEqual({
       version: 1,
       deviceId: "bot-1",
       deviceType: "Bot",
       operationId: "press",
+      skipUnlockConfirmation: false,
       operationParameters: {}
     });
+  });
+
+  it("解錠確認の省略設定を保存する", () => {
+    expect(normalizePhysicalControlSettings({
+      version: 1,
+      deviceId: "lock-pro-1",
+      deviceType: "Smart Lock Pro",
+      operationId: "unlock",
+      skipUnlockConfirmation: true,
+      operationParameters: {}
+    }).skipUnlockConfirmation).toBe(true);
   });
 
   it("未知の将来versionはfail closedする", () => {
@@ -34,12 +48,14 @@ describe("Physical Control settings", () => {
       deviceId: "bot-1",
       deviceType: "Bot",
       operationId: "press",
+      skipUnlockConfirmation: false,
       operationParameters: {}
     })).toEqual({
       version: 1,
       deviceId: "",
       deviceType: "",
       operationId: "",
+      skipUnlockConfirmation: false,
       operationParameters: {}
     });
   });
