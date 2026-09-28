@@ -7,12 +7,14 @@ export interface SettingsLifecycleOptions<T> {
   schema: z.ZodType<T>;
   defaults: () => T;
   migrations?: Readonly<Record<number, SettingsMigration>>;
+  normalize?: (value: Record<string, unknown>) => unknown;
 }
 
 /**
  * 永続化されたAction settingsを現在versionの型へ復元する。
  *
  * versionなしは初期versionとして扱い、登録済みmigrationを順番に適用する。
+ * migration完了後にAction固有のnested normalizationを行い、最後に現在schemaで検証する。
  * 未知の将来versionは現行schemaで誤解釈せず、安全な既定値へfail closedする。
  */
 export function normalizeVersionedSettings<T>(
@@ -30,7 +32,9 @@ export function normalizeVersionedSettings<T>(
     migrated = migration(migrated);
   }
 
-  const parsed = options.schema.safeParse(migrated);
+  if (!isRecord(migrated)) return options.defaults();
+  const normalized = options.normalize ? options.normalize(migrated) : migrated;
+  const parsed = options.schema.safeParse(normalized);
   return parsed.success ? parsed.data : options.defaults();
 }
 

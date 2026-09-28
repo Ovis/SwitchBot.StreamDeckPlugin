@@ -22,6 +22,27 @@ describe("settings lifecycle", () => {
     expect(result).toEqual({ version: 2, name: "Bot", enabled: true });
   });
 
+  it("normalizeはmigration後の値を受け取る", () => {
+    const observed: string[] = [];
+    const result = normalizeVersionedSettings({ version: 1, name: "old" }, {
+      currentVersion: 2,
+      schema: V2Schema,
+      defaults,
+      migrations: {
+        1: source => {
+          observed.push(`migration:${String(source.name)}`);
+          return { ...source, version: 2, name: "migrated" };
+        }
+      },
+      normalize: source => {
+        observed.push(`normalize:${String(source.name)}`);
+        return { ...source, enabled: true };
+      }
+    });
+    expect(observed).toEqual(["migration:old", "normalize:migrated"]);
+    expect(result).toEqual({ version: 2, name: "migrated", enabled: true });
+  });
+
   it("migrationが欠けている旧versionはfail closedする", () => {
     expect(normalizeVersionedSettings({ version: 1, name: "Bot" }, {
       currentVersion: 2,

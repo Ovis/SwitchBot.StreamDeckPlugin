@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { nestedRecord, normalizeVersionedSettings, recordOf } from "./settings-lifecycle.js";
+import { nestedRecord, normalizeVersionedSettings } from "./settings-lifecycle.js";
 
 const OverrideSchema = z.object({
   enabled: z.boolean().catch(false).default(false),
@@ -36,21 +36,23 @@ const InfraredRemoteSettingsSchema = z.object({
 export type InfraredRemoteSettingsV1 = z.infer<typeof InfraredRemoteSettingsSchema>;
 
 export function normalizeInfraredRemoteSettings(value: unknown): InfraredRemoteSettingsV1 {
-  const source = recordOf(value);
-  const overrides = nestedRecord(source, "overrides");
-  return normalizeVersionedSettings({
-    ...source,
-    airConditioner: nestedRecord(source, "airConditioner"),
-    overrides: {
-      command: OverrideSchema.parse(nestedRecord(overrides, "command")),
-      parameter: OverrideSchema.parse(nestedRecord(overrides, "parameter")),
-      commandType: OverrideSchema.parse(nestedRecord(overrides, "commandType"))
-    },
-    output: OutputSchema.parse(nestedRecord(source, "output"))
-  }, {
+  return normalizeVersionedSettings(value, {
     currentVersion: 1,
     schema: InfraredRemoteSettingsSchema,
-    defaults
+    defaults,
+    normalize: source => {
+      const overrides = nestedRecord(source, "overrides");
+      return {
+        ...source,
+        airConditioner: nestedRecord(source, "airConditioner"),
+        overrides: {
+          command: OverrideSchema.parse(nestedRecord(overrides, "command")),
+          parameter: OverrideSchema.parse(nestedRecord(overrides, "parameter")),
+          commandType: OverrideSchema.parse(nestedRecord(overrides, "commandType"))
+        },
+        output: OutputSchema.parse(nestedRecord(source, "output"))
+      };
+    }
   });
 }
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { API_ENDPOINT_IDS } from "../api/api-endpoints.js";
-import { nestedRecord, normalizeVersionedSettings, recordOf } from "./settings-lifecycle.js";
+import { nestedRecord, normalizeVersionedSettings } from "./settings-lifecycle.js";
 
 export const DEFAULT_API_REQUEST_BODY = `{
   "command": "",
@@ -27,14 +27,14 @@ const ApiRequestSettingsSchema = z.object({
 export type ApiRequestSettingsV1 = z.infer<typeof ApiRequestSettingsSchema>;
 
 export function normalizeApiRequestSettings(value: unknown): ApiRequestSettingsV1 {
-  const source = recordOf(value);
-  return normalizeVersionedSettings({
-    ...source,
-    output: OutputSchema.parse(nestedRecord(source, "output"))
-  }, {
+  return normalizeVersionedSettings(value, {
     currentVersion: 1,
     schema: ApiRequestSettingsSchema,
-    defaults
+    defaults,
+    normalize: source => ({
+      ...source,
+      output: OutputSchema.parse(nestedRecord(source, "output"))
+    })
   });
 }
 
