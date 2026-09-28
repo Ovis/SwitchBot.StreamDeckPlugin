@@ -34,13 +34,20 @@ document.addEventListener("DOMContentLoaded", () => {
     await streamDeckClient.setSettings(settings);
   }
 
-  function sendCatalog(isRefresh = false, deviceId = valueOf(device)): void {
+  function sendCatalog(
+    isRefresh = false,
+    deviceId = valueOf(device),
+    operationId = valueOf(operation),
+    operationParameters: Record<string, string | number | boolean | null> = {}
+  ): void {
     // Plugin側が保存settingsの反映タイミングだけに依存すると、PI上の選択とOperation一覧がずれる可能性がある。
     // 現在選択中のdeviceIdも送り、catalogの実データを基準にOperationを解決させる。
     streamDeckClient.send("sendToPlugin", {
       event: "getPhysicalControlCatalog",
       isRefresh,
-      deviceId
+      deviceId,
+      operationId,
+      operationParameters
     });
   }
 
@@ -66,6 +73,27 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
   }
 
+  function renderOperationParameters(saved: Record<string, unknown> = {}): void {
+    const host = queryRequired<HTMLElement>("#operation-parameters");
+    const selected = operations.get(valueOf(operation));
+    const input = selected?.input;
+    host.innerHTML = "";
+    queryRequired<HTMLElement>("#parameter-status").textContent = "";
+    if (!input) return;
+
+    const initial = saved[input.key];
+    const placeholder = input.kind === "rgb" ? "255:0:0" : `${input.min}–${input.max}${input.unit ?? ""}`;
+    host.innerHTML = `<sdpi-item label="${escapeHtml(input.label)}"><sdpi-textfield id="operation-parameter" placeholder="${escapeHtml(placeholder)}"></sdpi-textfield></sdpi-item>`;
+    const field = queryRequired<SdpiValueElement>("#operation-parameter");
+    field.value = typeof initial === "string" || typeof initial === "number" ? String(initial) : "";
+    field.addEventListener("valuechange", () => {
+      const raw = valueOf(field).trim();
+      const parameters = raw === "" ? {} : { [input.key]: raw };
+      void patchSettings(settings => { settings.operationParameters = parameters; });
+      sendCatalog(false, valueOf(device), valueOf(operation), parameters);
+    });
+  }
+
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
     void patchSettings(settings => {
@@ -73,7 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
       settings.operationId = valueOf(operation);
       settings.operationParameters = {};
     });
-    updateRequestPreview();
+    renderOperationParameters();
+    sendCatalog(false, valueOf(device), valueOf(operation), {});
   });
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
@@ -85,6 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
+      const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
+        ? settings.operationParameters as Record<string, unknown> : {};
       suppress = true;
       try {
         const devicePlaceholder = window.SwitchBotI18n?.t("Select a device", "デバイスを選択") ?? "Select a device";
@@ -103,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppress = false;
       }
+      renderOperationParameters(savedParameters);
       updateRequestPreview();
 
       // PIを開いた直後は、SDKのsettings復元より先に最初のcatalog要求がPluginへ届くことがある。
