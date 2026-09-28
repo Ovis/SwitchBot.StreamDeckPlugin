@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     queryRequired<HTMLElement>("#request-preview").textContent = operations.get(valueOf(operation))?.requestBody ?? "";
   }
 
-  function syncOperationOptions(settings: Record<string, unknown>): void {
+  function syncOperationOptions(): void {
     // PI初期表示ではsettings復元とcatalog応答の順序が一定ではないため、
     // Operation選択に従属するUIはvaluechangeだけに依存せず、catalog同期のたびに確定状態から再評価する。
     unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
         device.value = message.devices.some(item => item.value === selectedDevice) ? selectedDevice : "";
         operation.value = message.operations.some(item => item.value === selectedOperation) ? selectedOperation : "";
-        syncOperationOptions(settings);
+        syncOperationOptions();
       } finally {
         suppress = false;
       }
