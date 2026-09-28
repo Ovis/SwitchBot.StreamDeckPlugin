@@ -166,6 +166,7 @@ export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
   devices: PhysicalControlDeviceItem[];
   operations: PhysicalControlOperationItem[];
   refreshFailed?: boolean;
+  configurationInvalid?: boolean;
 }
 
 export interface InfraredRemotesResultMessage extends ProtocolJsonObject {
@@ -272,7 +273,13 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
     if (!Array.isArray(value.devices) || !Array.isArray(value.operations)) return undefined;
     const devices = value.devices.map(protocolPhysicalControlDevice).filter(protocolDefined);
     const operations = value.operations.map(protocolPhysicalControlOperation).filter(protocolDefined);
-    return { event: "physicalControlCatalog", devices, operations, ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}) };
+    return {
+      event: "physicalControlCatalog",
+      devices,
+      operations,
+      ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}),
+      ...(typeof value.configurationInvalid === "boolean" ? { configurationInvalid: value.configurationInvalid } : {})
+    };
   }
 
   if (value.event === "getInfraredRemotes") {
