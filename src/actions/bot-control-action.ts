@@ -1,10 +1,12 @@
-import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
+import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
+import { ActionInstanceFifo } from "../execution/action-instance-fifo.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import { normalizeBotControlSettings, type BotControlSettingsV1 } from "../settings/bot-control-settings.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
@@ -14,9 +16,17 @@ import { buildPhysicalCommand } from "../physical-control/physical-command-build
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 
+interface QueuedBotCommand {
+  request: ExecutionRequest;
+  action: KeyDownEvent<BotControlSettingsV1>["action"];
+}
+
+const MAX_QUEUED_COMMANDS = 5;
+
 @action({ UUID: "com.esheep.switchbot.bot-control" })
 export class BotControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
+  private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;
 
   constructor(
     private readonly executor: RequestExecutor,
@@ -29,6 +39,16 @@ export class BotControlAction extends AuthenticatedAction {
   ) {
     super(executor, globalSettings, executionDiagnostics);
     this.locale = displayLocale(locale);
+    this.commandQueue = new ActionInstanceFifo(
+      MAX_QUEUED_COMMANDS,
+      (actionId, item, isDisposed) => this.executeQueuedCommand(actionId, item, isDisposed),
+      (actionId, error) => {
+        streamDeck.logger.error("Bot Control queue item failed unexpectedly", {
+          actionId,
+          errorName: error instanceof Error ? error.name : "UnknownError"
+        });
+      }
+    );
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {
@@ -38,6 +58,7 @@ export class BotControlAction extends AuthenticatedAction {
       await super.onSendToPlugin(value);
       return;
     }
+
     const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
     const settings = normalizeBotControlSettings(actionInstance ? await actionInstance.getSettings() : {});
     const result = await loadPropertyInspectorCatalog({
@@ -75,14 +96,41 @@ export class BotControlAction extends AuthenticatedAction {
       await ev.action.showAlert();
       return;
     }
+
     const built = buildPhysicalCommand({ action: "bot", ...settings });
     if (!built.request) {
       streamDeck.logger.error("Bot Control failed", { category: "configuration", reason: built.error ?? "invalid-request" });
       await ev.action.showAlert();
       return;
     }
-    const result = await this.executor.execute(built.request);
-    this.recordExecutionDiagnostics(ev.action.id, result);
-    await this.output.process(result, { copyResponseToClipboard: false, prettyPrint: true }, ev.action);
+
+    if (this.commandQueue.enqueue(ev.action.id, { request: built.request, action: ev.action }) === "full") {
+      streamDeck.logger.warn("Bot Control command queue is full", { actionId: ev.action.id, limit: MAX_QUEUED_COMMANDS });
+      await ev.action.showAlert();
+    }
+  }
+
+  override onWillDisappear(ev: WillDisappearEvent<BotControlSettingsV1>): void {
+    this.commandQueue.dispose(ev.action.id);
+  }
+
+  private async executeQueuedCommand(
+    actionId: string,
+    item: QueuedBotCommand,
+    isDisposed: () => boolean
+  ): Promise<void> {
+    const result = await this.executor.execute(item.request);
+    this.recordExecutionDiagnostics(actionId, result);
+    if (!result.success) {
+      streamDeck.logger.error("Bot Control command failed", {
+        category: result.error.category,
+        method: result.request.method,
+        path: result.request.path,
+        httpStatus: result.response?.httpStatus,
+        switchBotStatus: result.response?.switchBot?.statusCode
+      });
+    }
+    if (isDisposed()) return;
+    await this.output.process(result, { copyResponseToClipboard: false, prettyPrint: true }, item.action);
   }
 }
