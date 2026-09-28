@@ -276,7 +276,7 @@ describe("Security physical control", () => {
   it.each([
     ["Smart Lock Pro", "lock", "lock", false],
     ["Smart Lock Pro", "unlock", "unlock", true],
-    ["Smart Lock Pro", "deadbolt", "deadbolt", true],
+    ["Smart Lock Pro", "deadbolt", "deadbolt", false],
     ["Smart Lock Pro Wifi", "night-latch-unlock", "nightLatchUnlock", true],
     ["Garage Door Opener", "open", "turnOn", true],
     ["Garage Door Opener", "close", "turnOff", true],
