@@ -81,13 +81,24 @@ export class PhysicalControlAction extends AuthenticatedAction {
     }
 
     const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
-    const settings = normalizePhysicalControlSettings(actionInstance ? await actionInstance.getSettings() : {});
+    let settings = normalizePhysicalControlSettings(actionInstance ? await actionInstance.getSettings() : {});
     const result = await loadPropertyInspectorCatalog({
       isRefresh: request.isRefresh === true,
       loadCached: () => this.catalogStore.get(),
       refresh: () => this.catalogRefresh.refreshDevices()
     });
     const selectedCatalogDevice = result.catalog?.devices.find(device => device.deviceId === settings.deviceId);
+
+    // PR開発途中などdeviceType導入前に保存された設定は、deviceIdだけが残っている場合がある。
+    // /devicesで同じIDの対応デバイスを確認できた場合に限ってtypeを補完し、
+    // 未知typeや既存typeの不一致を推測で上書きすることはしない。
+    if (actionInstance && settings.deviceId !== "" && settings.deviceType === ""
+      && selectedCatalogDevice && !selectedCatalogDevice.deleted
+      && supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)) {
+      settings = { ...settings, deviceType: selectedCatalogDevice.deviceType };
+      await actionInstance.setSettings(settings);
+    }
+
     const configurationInvalid = settings.deviceId !== ""
       && !this.isAvailableSelectedDevice(selectedCatalogDevice, settings);
     const devices = (result.catalog?.devices ?? [])
