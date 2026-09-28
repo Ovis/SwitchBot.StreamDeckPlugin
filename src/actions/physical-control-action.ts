@@ -12,7 +12,7 @@ import { ActionInstanceFifo } from "../execution/action-instance-fifo.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import { normalizePhysicalControlSettings, type PhysicalControlSettingsV1 } from "../settings/physical-control-settings.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
-import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage } from "../protocol/property-inspector-protocol.js";
+import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage, type PhysicalControlOperationParameterItem } from "../protocol/property-inspector-protocol.js";
 import { physicalDeviceDefinition, supportsPhysicalAction, type PhysicalControlActionId } from "../physical-control/physical-control-catalog.js";
 import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/physical-command-builder.js";
 import { PhysicalControlConfirmationGate } from "../physical-control/physical-control-confirmation-gate.js";
@@ -166,16 +166,24 @@ export class PhysicalControlAction extends AuthenticatedAction {
       devices,
       selectedDeviceId,
       operations: operations.map(operation => {
-        const localizeInput = (input: NonNullable<typeof operation.input>) => ({
-          ...input,
-          label: this.locale === "ja" ? input.label.ja : input.label.en,
-          ...(input.kind === "select" ? {
+        const localizeInput = (input: NonNullable<typeof operation.input>): PhysicalControlOperationParameterItem => {
+          const label = this.locale === "ja" ? input.label.ja : input.label.en;
+          if (input.kind === "number") {
+            return {
+              kind: "number", key: input.key, label,
+              min: input.min, max: input.max, step: input.step,
+              ...(input.unit ? { unit: input.unit } : {})
+            };
+          }
+          if (input.kind === "rgb") return { kind: "rgb", key: input.key, label };
+          return {
+            kind: "select", key: input.key, label,
             options: input.options.map(option => ({
               label: this.locale === "ja" ? option.label.ja : option.label.en,
               value: option.value
             }))
-          } : {})
-        });
+          };
+        };
         return {
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
         value: operation.id,
