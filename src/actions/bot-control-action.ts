@@ -18,15 +18,18 @@ import { AuthenticatedAction } from "./authenticated-action.js";
 
 interface QueuedBotCommand {
   request: ExecutionRequest;
+  displayText: string;
   action: KeyDownEvent<BotControlSettingsV1>["action"];
 }
 
-const MAX_QUEUED_COMMANDS = 5;\nconst TEMPORARY_TITLE_MS = 3_000;
+const MAX_QUEUED_COMMANDS = 5;
+const TEMPORARY_TITLE_MS = 3_000;
 
 @action({ UUID: "com.esheep.switchbot.bot-control" })
 export class BotControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
-  private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;\n  private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly commandQueue: ActionInstanceFifo<QueuedBotCommand>;
+  private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly executor: RequestExecutor,
@@ -89,7 +92,12 @@ export class BotControlAction extends AuthenticatedAction {
       devices,
       operations: operations.map(operation => ({
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
-        value: operation.id
+        value: operation.id,
+        requestBody: JSON.stringify({
+          command: operation.command,
+          parameter: operation.parameter,
+          commandType: operation.commandType
+        }, null, 2)
       })),
       refreshFailed: result.refreshFailed
     };
@@ -101,7 +109,7 @@ export class BotControlAction extends AuthenticatedAction {
     const catalog = await this.catalogStore.get();
     const selected = catalog?.devices.find(device => device.deviceId === settings.deviceId);
     if (!selected || selected.deleted || selected.deviceType !== settings.deviceType || !supportsPhysicalAction(selected.deviceType, "bot")) {
-      streamDeck.logger.error("Bot Control failed", { category: "configuration", reason: "device-type-mismatch" });
+      streamDeck.logger.error("Bot Control failed", { category: "configuration", reason: "device-unavailable-or-type-mismatch" });
       await ev.action.showAlert();
       return;
     }
@@ -125,6 +133,7 @@ export class BotControlAction extends AuthenticatedAction {
 
   override onWillDisappear(ev: WillDisappearEvent<BotControlSettingsV1>): void {
     this.commandQueue.dispose(ev.action.id);
+    this.clearTemporaryTitle(ev.action.id);
   }
 
   private async executeQueuedCommand(
@@ -144,6 +153,50 @@ export class BotControlAction extends AuthenticatedAction {
       });
     }
     if (isDisposed()) return;
-    await this.output.process(result, { copyResponseToClipboard: false, prettyPrint: true }, item.action);
+
+    const succeeded = await this.output.process(
+      result,
+      { copyResponseToClipboard: false, prettyPrint: true },
+      item.action
+    );
+    if (!succeeded) return;
+
+    this.clearTemporaryTitle(actionId);
+    await item.action.setTitle(item.displayText);
+    this.restoreTimers.set(actionId, setTimeout(() => {
+      this.restoreTimers.delete(actionId);
+      void this.updateNormalTitleFromCurrentSettings(item.action);
+    }, TEMPORARY_TITLE_MS));
+  }
+
+  private clearTemporaryTitle(actionId: string): void {
+    const timer = this.restoreTimers.get(actionId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.restoreTimers.delete(actionId);
+    }
+  }
+
+  private async updateNormalTitleFromCurrentSettings(actionInstance: QueuedBotCommand["action"]): Promise<void> {
+    await this.updateNormalTitle(actionInstance, normalizeBotControlSettings(await actionInstance.getSettings()));
+  }
+
+  private async updateNormalTitle(
+    actionInstance: QueuedBotCommand["action"],
+    settings: BotControlSettingsV1
+  ): Promise<void> {
+    if (!actionInstance.isKey()) return;
+    const catalog = await this.catalogStore.get();
+    const device = catalog?.devices.find(candidate => candidate.deviceId === settings.deviceId);
+    const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
+    if (!device || !operation) {
+      await actionInstance.setTitle();
+      return;
+    }
+
+    // Stream Deckではユーザー定義タイトルがsetTitleより優先されるため、
+    // 通常時はプラグイン側の既定表示だけをDevice名 + Operation名へ更新する。
+    const operationLabel = this.locale === "ja" ? operation.label.ja : operation.label.en;
+    await actionInstance.setTitle(`${device.deviceName.trim() || device.deviceType}\n${operationLabel}`);
   }
 }
