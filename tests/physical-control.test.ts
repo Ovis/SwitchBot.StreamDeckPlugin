@@ -163,3 +163,62 @@ describe("Lighting physical control", () => {
     }).error).toBe("invalid-parameter");
   });
 });
+
+
+describe("Climate physical control", () => {
+  it.each([
+    ["Humidifier", ["turn-on", "turn-off", "mode-auto", "mode-34", "mode-67", "mode-100", "target-humidity"]],
+    ["Humidifier2", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
+    ["Evaporative Humidifier", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
+    ["Evaporative Humidifier (Auto-refill)", ["turn-on", "turn-off", "level-4", "level-3", "level-2", "level-1", "target-humidity", "sleep", "auto", "drying", "child-lock-on", "child-lock-off"]],
+    ["Air Purifier VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
+    ["Air Purifier PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
+    ["Air Purifier Table VOC", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
+    ["Air Purifier Table PM2.5", ["turn-on", "turn-off", "normal", "auto", "sleep", "pet", "child-lock-on", "child-lock-off"]],
+    ["Smart Radiator Thermostat", ["turn-on", "turn-off", "schedule", "manual", "off-mode", "eco", "comfort", "quick-heat", "manual-temperature"]]
+  ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
+    const definition = physicalDeviceDefinition(deviceType);
+    expect(definition?.action).toBe("climate");
+    expect(definition?.operations.map(operation => operation.id)).toEqual(operationIds);
+    expect(supportsPhysicalAction(deviceType, "climate")).toBe(true);
+  });
+
+  it("read-onlyのHome Climate PanelはControl対象にしない", () => {
+    expect(supportsPhysicalAction("Home Climate Panel", "climate")).toBe(false);
+  });
+
+  it.each([
+    ["Humidifier", "mode-auto", undefined, "setMode", "auto"],
+    ["Humidifier", "mode-34", undefined, "setMode", "101"],
+    ["Humidifier", "target-humidity", 55, "setMode", "55"],
+    ["Humidifier2", "auto", undefined, "setMode", '{"mode":7,"targetHumidify":0}'],
+    ["Humidifier2", "target-humidity", 55, "setMode", '{"mode":5,"targetHumidify":55}'],
+    ["Humidifier2", "child-lock-on", undefined, "setChildLock", "true"],
+    ["Air Purifier VOC", "normal", 2, "setMode", '{"mode":1,"fanGear":2}'],
+    ["Air Purifier VOC", "sleep", undefined, "setMode", '{"mode":3}'],
+    ["Air Purifier VOC", "child-lock-off", undefined, "setChildLock", "0"],
+    ["Smart Radiator Thermostat", "eco", undefined, "setMode", "3"],
+    ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"]
+  ])("%sの%sを公式wire parameterへ変換する", (deviceType, operationId, value, command, parameter) => {
+    const built = buildPhysicalCommand({
+      action: "climate", deviceId: "CLIMATE-001", deviceType, operationId,
+      ...(value === undefined ? {} : { operationParameters: { value } })
+    });
+    expect(built.command).toMatchObject({ command, parameter, commandType: "command" });
+  });
+
+  it("Climateの入力範囲をfail closedする", () => {
+    expect(buildPhysicalCommand({
+      action: "climate", deviceId: "C1", deviceType: "Humidifier", operationId: "target-humidity",
+      operationParameters: { value: 101 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "climate", deviceId: "C2", deviceType: "Air Purifier VOC", operationId: "normal",
+      operationParameters: { value: 4 }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "climate", deviceId: "C3", deviceType: "Smart Radiator Thermostat", operationId: "manual-temperature",
+      operationParameters: { value: 3 }
+    }).error).toBe("invalid-parameter");
+  });
+});
