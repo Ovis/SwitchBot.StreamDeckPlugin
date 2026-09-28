@@ -133,6 +133,16 @@ export class PhysicalControlAction extends AuthenticatedAction {
     }
 
     const effectiveDeviceType = selectedCatalogDevice?.deviceType ?? settings.deviceType;
+    const effectiveDefinition = physicalDeviceDefinition(effectiveDeviceType);
+    if (selectedCatalogDevice && !selectedCatalogDevice.deleted
+      && supportsPhysicalAction(effectiveDeviceType, this.physicalActionId)
+      && settings.operationId !== ""
+      && !effectiveDefinition?.operations.some(operation => operation.id === settings.operationId)) {
+      // PIがDevice選択を先に保存した場合でも、catalogを基準に旧Operationの有効性を再検証する。
+      // 非対応Operationを先頭候補へ置換せず空へ戻すことで、別commandの意図しない実行を防ぐ。
+      settings = { ...settings, operationId: "", operationParameters: {} };
+      if (actionInstance) await actionInstance.setSettings(settings);
+    }
     const configurationInvalid = selectedDeviceId !== "" && (
       !selectedCatalogDevice
       || selectedCatalogDevice.deleted
