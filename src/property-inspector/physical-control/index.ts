@@ -35,6 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
     const settings = settingsRecord(await streamDeckClient.getSettings());
     mutator(settings);
+    console.debug("[PhysicalControl PI] setSettings", {
+      skipUnlockConfirmation: settings.skipUnlockConfirmation
+    });
     await streamDeckClient.setSettings(settings);
   }
 
@@ -82,6 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Operation選択に従属するUIはvaluechangeだけに依存せず、catalog同期のたびに確定状態から再評価する。
     unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
     skipUnlockConfirmation.value = settings.skipUnlockConfirmation === true ? "true" : "false";
+    console.debug("[PhysicalControl PI] syncOperationOptions", {
+      operation: valueOf(operation),
+      savedSkipUnlockConfirmation: settings.skipUnlockConfirmation,
+      restoredCheckboxValue: skipUnlockConfirmation.value
+    });
   }
 
   function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
@@ -129,8 +137,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   skipUnlockConfirmation.addEventListener("valuechange", () => {
+    const isChecked = checked(skipUnlockConfirmation);
+    console.debug("[PhysicalControl PI] unlock confirmation valuechange", {
+      rawValue: skipUnlockConfirmation.value,
+      checked: isChecked
+    });
     void patchSettings(settings => {
-      settings.skipUnlockConfirmation = checked(skipUnlockConfirmation);
+      settings.skipUnlockConfirmation = isChecked;
     });
   });
 
@@ -152,6 +165,11 @@ document.addEventListener("DOMContentLoaded", () => {
       devices = new Map(message.devices.map(item => [item.value, item]));
       operations = new Map(message.operations.map(item => [item.value, item]));
       const settings = settingsRecord(await streamDeckClient.getSettings());
+      console.debug("[PhysicalControl PI] catalog settings", {
+        operationId: settings.operationId,
+        skipUnlockConfirmation: settings.skipUnlockConfirmation,
+        checkboxValueBeforeSync: skipUnlockConfirmation.value
+      });
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
       const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
