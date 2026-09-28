@@ -113,7 +113,11 @@ export class BotControlAction extends AuthenticatedAction {
       return;
     }
 
-    if (this.commandQueue.enqueue(ev.action.id, { request: built.request, displayText: built.displayText ?? settings.operationId, action: ev.action }) === "full") {
+    const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
+    const displayText = operation
+      ? (this.locale === "ja" ? operation.label.ja : operation.label.en)
+      : built.displayText ?? settings.operationId;
+    if (this.commandQueue.enqueue(ev.action.id, { request: built.request, displayText, action: ev.action }) === "full") {
       streamDeck.logger.warn("Bot Control command queue is full", { actionId: ev.action.id, limit: MAX_QUEUED_COMMANDS });
       await ev.action.showAlert();
     }
