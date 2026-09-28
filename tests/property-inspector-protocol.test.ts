@@ -69,12 +69,14 @@ describe("Property Inspector protocol", () => {
           { label: "Broken", value: "broken" }
         ],
         operations: [{ label: "Press", value: "press", requestBody: "{\\\"command\\\":\\\"press\\\"}" }],
+        selectedDeviceId: "bot-1",
         refreshFailed: false,
         configurationInvalid: true
       })).toEqual({
         event: "physicalControlCatalog",
         devices: [{ label: "Bot", value: "bot-1", deviceType: "Bot" }],
         operations: [{ label: "Press", value: "press", requestBody: "{\\\"command\\\":\\\"press\\\"}" }],
+        selectedDeviceId: "bot-1",
         refreshFailed: false,
         configurationInvalid: true
       });
