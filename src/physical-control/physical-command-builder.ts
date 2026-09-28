@@ -68,7 +68,8 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
         || Math.abs((value - operation.input.min) / operation.input.step - Math.round((value - operation.input.min) / operation.input.step)) > 1e-9) {
         return { error: "invalid-parameter" };
       }
-      parameter = String(value);
+      const normalized = String(value);
+      parameter = operation.parameterTemplate?.replace("{{value}}", normalized) ?? normalized;
     } else {
       if (typeof raw !== "string") return { error: "invalid-parameter" };
       const parts = raw.split(":");
