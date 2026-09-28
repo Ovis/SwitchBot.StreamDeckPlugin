@@ -6,6 +6,7 @@ export interface PhysicalCommandSettings {
   deviceId: string;
   deviceType: string;
   operationId: string;
+  operationParameters?: Record<string, string | number | boolean | null>;
 }
 
 /**
@@ -24,7 +25,7 @@ export interface BuiltPhysicalCommand {
   command?: PhysicalCommand;
   request?: ExecutionRequest;
   displayText?: string;
-  error?: "missing-device" | "device-type-mismatch" | "unsupported-operation";
+  error?: "missing-device" | "device-type-mismatch" | "unsupported-operation" | "invalid-parameter";
 }
 
 /** PhysicalCommandをSwitchBot OpenAPIのExecutionRequestへ変換する。 */
@@ -58,10 +59,29 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
   const operation = definition.operations.find(candidate => candidate.id === settings.operationId);
   if (!operation) return { error: "unsupported-operation" };
 
+  let parameter = operation.parameter;
+  if (operation.input) {
+    const raw = settings.operationParameters?.[operation.input.key];
+    if (operation.input.kind === "number") {
+      const value = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" ? Number(raw) : Number.NaN;
+      if (!Number.isFinite(value) || value < operation.input.min || value > operation.input.max
+        || Math.abs((value - operation.input.min) / operation.input.step - Math.round((value - operation.input.min) / operation.input.step)) > 1e-9) {
+        return { error: "invalid-parameter" };
+      }
+      parameter = String(value);
+    } else {
+      if (typeof raw !== "string") return { error: "invalid-parameter" };
+      const parts = raw.split(":");
+      if (parts.length !== 3 || parts.some(part => !/^\\d{1,3}$/.test(part)
+        || Number(part) < 0 || Number(part) > 255)) return { error: "invalid-parameter" };
+      parameter = parts.map(part => String(Number(part))).join(":");
+    }
+  }
+
   const command: PhysicalCommand = {
     deviceId,
     command: operation.command,
-    parameter: operation.parameter,
+    parameter,
     commandType: operation.commandType
   };
   return {
