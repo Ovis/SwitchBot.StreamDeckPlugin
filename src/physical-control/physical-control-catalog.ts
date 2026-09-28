@@ -187,7 +187,7 @@ const CURTAIN: readonly PhysicalOperationDefinition[] = [
   fixed("close", "Close", "閉じる", "turnOff", "default"),
   fixed("pause", "Pause", "一時停止", "pause", "default"),
   numeric("set-position", "Set Position", "位置を設定", "setPosition", 0, 100, 1, "Closed Position", "閉じ具合", "%", {
-    kind: "number-template", prefix: "0,ff,", suffix: ""
+    prefix: "0,ff,", suffix: ""
   })
 ];
 const BLIND_TILT: readonly PhysicalOperationDefinition[] = [
@@ -196,10 +196,10 @@ const BLIND_TILT: readonly PhysicalOperationDefinition[] = [
   fixed("close-down", "Close Down", "下向きに閉じる", "closeDown", "default"),
   // Blind Tiltは方向もwire parameterの一部なので、方向ごとにOperationを分けて単一数値入力の契約を維持する。
   numeric("set-position-up", "Set Position (Up)", "位置を設定（上向き）", "setPosition", 0, 100, 2, "Open Position", "開き具合", "%", {
-    kind: "number-template", prefix: "up;", suffix: ""
+    prefix: "up;", suffix: ""
   }),
   numeric("set-position-down", "Set Position (Down)", "位置を設定（下向き）", "setPosition", 0, 100, 2, "Open Position", "開き具合", "%", {
-    kind: "number-template", prefix: "down;", suffix: ""
+    prefix: "down;", suffix: ""
   })
 ];
 const ROLLER_SHADE: readonly PhysicalOperationDefinition[] = [
