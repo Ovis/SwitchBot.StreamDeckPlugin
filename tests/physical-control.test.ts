@@ -305,7 +305,7 @@ describe("Security physical control", () => {
 describe("Curtains & Blinds physical control", () => {
   it.each([
     ["Curtain", ["open", "close", "pause", "set-position"]],
-    ["Curtain 3", ["open", "close", "pause", "set-position"]],
+    ["Curtain3", ["open", "close", "pause", "set-position"]],
     ["Blind Tilt", ["fully-open", "close-up", "close-down", "set-position-up", "set-position-down"]],
     ["Roller Shade", ["set-position"]]
   ] as const)("%sでは公式Control Commandsだけを公開する", (deviceType, operationIds) => {
@@ -315,10 +315,15 @@ describe("Curtains & Blinds physical control", () => {
     expect(supportsPhysicalAction(deviceType, "curtains-blinds")).toBe(true);
   });
 
+  it("APIが返すCurtain3を対応Deviceとして認識し、表示名のCurtain 3は推測で受け入れない", () => {
+    expect(supportsPhysicalAction("Curtain3", "curtains-blinds")).toBe(true);
+    expect(supportsPhysicalAction("Curtain 3", "curtains-blinds")).toBe(false);
+  });
+
   it.each([
     ["Curtain", "open", undefined, "turnOn", "default"],
-    ["Curtain 3", "close", undefined, "turnOff", "default"],
-    ["Curtain 3", "pause", undefined, "pause", "default"],
+    ["Curtain3", "close", undefined, "turnOff", "default"],
+    ["Curtain3", "pause", undefined, "pause", "default"],
     ["Curtain", "set-position", 80, "setPosition", "0,ff,80"],
     ["Blind Tilt", "fully-open", undefined, "fullyOpen", "default"],
     ["Blind Tilt", "close-up", undefined, "closeUp", "default"],
