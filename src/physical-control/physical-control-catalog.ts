@@ -228,8 +228,6 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Candle Warmer Lamp", action: "lighting", operations: CANDLE_WARMER },
   { deviceType: "Humidifier", action: "climate", operations: HUMIDIFIER },
   { deviceType: "Humidifier2", action: "climate", operations: HUMIDIFIER2 },
-  { deviceType: "Evaporative Humidifier", action: "climate", operations: HUMIDIFIER2 },
-  { deviceType: "Evaporative Humidifier (Auto-refill)", action: "climate", operations: HUMIDIFIER2 },
   { deviceType: "Air Purifier VOC", action: "climate", operations: AIR_PURIFIER },
   { deviceType: "Air Purifier PM2.5", action: "climate", operations: AIR_PURIFIER },
   { deviceType: "Air Purifier Table VOC", action: "climate", operations: AIR_PURIFIER },
@@ -237,7 +235,8 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Smart Radiator Thermostat", action: "climate", operations: RADIATOR_THERMOSTAT },
   { deviceType: "Battery Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
   { deviceType: "Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
-  { deviceType: "Standing Circulator Fan", action: "climate", operations: CIRCULATOR_FAN },
+  // 製品名は「Standing Circulator Fan」だが、/devices のdeviceTypeは「Standing Fan」。
+  { deviceType: "Standing Fan", action: "climate", operations: CIRCULATOR_FAN },
   { deviceType: "Battery Circulator Fan 2 Pro", action: "climate", operations: CIRCULATOR_FAN_2_PRO },
   { deviceType: "Smart Lock", action: "security", operations: SMART_LOCK },
   { deviceType: "Lock", action: "security", operations: SMART_LOCK },
