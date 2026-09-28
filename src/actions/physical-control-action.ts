@@ -15,6 +15,7 @@ import { propertyInspectorMessage } from "../settings/property-inspector-message
 import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage } from "../protocol/property-inspector-protocol.js";
 import { physicalDeviceDefinition, supportsPhysicalAction, type PhysicalControlActionId } from "../physical-control/physical-control-catalog.js";
 import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/physical-command-builder.js";
+import { PhysicalControlConfirmationGate } from "../physical-control/physical-control-confirmation-gate.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 
@@ -38,6 +39,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   private readonly commandQueue: ActionInstanceFifo<QueuedPhysicalCommand>;
   private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly confirmationGate = new PhysicalControlConfirmationGate();
 
   constructor(
     private readonly physicalActionId: PhysicalControlActionId,
@@ -68,6 +70,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<PhysicalControlSettingsV1>): Promise<void> {
+    this.confirmationGate.clear(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
     await this.updateNormalTitle(ev.action, normalizePhysicalControlSettings(ev.payload.settings));
   }
@@ -177,6 +180,20 @@ export class PhysicalControlAction extends AuthenticatedAction {
     }
 
     const operation = physicalDeviceDefinition(settings.deviceType)?.operations.find(candidate => candidate.id === settings.operationId);
+    if (operation?.confirmationRequired) {
+      const confirmationKey = `${settings.deviceId}:${settings.deviceType}:${settings.operationId}`;
+      if (this.confirmationGate.confirm(ev.action.id, confirmationKey) === "required") {
+        await this.showTemporaryTitle(
+          ev.action.id,
+          ev.action,
+          this.locale === "ja" ? "再押下で実行" : "Press again to confirm",
+          3_000
+        );
+        return;
+      }
+      this.clearTemporaryTitle(ev.action.id);
+    }
+
     const displayText = operation
       ? (this.locale === "ja" ? operation.label.ja : operation.label.en)
       : built.displayText ?? settings.operationId;
@@ -187,6 +204,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   }
 
   override onWillDisappear(ev: WillDisappearEvent<PhysicalControlSettingsV1>): void {
+    this.confirmationGate.clear(ev.action.id);
     this.commandQueue.dispose(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
   }
