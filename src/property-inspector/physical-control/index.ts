@@ -1,6 +1,6 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
-import { checked, queryRequired, valueOf } from "../shared/dom.js";
+import { queryRequired, valueOf } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
 import { shouldResyncInitialSelection } from "./initial-selection-resync.js";
@@ -81,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // PI初期表示ではsettings復元とcatalog応答の順序が一定ではないため、
     // Operation選択に従属するUIはvaluechangeだけに依存せず、catalog同期のたびに確定状態から再評価する。
     unlockConfirmationItem.hidden = valueOf(operation) !== "unlock";
-    skipUnlockConfirmation.value = settings.skipUnlockConfirmation === true ? "true" : "false";
   }
 
   function isValidNumberParameter(raw: string, min?: number, max?: number, step?: number): boolean {
@@ -128,15 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  skipUnlockConfirmation.addEventListener("valuechange", () => {
-    // catalog応答から保存値を復元する際にもsdpi-checkboxがvaluechangeを発火し得る。
-    // 復元処理をユーザー操作として再保存すると、古い値で最新設定を上書きする競合になるため抑止する。
-    if (suppress) return;
-    void patchSettings(settings => {
-      settings.skipUnlockConfirmation = checked(skipUnlockConfirmation);
-    });
-  });
-
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
     void patchSettings(settings => {
@@ -155,11 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
       devices = new Map(message.devices.map(item => [item.value, item]));
       operations = new Map(message.operations.map(item => [item.value, item]));
       const settings = settingsRecord(await streamDeckClient.getSettings());
-      console.debug("[PhysicalControl PI] catalog settings", {
-        operationId: settings.operationId,
-        skipUnlockConfirmation: settings.skipUnlockConfirmation,
-        checkboxValueBeforeSync: skipUnlockConfirmation.value
-      });
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
       const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
