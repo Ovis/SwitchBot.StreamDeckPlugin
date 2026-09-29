@@ -1,4 +1,4 @@
-import streamDeck, { SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { SingletonAction, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
@@ -59,6 +59,16 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       ...(!result.success ? { errorCategory: result.error.category } : {})
     };
     await streamDeck.ui.sendToPropertyInspector({ ...response });
+  }
+
+  /**
+   * Actionが画面から消えた時点で、そのinstance専用の診断結果を破棄する。
+   *
+   * 診断情報にはAPIレスポンス本文を含むため、削除済みActionの結果を
+   * プラグイン終了まで保持し続けないようライフサイクルに合わせて解放する。
+   */
+  override onWillDisappear(ev: WillDisappearEvent<any>): void {
+    this.executionDiagnostics.delete(ev.action.id);
   }
 
   /** Action instanceの最新実行結果をPI診断表示用に記録する。 */
