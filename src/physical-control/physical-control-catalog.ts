@@ -74,6 +74,73 @@ const color = (command = "setColor", id = "set-color", en = "Set Color", ja = "�
   input: { kind: "rgb", key: "value", label: { en: "Color", ja: "色" } }
 });
 
+const relayMode = (id = "set-mode", prefix?: string): PhysicalOperationDefinition => ({
+  id,
+  label: { en: "Set Switch Mode", ja: "スイッチモードを設定" },
+  command: "setMode",
+  parameter: "",
+  commandType: "command",
+  input: {
+    kind: "select",
+    key: "value",
+    label: { en: "Switch Mode", ja: "スイッチモード" },
+    options: [
+      { label: { en: "Toggle", ja: "トグル" }, value: "0", wireValue: 0 },
+      { label: { en: "Edge", ja: "エッジ" }, value: "1", wireValue: 1 },
+      { label: { en: "Detached", ja: "デタッチ" }, value: "2", wireValue: 2 },
+      { label: { en: "Momentary", ja: "モーメンタリ" }, value: "3", wireValue: 3 }
+    ]
+  },
+  ...(prefix ? { parameterFormat: { prefix, suffix: "" } } : {})
+});
+
+const RELAY_SWITCH: readonly PhysicalOperationDefinition[] = [
+  ...ON_OFF_TOGGLE,
+  relayMode()
+];
+
+const relayChannelInput = (): PhysicalOperationParameter => ({
+  kind: "select",
+  key: "channel",
+  label: { en: "Channel", ja: "チャンネル" },
+  options: [
+    { label: { en: "Channel 1", ja: "チャンネル1" }, value: "1", wireValue: 1 },
+    { label: { en: "Channel 2", ja: "チャンネル2" }, value: "2", wireValue: 2 }
+  ]
+});
+
+const relayChannelOperation = (
+  id: string,
+  en: string,
+  ja: string,
+  command: "turnOn" | "turnOff" | "toggle"
+): PhysicalOperationDefinition => ({
+  id,
+  label: { en, ja },
+  command,
+  parameter: "",
+  commandType: "command",
+  input: relayChannelInput()
+});
+
+const RELAY_SWITCH_2PM: readonly PhysicalOperationDefinition[] = [
+  relayChannelOperation("turn-on", "Turn On", "ON", "turnOn"),
+  relayChannelOperation("turn-off", "Turn Off", "OFF", "turnOff"),
+  relayChannelOperation("toggle", "Toggle", "切り替え", "toggle"),
+  // setModeは「channel;mode」というwire形式なので、チャンネルをOperation側へ固定して
+  // 既存Builderに暗黙の複数値文字列結合規則を持ち込まない。
+  relayMode("set-mode-channel-1", "1;"),
+  relayMode("set-mode-channel-2", "2;"),
+  {
+    id: "set-position",
+    label: { en: "Set Roller Blind Position", ja: "ローラーブラインド位置を設定" },
+    command: "setPosition",
+    parameter: "",
+    commandType: "command",
+    input: { kind: "number", key: "value", label: { en: "Closed Position", ja: "閉じ具合" }, min: 0, max: 100, step: 1, unit: "%" }
+  }
+];
+
 const LIGHT_RGB_1_100 = [...ON_OFF_TOGGLE, brightness(1), color(), colorTemperature()] as const;
 const LIGHT_RGB_0_100 = [...ON_OFF_TOGGLE, brightness(0), color(), colorTemperature()] as const;
 const LIGHT_RGB_ONLY_0_100 = [...ON_OFF_TOGGLE, brightness(0), color()] as const;
@@ -331,6 +398,9 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Plug Mini (US)", action: "power", operations: ON_OFF_TOGGLE },
   { deviceType: "Plug Mini (JP)", action: "power", operations: ON_OFF_TOGGLE },
   { deviceType: "Plug Mini (EU)", action: "power", operations: ON_OFF_TOGGLE },
+  { deviceType: "Relay Switch 1", action: "power", operations: RELAY_SWITCH },
+  { deviceType: "Relay Switch 1PM", action: "power", operations: RELAY_SWITCH },
+  { deviceType: "Relay Switch 2PM", action: "power", operations: RELAY_SWITCH_2PM },
   { deviceType: "Color Bulb", action: "lighting", operations: LIGHT_RGB_1_100 },
   { deviceType: "Strip Light", action: "lighting", operations: [...ON_OFF_TOGGLE, brightness(1), color()] },
   { deviceType: "Floor Lamp", action: "lighting", operations: LIGHT_RGB_0_100 },
