@@ -24,6 +24,13 @@ describe("execution diagnostics", () => {
     expect(store.get("b")).toBeUndefined();
   });
 
+  it("Action instance破棄時に保持していた診断結果を解放できる", () => {
+    const store = new ExecutionDiagnosticsStore();
+    store.set("a", success);
+    store.delete("a");
+    expect(store.get("a")).toBeUndefined();
+  });
+
   it("PI表示モデルへ認証ヘッダーを含めず変換する", () => {
     const view = executionDiagnosticsView(success);
     expect(view).toEqual({

@@ -44,6 +44,7 @@ export class GetStatusAction extends AuthenticatedAction {
   }
 
   override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
+    super.onWillDisappear(ev);
     this.clearRestoreTimer(ev.action.id);
   }
 
