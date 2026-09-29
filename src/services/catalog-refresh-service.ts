@@ -24,11 +24,14 @@ export class CatalogRefreshService {
   refreshDevices(): Promise<CatalogRefreshResult<DeviceCatalog>> {
     if (this.deviceRefresh) return this.deviceRefresh;
 
-    const operation = this.refreshDevicesCore();
+    const operation = (async () => {
+      try {
+        return await this.refreshDevicesCore();
+      } finally {
+        if (this.deviceRefresh === operation) this.deviceRefresh = undefined;
+      }
+    })();
     this.deviceRefresh = operation;
-    void operation.finally(() => {
-      if (this.deviceRefresh === operation) this.deviceRefresh = undefined;
-    });
     return operation;
   }
 
@@ -56,11 +59,14 @@ export class CatalogRefreshService {
   refreshScenes(): Promise<CatalogRefreshResult<SceneCatalog>> {
     if (this.sceneRefresh) return this.sceneRefresh;
 
-    const operation = this.refreshScenesCore();
+    const operation = (async () => {
+      try {
+        return await this.refreshScenesCore();
+      } finally {
+        if (this.sceneRefresh === operation) this.sceneRefresh = undefined;
+      }
+    })();
     this.sceneRefresh = operation;
-    void operation.finally(() => {
-      if (this.sceneRefresh === operation) this.sceneRefresh = undefined;
-    });
     return operation;
   }
 
