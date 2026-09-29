@@ -5,7 +5,7 @@ const root = "com.esheep.switchbot.sdPlugin/ui";
 const pages = ["api-request", "get-status", "infrared-remote", "physical-control"];
 
 for (const page of pages) {
-  for (const extension of [".html", ".js", ".js.map"]) {
+  for (const extension of [".html", ".js"]) {
     await access(join(root, page + extension));
   }
 
@@ -24,10 +24,10 @@ for (const page of pages) {
 }
 
 const allowed = new Set([
-  "api-request.html", "api-request.js", "api-request.js.map",
-  "get-status.html", "get-status.js", "get-status.js.map",
-  "infrared-remote.html", "infrared-remote.js", "infrared-remote.js.map",
-  "physical-control.html", "physical-control.js", "physical-control.js.map",
+  "api-request.html", "api-request.js",
+  "get-status.html", "get-status.js",
+  "infrared-remote.html", "infrared-remote.js",
+  "physical-control.html", "physical-control.js",
   "authentication.css", "sdpi-components.js"
 ]);
 
@@ -35,7 +35,7 @@ for (const name of await readdir(root)) {
   if (!allowed.has(name)) {
     throw new Error(`Unexpected Property Inspector artifact: ${name}`);
   }
-  if (![".html", ".js", ".map", ".css"].includes(extname(name))) {
+  if (![".html", ".js", ".css"].includes(extname(name))) {
     throw new Error(`Unsupported Property Inspector artifact: ${name}`);
   }
 }
