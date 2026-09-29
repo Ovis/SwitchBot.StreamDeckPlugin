@@ -315,7 +315,12 @@ export class PhysicalControlAction extends AuthenticatedAction {
     await actionInstance.setTitle(title);
     this.restoreTimers.set(actionId, setTimeout(() => {
       this.restoreTimers.delete(actionId);
-      void this.updateNormalTitleFromCurrentSettings(actionInstance);
+      void this.updateNormalTitleFromCurrentSettings(actionInstance).catch(error => {
+        // タイマーcallbackはSDKイベントのawait対象外なので、Action破棄などによる失敗を未処理Promiseにしない。
+        streamDeck.logger.warn("Failed to restore Physical Control title", {
+          errorName: error instanceof Error ? error.name : "UnknownError"
+        });
+      });
     }, durationMs));
   }
 

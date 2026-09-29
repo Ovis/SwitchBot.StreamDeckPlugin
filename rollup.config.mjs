@@ -26,7 +26,7 @@ const propertyInspectors = [
   output: {
     file,
     format: "iife",
-    sourcemap: true
+    sourcemap: false
   },
   plugins: [
     nodeResolve({ browser: true }),

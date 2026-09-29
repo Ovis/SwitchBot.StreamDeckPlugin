@@ -25,11 +25,19 @@ export class CatalogRefreshService {
     if (this.deviceRefresh) return this.deviceRefresh;
 
     const operation = this.refreshDevicesCore();
-    this.deviceRefresh = operation;
-    void operation.finally(() => {
-      if (this.deviceRefresh === operation) this.deviceRefresh = undefined;
-    });
-    return operation;
+    this.deviceRefresh = this.clearDeviceRefreshWhenSettled(operation);
+    return this.deviceRefresh;
+  }
+
+  private async clearDeviceRefreshWhenSettled(
+    operation: Promise<CatalogRefreshResult<DeviceCatalog>>
+  ): Promise<CatalogRefreshResult<DeviceCatalog>> {
+    try {
+      return await operation;
+    } finally {
+      // wrapper自身が共有Promiseなので、別refreshへ差し替わっていない場合だけslotを解放する。
+      this.deviceRefresh = undefined;
+    }
   }
 
   private async refreshDevicesCore(): Promise<CatalogRefreshResult<DeviceCatalog>> {
@@ -57,11 +65,18 @@ export class CatalogRefreshService {
     if (this.sceneRefresh) return this.sceneRefresh;
 
     const operation = this.refreshScenesCore();
-    this.sceneRefresh = operation;
-    void operation.finally(() => {
-      if (this.sceneRefresh === operation) this.sceneRefresh = undefined;
-    });
-    return operation;
+    this.sceneRefresh = this.clearSceneRefreshWhenSettled(operation);
+    return this.sceneRefresh;
+  }
+
+  private async clearSceneRefreshWhenSettled(
+    operation: Promise<CatalogRefreshResult<SceneCatalog>>
+  ): Promise<CatalogRefreshResult<SceneCatalog>> {
+    try {
+      return await operation;
+    } finally {
+      this.sceneRefresh = undefined;
+    }
   }
 
   private async refreshScenesCore(): Promise<CatalogRefreshResult<SceneCatalog>> {
