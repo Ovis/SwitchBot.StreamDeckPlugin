@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run typecheck && npm run build:assets && npm run build:bundle",
-    "build:assets": "node scripts/generate-assets.mjs && node scripts/build-property-inspector.mjs",
+    "build:assets": "node scripts/generate-assets.mjs && node scripts/build-property-inspector.mjs && node scripts/generate-third-party-notices.mjs",
     "build:bundle": "rollup -c",
     "typecheck": "npm run typecheck:plugin && npm run typecheck:pi",
     "typecheck:plugin": "tsc --noEmit -p tsconfig.plugin.json",
