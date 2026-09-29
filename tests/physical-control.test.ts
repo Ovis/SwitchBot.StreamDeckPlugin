@@ -79,6 +79,19 @@ describe("Power physical control", () => {
     expect(built.error).toBe("unsupported-operation");
   });
 
+  it("Relay Switch 2PMのチャンネル別setModeを表示上も区別する", () => {
+    const definition = physicalDeviceDefinition("Relay Switch 2PM");
+    const modes = definition?.operations.filter(operation => operation.id.startsWith("set-mode-channel-")) ?? [];
+    expect(modes.map(operation => operation.label.en)).toEqual([
+      "Set Switch Mode — Channel 1",
+      "Set Switch Mode — Channel 2"
+    ]);
+    expect(modes.map(operation => operation.label.ja)).toEqual([
+      "スイッチモードを設定 — チャンネル1",
+      "スイッチモードを設定 — チャンネル2"
+    ]);
+  });
+
   it.each([
     ["Relay Switch 1", ["turn-on", "turn-off", "toggle", "set-mode"]],
     ["Relay Switch 1PM", ["turn-on", "turn-off", "toggle", "set-mode"]],
