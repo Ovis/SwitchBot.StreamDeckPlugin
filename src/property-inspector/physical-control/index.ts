@@ -154,8 +154,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const field = fields[index];
         if (!field) return;
         const raw = valueOf(field).trim();
+        const savedRaw = saved[input.key];
+        const savedValue = typeof savedRaw === "string" || typeof savedRaw === "number" ? String(savedRaw) : "";
+        const preserveInvalidSelect = input.kind === "select" && raw === "" && isInvalid(input, savedValue);
+        // catalogから外れた保存済みselect値は画面上では未選択に見せるが、
+        // 他フィールドの編集を契機に暗黙削除しない。ユーザーが有効な候補を選んだ時だけ置き換える。
         if (raw !== "") parameters[input.key] = raw;
-        queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = isInvalid(input, raw)
+        else if (preserveInvalidSelect) parameters[input.key] = savedValue;
+        queryRequired<HTMLElement>(`#parameter-status-${index}`).textContent = preserveInvalidSelect || isInvalid(input, raw)
           ? validationMessage
           : "";
       });
