@@ -1,6 +1,6 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
-import { queryRequired, valueOf } from "../shared/dom.js";
+import { queryRequired, valueOf, createSettingsPatchQueue } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
 import { shouldResyncInitialSelection } from "./initial-selection-resync.js";
@@ -31,20 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let initialSelectionRetryDeviceId = "";
   let parameterPreviewResyncKey = "";
   let renderedParameterOperationId = "";
-  let settingsUpdateQueue = Promise.resolve();
 
-  function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
-    // 複数のvaluechangeが短時間に発生しても、古いgetSettings結果が後からsetSettingsされて
-    // 新しい選択やparameterを巻き戻さないよう、PI内のread-modify-writeを直列化する。
-    const update = settingsUpdateQueue.then(async () => {
-      const settings = settingsRecord(await streamDeckClient.getSettings());
-      mutator(settings);
-      await streamDeckClient.setSettings(settings);
-    });
-    // 一度のSDKエラーで以後の更新キューまで停止しないよう、内部キューは成功状態へ戻す。
-    settingsUpdateQueue = update.catch(() => undefined);
-    return update;
-  }
+  const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
   function sendCatalog(
     isRefresh = false,
