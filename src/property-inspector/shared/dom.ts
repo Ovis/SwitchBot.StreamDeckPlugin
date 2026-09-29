@@ -44,9 +44,15 @@ export function createSettingsPatchQueue(
   return mutator => {
     const update = queue.then(async () => {
       const value = await streamDeckClient.getSettings();
-      const settings = typeof value === "object" && value !== null && !Array.isArray(value)
-        ? { ...(value as Record<string, unknown>) }
+      const record = typeof value === "object" && value !== null && !Array.isArray(value)
+        ? value as Record<string, unknown>
         : {};
+      // SDK/テストダブルのどちらの応答形でも、実際のAction settingsだけを更新する。
+      // { settings: {...} }をそのままsetSettingsへ返すとsettingsキー自体を保存してしまうため展開する。
+      const nested = record.settings;
+      const settings = typeof nested === "object" && nested !== null && !Array.isArray(nested)
+        ? { ...(nested as Record<string, unknown>) }
+        : { ...record };
       mutator(settings);
       await streamDeckClient.setSettings(settings);
     });
