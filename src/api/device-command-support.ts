@@ -17,7 +17,7 @@ const API_REQUEST_ONLY_CONTROL_COMMAND_DEVICE_TYPES = [
 ] as const;
 
 const CONTROL_COMMAND_DEVICE_TYPES = new Set<string>([
-  ...physicalDeviceDefinitions.map(definition => definition.deviceType),
+  ...physicalDeviceDefinitions().map(definition => definition.deviceType),
   ...API_REQUEST_ONLY_CONTROL_COMMAND_DEVICE_TYPES
 ]);
 
