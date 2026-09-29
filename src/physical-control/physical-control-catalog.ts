@@ -161,6 +161,18 @@ const RGBICWW_CEILING: readonly PhysicalOperationDefinition[] = [
 
 const fixed = (id: string, en: string, ja: string, command: string, parameter: string): PhysicalOperationDefinition =>
   ({ id, label: { en, ja }, command, parameter, commandType: "command" });
+
+/**
+ * OpenAPIがcommand parameterをJSON objectとして要求する固定Operationを定義する。
+ *
+ * JSON文字列をparameterへ格納するとHTTP body上でも文字列として送信されるため、
+ * object契約の機種ではparameterJsonを使ってwire型を保持する。
+ */
+const fixedJson = (
+  id: string, en: string, ja: string, command: string, parameterJson: Readonly<Record<string, PhysicalJsonParameterValue>>
+): PhysicalOperationDefinition => ({
+  id, label: { en, ja }, command, parameter: "", commandType: "command", parameterJson
+});
 const numeric = (
   id: string, en: string, ja: string, command: string, min: number, max: number, step: number,
   inputEn: string, inputJa: string, unit?: string, parameterFormat?: PhysicalOperationDefinition["parameterFormat"]
@@ -180,23 +192,31 @@ const HUMIDIFIER: readonly PhysicalOperationDefinition[] = [
 ];
 const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  fixed("level-4", "Level 4", "レベル4", "setMode", '{"mode":1,"targetHumidify":0}'),
-  fixed("level-3", "Level 3", "レベル3", "setMode", '{"mode":2,"targetHumidify":0}'),
-  fixed("level-2", "Level 2", "レベル2", "setMode", '{"mode":3,"targetHumidify":0}'),
-  fixed("level-1", "Level 1", "レベル1", "setMode", '{"mode":4,"targetHumidify":0}'),
-  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
-  fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":6,"targetHumidify":0}'),
-  fixed("auto", "Auto", "自動", "setMode", '{"mode":7,"targetHumidify":0}'),
-  fixed("drying", "Drying", "乾燥", "setMode", '{"mode":8,"targetHumidify":0}'),
+  fixedJson("level-4", "Level 4", "レベル4", "setMode", { mode: 1, targetHumidify: 0 }),
+  fixedJson("level-3", "Level 3", "レベル3", "setMode", { mode: 2, targetHumidify: 0 }),
+  fixedJson("level-2", "Level 2", "レベル2", "setMode", { mode: 3, targetHumidify: 0 }),
+  fixedJson("level-1", "Level 1", "レベル1", "setMode", { mode: 4, targetHumidify: 0 }),
+  {
+    id: "target-humidity", label: { en: "Humidity Mode", ja: "湿度指定" }, command: "setMode", parameter: "", commandType: "command",
+    input: { kind: "number", key: "value", label: { en: "Humidity", ja: "湿度" }, min: 0, max: 100, step: 1, unit: "%" },
+    parameterJson: { mode: 5, targetHumidify: { parameter: "value" } }
+  },
+  fixedJson("sleep", "Sleep", "睡眠", "setMode", { mode: 6, targetHumidify: 0 }),
+  fixedJson("auto", "Auto", "自動", "setMode", { mode: 7, targetHumidify: 0 }),
+  fixedJson("drying", "Drying", "乾燥", "setMode", { mode: 8, targetHumidify: 0 }),
   fixed("child-lock-on", "Child Lock On", "チャイルドロック ON", "setChildLock", "true"),
   fixed("child-lock-off", "Child Lock Off", "チャイルドロック OFF", "setChildLock", "false")
 ];
 const AIR_PURIFIER: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { prefix: '{"mode":1,"fanGear":', suffix: "}" }),
-  fixed("auto", "Auto", "自動", "setMode", '{"mode":2}'),
-  fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":3}'),
-  fixed("pet", "Pet", "ペット", "setMode", '{"mode":4}'),
+  {
+    id: "normal", label: { en: "Normal", ja: "通常" }, command: "setMode", parameter: "", commandType: "command",
+    input: { kind: "number", key: "value", label: { en: "Fan Gear", ja: "風量" }, min: 1, max: 3, step: 1 },
+    parameterJson: { mode: 1, fanGear: { parameter: "value" } }
+  },
+  fixedJson("auto", "Auto", "自動", "setMode", { mode: 2 }),
+  fixedJson("sleep", "Sleep", "睡眠", "setMode", { mode: 3 }),
+  fixedJson("pet", "Pet", "ペット", "setMode", { mode: 4 }),
   fixed("child-lock-on", "Child Lock On", "チャイルドロック ON", "setChildLock", "1"),
   fixed("child-lock-off", "Child Lock Off", "チャイルドロック OFF", "setChildLock", "0")
 ];
