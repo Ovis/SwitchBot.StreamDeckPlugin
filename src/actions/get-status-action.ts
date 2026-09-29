@@ -13,7 +13,7 @@ import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../setting
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 
-const TRANSPARENT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="none"/></svg>`)}`;
+const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
 
 @action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
@@ -112,9 +112,10 @@ export class GetStatusAction extends AuthenticatedAction {
       const title = formatStatusForKey(result.response.body, this.locale);
       if (title) {
         this.clearRestoreTimer(ev.action.id);
-        // ステータス文字列とアイコンが重なると可読性が落ちるため、結果表示中だけ画像を透明化する。
-        // 引数なしの setImage でmanifestの画像へ戻せるので、元画像のパスをAction側で重複管理しない。
-        await ev.action.setImage(TRANSPARENT_KEY_IMAGE);
+        // Stream Deckでは透明なruntime画像の背後にmanifestのState画像が見えるため、
+        // ステータス文字列の表示中は黒一色の画像でアイコンを覆い、文字の可読性を確保する。
+        // 引数なしのsetImageでmanifestの画像へ戻せるので、元画像のパスをAction側で重複管理しない。
+        await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);
         await ev.action.setTitle(title);
         this.restoreTimers.set(ev.action.id, setTimeout(() => {
           this.restoreTimers.delete(ev.action.id);
