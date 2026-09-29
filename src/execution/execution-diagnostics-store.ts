@@ -13,6 +13,11 @@ export class ExecutionDiagnosticsStore {
     this.latestResults.set(actionId, result);
   }
 
+  /** 指定Action instanceの診断結果を破棄する。Actionが画面から消えた際のメモリ保持を防ぐ。 */
+  delete(actionId: string): void {
+    this.latestResults.delete(actionId);
+  }
+
   /** 指定Action instanceの最新結果を返す。未実行ならundefinedを返す。 */
   get(actionId: string): ExecutionResult | undefined {
     return this.latestResults.get(actionId);
