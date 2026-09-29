@@ -112,10 +112,9 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
   const values = validatedParameterValues(inputs, settings.operationParameters);
   if (inputs.length > 0 && !values) return { error: "invalid-parameter" };
 
-  let parameter = operation.parameter;
+  let parameter: unknown = operation.parameter;
   if (operation.parameterJson) {
-    // JSON文字列テンプレートの置換では型を保持できないため、検証済みwire値からobjectを組み立てて最後にserializeする。
-    // OpenAPIのobject parameterを文字列化するとwire typeが変わるため、objectのままHTTP JSONへ渡す。
+    // JSON文字列テンプレートではwire typeを保持できないため、検証済み値からobjectを組み立ててそのままHTTP JSONへ渡す。
     parameter = resolveJsonParameter(operation.parameterJson, values ?? new Map());
   } else if (operation.parameterFormat && inputs.length === 1) {
     const input = inputs[0];
