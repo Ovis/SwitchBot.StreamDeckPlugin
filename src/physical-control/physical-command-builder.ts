@@ -17,7 +17,7 @@ export interface PhysicalCommandSettings {
 export interface PhysicalCommand {
   deviceId: string;
   command: string;
-  parameter: string;
+  parameter: unknown;
   commandType: "command";
 }
 
@@ -115,7 +115,8 @@ export function buildPhysicalCommand(settings: PhysicalCommandSettings): BuiltPh
   let parameter = operation.parameter;
   if (operation.parameterJson) {
     // JSON文字列テンプレートの置換では型を保持できないため、検証済みwire値からobjectを組み立てて最後にserializeする。
-    parameter = JSON.stringify(resolveJsonParameter(operation.parameterJson, values ?? new Map()));
+    // OpenAPIのobject parameterを文字列化するとwire typeが変わるため、objectのままHTTP JSONへ渡す。
+    parameter = resolveJsonParameter(operation.parameterJson, values ?? new Map());
   } else if (operation.parameterFormat && inputs.length === 1) {
     const input = inputs[0];
     if (!input) return { error: "invalid-parameter" };
