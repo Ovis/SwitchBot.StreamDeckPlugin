@@ -110,9 +110,7 @@ export class GetStatusAction extends AuthenticatedAction {
         await ev.action.setTitle(title);
         this.restoreTimers.set(ev.action.id, setTimeout(() => {
           this.restoreTimers.delete(ev.action.id);
-          void ev.action.setTitle(settings.buttonName).catch(error => {
-            streamDeck.logger.warn("Failed to restore Get Status button title", { errorName: error instanceof Error ? error.name : "UnknownError" });
-          });
+          void this.restoreNormalTitle(ev.action);
         }, 15_000));
       }
     } else if (result.success) {
@@ -130,6 +128,18 @@ export class GetStatusAction extends AuthenticatedAction {
       ev.action
     );
   }
+  private async restoreNormalTitle(actionInstance: KeyDownEvent<GetStatusSettingsV1>["action"]): Promise<void> {
+    try {
+      // 一時表示中にPIでbuttonNameが変更される場合があるため、押下時のsnapshotではなく現在設定から復元する。
+      const current = normalizeGetStatusSettings(await actionInstance.getSettings());
+      await actionInstance.setTitle(current.buttonName);
+    } catch (error) {
+      streamDeck.logger.warn("Failed to restore Get Status button title", {
+        errorName: error instanceof Error ? error.name : "UnknownError"
+      });
+    }
+  }
+
   private clearRestoreTimer(actionId: string): void {
     const timer = this.restoreTimers.get(actionId);
     if (timer !== undefined) {
