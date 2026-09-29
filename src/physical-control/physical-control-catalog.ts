@@ -77,7 +77,7 @@ const color = (command = "setColor", id = "set-color", en = "Set Color", ja = "�
 const relayMode = (
   id = "set-mode",
   prefix?: string,
-  label: LocalizedText = { en: "Set Switch Mode", ja: "スイッチモードを設定" }
+  label: { en: string; ja: string } = { en: "Set Switch Mode", ja: "スイッチモードを設定" }
 ): PhysicalOperationDefinition => ({
   id,
   label,
