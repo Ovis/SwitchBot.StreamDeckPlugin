@@ -10,7 +10,7 @@ Licensed under the MIT License.
 
 The vendored bundle also includes Lit, Copyright 2019 Google LLC, licensed under the BSD 3-Clause License.
 
-The original license notices are preserved in `src/property-inspector/shared/vendor/sdpi-components.js`.
+The original license notices are preserved in the vendored `sdpi-components.js` bundle included with the Property Inspector.
 
 ## Runtime dependencies
 
