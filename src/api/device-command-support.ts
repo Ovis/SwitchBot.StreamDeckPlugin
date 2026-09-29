@@ -1,43 +1,34 @@
-// Physical device types whose official SwitchBot API documentation marks Command support as available.
-// Keep this allow-list aligned with the "Device Specifications and Supported Features List" in
-// https://github.com/OpenWonderLabs/SwitchBotAPI/blob/main/README.md.
-// Values are deviceType strings returned by GET /v1.1/devices; aliases cover documented naming variants.
-const CONTROL_COMMAND_DEVICE_TYPES = new Set([
-  // Locks & security
-  "Keypad", "Keypad Touch", "Keypad Vision", "Keypad Vision Pro",
-  "Lock", "Lock Lite", "Smart Lock Pro", "Smart Lock Pro Wifi", "Smart Lock Ultra",
-  "Lock Vision", "Lock Vision Pro", "Video Doorbell",
+import { physicalDeviceDefinitions } from "../physical-control/physical-control-catalog.js";
 
-  // Curtains & blinds
-  "Blind Tilt", "Curtain", "Curtain3", "Roller Shade",
+/**
+ * Physical Controlでは扱わないが、公式OpenAPIがControl Commandsを提供するdeviceType。
+ *
+ * 日常操作として安全かつ自然にモデル化できる機種はPhysical Control Catalogを正とし、
+ * API Request専用の特殊機種だけをここで補完する。これにより同じdeviceTypeを二重管理しない。
+ */
+const API_REQUEST_ONLY_CONTROL_COMMAND_DEVICE_TYPES = [
+  "Keypad",
+  "Keypad Touch",
+  "Keypad Vision",
+  "Keypad Vision Pro",
+  "AI Art Frame",
+  "WeatherStation",
+  "Kata Friends"
+] as const;
 
-  // Lighting
-  "Candle Warmer Lamp", "Ceiling Light", "Ceiling Light Pro", "Color Bulb", "Floor Lamp",
-  "RGBIC Neon Rope Light", "RGBIC Neon Wire Rope Light", "RGBICWW Floor Lamp",
-  "RGBICWW Strip Light", "Strip Light", "Strip Light 3", "Permanent Outdoor Lights",
-  "RGBICWW Ceiling Light",
+const CONTROL_COMMAND_DEVICE_TYPES = new Set<string>([
+  ...physicalDeviceDefinitions.map(definition => definition.deviceType),
+  ...API_REQUEST_ONLY_CONTROL_COMMAND_DEVICE_TYPES
+]);
 
-  // Robot vacuums
-  "Robot Vacuum Cleaner S10", "Robot Vacuum Cleaner S20", "K10+ Pro Combo", "K20+ Pro",
-  "Mini Robot Vacuum K10+", "Mini Robot Vacuum K10+ Pro",
-  "Robot Vacuum Cleaner S1", "Robot Vacuum Cleaner S1 Plus", "Robot Vacuum K11+",
-
-  // Climate control
-  "Air Purifier PM2.5", "Air Purifier Table PM2.5", "Air Purifier Table VOC", "Air Purifier VOC",
-  "Battery Circulator Fan", "Circulator Fan", "Evaporative Humidifier",
-  "Evaporative Humidifier (Auto-refill)", "Humidifier", "Smart Radiator Thermostat",
-  "Standing Circulator Fan", "Battery Circulator Fan 2 Pro",
-
-  // Plugs & switches
-  "Garage Door Opener", "Plug", "Plug Mini (EU)", "Plug Mini (JP)", "Plug Mini (US)",
-  "Relay Switch 1", "Relay Switch 1PM", "Relay Switch 2PM",
-
-  // Others
-  "Bot", "AI Art Frame", "WeatherStation", "Kata Friends"
-] as const);
-
+/** GET /devicesが返すdeviceTypeについて、公式OpenAPIのControl Commands対象かを判定する。 */
 export function supportsControlCommands(deviceType: string): boolean {
-  return CONTROL_COMMAND_DEVICE_TYPES.has(deviceType as never);
+  return CONTROL_COMMAND_DEVICE_TYPES.has(deviceType);
 }
 
+/**
+ * API RequestのDevice候補として認識するControl Commands対応deviceTypeを返す。
+ *
+ * 呼び出し側が配列を変更して共有状態を壊さないよう、公開値は凍結したコピーとする。
+ */
 export const documentedControlCommandDeviceTypes = Object.freeze([...CONTROL_COMMAND_DEVICE_TYPES]);
