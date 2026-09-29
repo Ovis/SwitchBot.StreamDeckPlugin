@@ -391,7 +391,7 @@ const COMBO_CLEANING: readonly PhysicalOperationDefinition[] = [
   setVolume
 ];
 
-const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
+export const physicalDeviceDefinitions: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
   { deviceType: "Plug", action: "power", operations: ON_OFF },
@@ -460,7 +460,7 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
 
 /** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
 export function physicalDeviceDefinition(deviceType: string): PhysicalDeviceDefinition | undefined {
-  return DEFINITIONS.find(definition => definition.deviceType === deviceType);
+  return physicalDeviceDefinitions.find(definition => definition.deviceType === deviceType);
 }
 
 /** 指定Actionで選択可能なdeviceTypeかを判定する。 */
