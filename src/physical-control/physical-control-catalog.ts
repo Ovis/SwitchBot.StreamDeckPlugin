@@ -411,7 +411,7 @@ const COMBO_CLEANING: readonly PhysicalOperationDefinition[] = [
   setVolume
 ];
 
-export const physicalDeviceDefinitions: readonly PhysicalDeviceDefinition[] = [
+const PHYSICAL_DEVICE_DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
   { deviceType: "Plug", action: "power", operations: ON_OFF },
@@ -478,9 +478,18 @@ export const physicalDeviceDefinitions: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Robot Vacuum Cleaner K11+", action: "cleaning", operations: COMBO_CLEANING }
 ];
 
-/** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
+const PHYSICAL_DEVICE_DEFINITIONS_BY_TYPE = new Map(
+  PHYSICAL_DEVICE_DEFINITIONS.map(definition => [definition.deviceType, definition] as const)
+);
+
+/** Physical Controlが明示的に対応するdevice定義を列挙する。 */
+export function physicalDeviceDefinitions(): readonly PhysicalDeviceDefinition[] {
+  return PHYSICAL_DEVICE_DEFINITIONS;
+}
+
+/** APIから返るdeviceTypeをPhysical Controlの明示的な定義へ解決する。未知typeは推測しない。 */
 export function physicalDeviceDefinition(deviceType: string): PhysicalDeviceDefinition | undefined {
-  return physicalDeviceDefinitions.find(definition => definition.deviceType === deviceType);
+  return PHYSICAL_DEVICE_DEFINITIONS_BY_TYPE.get(deviceType);
 }
 
 /** 指定Actionで選択可能なdeviceTypeかを判定する。 */
