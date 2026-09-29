@@ -91,6 +91,34 @@ describe("Physical Control HTTP contract", () => {
   });
 
   it.each([
+    ["Relay Switch 1", "set-mode", { value: "2" }, "setMode", "2"],
+    ["Relay Switch 1PM", "toggle", {}, "toggle", "default"],
+    ["Relay Switch 2PM", "turn-on", { channel: "2" }, "turnOn", "2"],
+    ["Relay Switch 2PM", "set-mode-channel-1", { value: "3" }, "setMode", "1;3"],
+    ["Relay Switch 2PM", "set-position", { value: 40 }, "setPosition", "40"]
+  ] as const)("%sの%sを正しいRelay Switch HTTP requestとして送信する", async (deviceType, operationId, operationParameters, command, parameter) => {
+    const fetchMock = vi.fn<FetchLike>(async () => new Response(
+      JSON.stringify({ statusCode: 100, message: "success", body: {} }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    const executor = new RequestExecutor(new SwitchBotClient(undefined, fetchMock), {
+      getCredentials: async () => CREDENTIALS
+    });
+    const built = buildPhysicalCommand({
+      action: "power", deviceId: "RELAY-001", deviceType, operationId, operationParameters
+    });
+    expect(built.request).toBeDefined();
+
+    const result = await executor.execute(built.request!);
+
+    expect(result.success).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/RELAY-001/commands");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
+  });
+
+  it.each([
     ["Color Bulb", "set-brightness", "50", "setBrightness"],
     ["Color Bulb", "set-color", "255:0:0", "setColor"],
     ["Color Bulb", "set-color-temperature", "4000", "setColorTemperature"],
