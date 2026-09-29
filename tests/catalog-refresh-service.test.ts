@@ -55,6 +55,25 @@ describe("CatalogRefreshService", () => {
     expect(devices.set).toHaveBeenCalledOnce();
   });
 
+  it("releases a failed single-flight refresh so the next request can retry", async () => {
+    const executor = { execute: vi.fn(async () => ({
+      success: false, request: { method: "GET", path: "/v1.1/devices" }, executedAt: "now",
+      error: { category: "network", message: "failed" }
+    })) } as unknown as RequestExecutor;
+    const devices = {
+      get: vi.fn()
+        .mockRejectedValueOnce(new Error("settings unavailable"))
+        .mockResolvedValueOnce({ fetchedAt: "retry", devices: [], infraredRemotes: [] }),
+      set: vi.fn()
+    } as unknown as DeviceCatalogStore;
+    const scenes = { get: vi.fn(), set: vi.fn() } as unknown as SceneCatalogStore;
+    const service = new CatalogRefreshService(executor, devices, scenes);
+
+    await expect(service.refreshDevices()).rejects.toThrow("settings unavailable");
+    await expect(service.refreshDevices()).resolves.toMatchObject({ refreshed: false });
+    expect(executor.execute).toHaveBeenCalledTimes(2);
+  });
+
   it("persists and reports a successful scene refresh", async () => {
     const executor = { execute: vi.fn(async () => ({
       success: true, request: { method: "GET", path: "/v1.1/scenes" }, executedAt: "2026-09-27T00:00:00.000Z",
