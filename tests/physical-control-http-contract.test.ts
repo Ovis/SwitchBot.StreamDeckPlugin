@@ -211,6 +211,39 @@ describe("Physical Control HTTP contract", () => {
     expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
   });
 
+  it.each([
+    ["Robot Vacuum Cleaner S1", "start-cleaning", {}, "start", "default"],
+    ["Robot Vacuum Cleaner S1 Plus", "start-cleaning", {}, "start", "default"],
+    ["K10+", "start-cleaning", {}, "start", "default"],
+    ["K10+ Pro", "start-cleaning", {}, "start", "default"],
+    ["Robot Vacuum Cleaner S10", "start-cleaning", { mode: "sweep_mop", fanLevel: "2", waterLevel: "1", times: 3 }, "startClean", JSON.stringify({ action: "sweep_mop", param: { fanLevel: 2, waterLevel: 1, times: 3 } })],
+    ["Robot Vacuum Cleaner S20", "start-cleaning", { mode: "sweep", fanLevel: "1", waterLevel: "2", times: 1 }, "startClean", JSON.stringify({ action: "sweep", param: { fanLevel: 1, waterLevel: 2, times: 1 } })],
+    ["Robot Vacuum Cleaner K10+ Pro Combo", "start-cleaning", { mode: "mop", fanLevel: "2", times: 3 }, "startClean", JSON.stringify({ action: "mop", param: { fanLevel: 2, times: 3 } })],
+    ["Robot Vacuum Cleaner K20 Plus Pro", "start-cleaning", { mode: "sweep", fanLevel: "3", times: 2 }, "startClean", JSON.stringify({ action: "sweep", param: { fanLevel: 3, times: 2 } })],
+    ["Robot Vacuum Cleaner K11+", "start-cleaning", { mode: "mop", fanLevel: "4", times: 1 }, "startClean", JSON.stringify({ action: "mop", param: { fanLevel: 4, times: 1 } })]
+  ] as const)("%sをCleaning catalogからHTTP境界まで検証する", async (deviceType, operationId, operationParameters, command, parameter) => {
+    const fetchMock = vi.fn<FetchLike>(async () => new Response(
+      JSON.stringify({ statusCode: 100, message: "success", body: {} }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    const executor = new RequestExecutor(new SwitchBotClient(undefined, fetchMock), {
+      getCredentials: async () => CREDENTIALS
+    });
+    const built = buildPhysicalCommand({
+      action: "cleaning", deviceId: "CLEANING-001", deviceType, operationId, operationParameters
+    });
+    expect(built.request).toBeDefined();
+
+    const result = await executor.execute(built.request!);
+
+    expect(result.success).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url.toString()).toBe("https://api.switch-bot.com/v1.1/devices/CLEANING-001/commands");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({ command, parameter, commandType: "command" }));
+    expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json");
+  });
+
   it("fail closedしたPhysical ControlはHTTP境界へ到達しない", async () => {
     const fetchMock = vi.fn<FetchLike>();
     const client = new SwitchBotClient(undefined, fetchMock);

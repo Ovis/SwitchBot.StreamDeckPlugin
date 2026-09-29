@@ -8,6 +8,7 @@ import { LightingAction } from "./actions/lighting-control-action.js";
 import { ClimateAction } from "./actions/climate-control-action.js";
 import { SecurityAction } from "./actions/security-control-action.js";
 import { CurtainsBlindsAction } from "./actions/curtains-blinds-control-action.js";
+import { CleaningAction } from "./actions/cleaning-control-action.js";
 import { SwitchBotClient } from "./api/switchbot-client.js";
 import { RequestExecutor } from "./execution/request-executor.js";
 import { ClipboardOutput } from "./output/clipboard-output.js";
@@ -44,6 +45,9 @@ streamDeck.actions.registerAction(new SecurityAction(
   executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
 ));
 streamDeck.actions.registerAction(new CurtainsBlindsAction(
+  executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
+));
+streamDeck.actions.registerAction(new CleaningAction(
   executor, output, deviceCatalogStore, catalogRefresh, globalSettings, executionDiagnostics, streamDeck.info.application.language
 ));
 streamDeck.actions.registerAction(new ApiRequestAction(

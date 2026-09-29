@@ -12,7 +12,7 @@ import { ActionInstanceFifo } from "../execution/action-instance-fifo.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import { normalizePhysicalControlSettings, type PhysicalControlSettingsV1 } from "../settings/physical-control-settings.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
-import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage } from "../protocol/property-inspector-protocol.js";
+import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage, type PhysicalControlOperationParameterItem } from "../protocol/property-inspector-protocol.js";
 import { physicalDeviceDefinition, supportsPhysicalAction, type PhysicalControlActionId } from "../physical-control/physical-control-catalog.js";
 import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/physical-command-builder.js";
 import { PhysicalControlConfirmationGate } from "../physical-control/physical-control-confirmation-gate.js";
@@ -114,16 +114,35 @@ export class PhysicalControlAction extends AuthenticatedAction {
     if (selectedCatalogDevice && !selectedCatalogDevice.deleted
       && supportsPhysicalAction(selectedCatalogDevice.deviceType, this.physicalActionId)
       && (settings.deviceId !== selectedDeviceId || settings.deviceType === "")) {
+      const deviceChanged = settings.deviceId !== selectedDeviceId;
+      const requestedOperationId = request.operationId?.trim() || settings.operationId;
+      const requestedOperationSupported = physicalDeviceDefinition(selectedCatalogDevice.deviceType)
+        ?.operations.some(operation => operation.id === requestedOperationId) === true;
       settings = {
         ...settings,
         deviceId: selectedDeviceId,
         deviceType: selectedCatalogDevice.deviceType,
-        ...(settings.deviceId !== selectedDeviceId ? { operationId: "", operationParameters: {} } : {})
+        // Device変更ではparameterを必ず破棄する一方、同じOperation IDが新Deviceでも有効なら維持する。
+        // 先頭Operationへの自動fallbackは行わず、非対応なら未選択へ戻してfail closedする。
+        ...(deviceChanged ? {
+          operationId: requestedOperationSupported ? requestedOperationId : "",
+          operationParameters: {}
+        } : {})
       };
       if (actionInstance) await actionInstance.setSettings(settings);
     }
 
     const effectiveDeviceType = selectedCatalogDevice?.deviceType ?? settings.deviceType;
+    const effectiveDefinition = physicalDeviceDefinition(effectiveDeviceType);
+    if (selectedCatalogDevice && !selectedCatalogDevice.deleted
+      && supportsPhysicalAction(effectiveDeviceType, this.physicalActionId)
+      && settings.operationId !== ""
+      && !effectiveDefinition?.operations.some(operation => operation.id === settings.operationId)) {
+      // PIがDevice選択を先に保存した場合でも、catalogを基準に旧Operationの有効性を再検証する。
+      // 非対応Operationを先頭候補へ置換せず空へ戻すことで、別commandの意図しない実行を防ぐ。
+      settings = { ...settings, operationId: "", operationParameters: {} };
+      if (actionInstance) await actionInstance.setSettings(settings);
+    }
     const configurationInvalid = selectedDeviceId !== "" && (
       !selectedCatalogDevice
       || selectedCatalogDevice.deleted
@@ -146,15 +165,30 @@ export class PhysicalControlAction extends AuthenticatedAction {
       event: "physicalControlCatalog",
       devices,
       selectedDeviceId,
-      operations: operations.map(operation => ({
+      operations: operations.map(operation => {
+        const localizeInput = (input: NonNullable<typeof operation.input>): PhysicalControlOperationParameterItem => {
+          const label = this.locale === "ja" ? input.label.ja : input.label.en;
+          if (input.kind === "number") {
+            return {
+              kind: "number", key: input.key, label,
+              min: input.min, max: input.max, step: input.step,
+              ...(input.unit ? { unit: input.unit } : {})
+            };
+          }
+          if (input.kind === "rgb") return { kind: "rgb", key: input.key, label };
+          return {
+            kind: "select", key: input.key, label,
+            options: input.options.map(option => ({
+              label: this.locale === "ja" ? option.label.ja : option.label.en,
+              value: option.value
+            }))
+          };
+        };
+        return {
         label: this.locale === "ja" ? operation.label.ja : operation.label.en,
         value: operation.id,
-        ...(operation.input ? {
-          input: {
-            ...operation.input,
-            label: this.locale === "ja" ? operation.input.label.ja : operation.input.label.en
-          }
-        } : {}),
+        ...(operation.input ? { input: localizeInput(operation.input) } : {}),
+        ...(operation.inputs ? { inputs: operation.inputs.map(localizeInput) } : {}),
         requestBody: (() => {
           const operationParameters = request.operationId === operation.id ? request.operationParameters : undefined;
           const built = buildPhysicalCommand({
@@ -166,7 +200,8 @@ export class PhysicalControlAction extends AuthenticatedAction {
           });
           return built.command ? physicalCommandBody(built.command, true) : "";
         })()
-      })),
+      };
+      }),
       refreshFailed: result.refreshFailed,
       configurationInvalid
     };

@@ -160,19 +160,26 @@ export interface PhysicalControlDeviceItem extends PropertyInspectorSelectItem {
   deviceType: string;
 }
 
+export interface PhysicalControlOperationParameterOptionItem extends ProtocolJsonObject {
+  label: string;
+  value: string;
+}
+
 export interface PhysicalControlOperationParameterItem extends ProtocolJsonObject {
-  kind: "number" | "rgb";
+  kind: "number" | "rgb" | "select";
   key: string;
   label: string;
   min?: number;
   max?: number;
   step?: number;
   unit?: string;
+  options?: PhysicalControlOperationParameterOptionItem[];
 }
 
 export interface PhysicalControlOperationItem extends PropertyInspectorSelectItem {
   requestBody: string;
   input?: PhysicalControlOperationParameterItem;
+  inputs?: PhysicalControlOperationParameterItem[];
 }
 
 export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
@@ -343,20 +350,38 @@ function protocolPhysicalControlOperation(value: unknown): PhysicalControlOperat
   if (!item || !protocolRecord(value) || typeof value.requestBody !== "string") return undefined;
   const input = protocolPhysicalControlParameter(value.input);
   if (value.input !== undefined && !input) return undefined;
-  return { ...item, requestBody: value.requestBody, ...(input ? { input } : {}) };
+  let inputs: PhysicalControlOperationParameterItem[] | undefined;
+  if (value.inputs !== undefined) {
+    if (!Array.isArray(value.inputs)) return undefined;
+    inputs = value.inputs.map(protocolPhysicalControlParameter).filter(protocolDefined);
+    if (inputs.length !== value.inputs.length) return undefined;
+  }
+  return { ...item, requestBody: value.requestBody, ...(input ? { input } : {}), ...(inputs ? { inputs } : {}) };
 }
 
 function protocolPhysicalControlParameter(value: unknown): PhysicalControlOperationParameterItem | undefined {
-  if (!protocolRecord(value) || (value.kind !== "number" && value.kind !== "rgb")
+  if (!protocolRecord(value) || (value.kind !== "number" && value.kind !== "rgb" && value.kind !== "select")
     || typeof value.key !== "string" || typeof value.label !== "string") return undefined;
   if (value.kind === "number" && (typeof value.min !== "number" || typeof value.max !== "number" || typeof value.step !== "number")) return undefined;
+  let options: PhysicalControlOperationParameterOptionItem[] | undefined;
+  if (value.kind === "select") {
+    if (!Array.isArray(value.options)) return undefined;
+    options = value.options.map(protocolPhysicalControlParameterOption).filter(protocolDefined);
+    if (options.length !== value.options.length) return undefined;
+  }
   return {
     kind: value.kind, key: value.key, label: value.label,
     ...(typeof value.min === "number" ? { min: value.min } : {}),
     ...(typeof value.max === "number" ? { max: value.max } : {}),
     ...(typeof value.step === "number" ? { step: value.step } : {}),
-    ...(typeof value.unit === "string" ? { unit: value.unit } : {})
+    ...(typeof value.unit === "string" ? { unit: value.unit } : {}),
+    ...(options ? { options } : {})
   };
+}
+
+function protocolPhysicalControlParameterOption(value: unknown): PhysicalControlOperationParameterOptionItem | undefined {
+  if (!protocolRecord(value) || typeof value.label !== "string" || typeof value.value !== "string") return undefined;
+  return { label: value.label, value: value.value };
 }
 
 function protocolPhysicalControlDevice(value: unknown): PhysicalControlDeviceItem | undefined {

@@ -82,6 +82,63 @@ describe("Property Inspector protocol", () => {
       });
     });
 
+    it("Physical Controlの複数inputとselect optionを検証する", () => {
+      const message = parsePluginToPropertyInspectorMessage({
+        event: "physicalControlCatalog",
+        devices: [{ label: "S10", value: "s10", deviceType: "Robot Vacuum Cleaner S10" }],
+        operations: [{
+          label: "Start Cleaning",
+          value: "start-cleaning",
+          requestBody: "",
+          inputs: [
+            {
+              kind: "select", key: "mode", label: "Cleaning Mode",
+              options: [{ label: "Sweep", value: "sweep" }, { label: "Sweep & Mop", value: "sweep_mop" }]
+            },
+            { kind: "number", key: "times", label: "Cleaning Cycles", min: 1, max: 2639999, step: 1 }
+          ]
+        }],
+        selectedDeviceId: "s10"
+      });
+      expect(message?.event).toBe("physicalControlCatalog");
+      if (message?.event !== "physicalControlCatalog") return;
+      expect(message.operations[0]?.inputs).toHaveLength(2);
+      expect(message.operations[0]?.inputs?.[0]?.options?.[1]).toEqual({ label: "Sweep & Mop", value: "sweep_mop" });
+    });
+
+    it("Physical Controlのmalformed inputsと未知kindをfail closedする", () => {
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "physicalControlCatalog",
+        devices: [],
+        operations: [{
+          label: "Broken", value: "broken", requestBody: "",
+          inputs: [{ kind: "future", key: "x", label: "X" }]
+        }],
+        selectedDeviceId: ""
+      })?.event === "physicalControlCatalog"
+        ? (parsePluginToPropertyInspectorMessage({
+          event: "physicalControlCatalog", devices: [],
+          operations: [{ label: "Broken", value: "broken", requestBody: "", inputs: [{ kind: "future", key: "x", label: "X" }] }],
+          selectedDeviceId: ""
+        }) as { operations: unknown[] }).operations
+        : undefined).toEqual([]);
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "physicalControlCatalog",
+        devices: [],
+        operations: [{
+          label: "Broken", value: "broken", requestBody: "",
+          inputs: [{ kind: "select", key: "mode", label: "Mode", options: [{ label: "Sweep", value: 1 }] }]
+        }],
+        selectedDeviceId: ""
+      })?.event === "physicalControlCatalog"
+        ? (parsePluginToPropertyInspectorMessage({
+          event: "physicalControlCatalog", devices: [],
+          operations: [{ label: "Broken", value: "broken", requestBody: "", inputs: [{ kind: "select", key: "mode", label: "Mode", options: [{ label: "Sweep", value: 1 }] }] }],
+          selectedDeviceId: ""
+        }) as { operations: unknown[] }).operations
+        : undefined).toEqual([]);
+    });
+
     it("赤外線リモコンの入れ子構造を検証する", () => {
       expect(parsePluginToPropertyInspectorMessage({
         event: "getInfraredRemotes",

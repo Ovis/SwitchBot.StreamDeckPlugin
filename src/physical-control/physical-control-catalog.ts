@@ -1,8 +1,23 @@
-export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security" | "curtains-blinds";
+export type PhysicalControlActionId = "bot" | "power" | "lighting" | "climate" | "security" | "curtains-blinds" | "cleaning";
+
+export interface PhysicalSelectOption {
+  label: { en: string; ja: string };
+  value: string;
+  wireValue: string | number;
+}
 
 export type PhysicalOperationParameter =
   | { kind: "number"; key: string; label: { en: string; ja: string }; min: number; max: number; step: number; unit?: string }
-  | { kind: "rgb"; key: string; label: { en: string; ja: string } };
+  | { kind: "rgb"; key: string; label: { en: string; ja: string } }
+  | { kind: "select"; key: string; label: { en: string; ja: string }; options: readonly PhysicalSelectOption[] };
+
+export type PhysicalJsonParameterValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { parameter: string }
+  | { readonly [key: string]: PhysicalJsonParameterValue };
 
 export interface PhysicalOperationDefinition {
   id: string;
@@ -11,8 +26,18 @@ export interface PhysicalOperationDefinition {
   parameter: string;
   commandType: "command";
   input?: PhysicalOperationParameter;
+  /**
+   * 既存カテゴリは単一inputで定義済みなので、Cleaning追加時にはcatalog全体を移行せず、
+   * Builder側でinputとinputsを同じ配列形式へ正規化して後方互換を維持する。
+   */
+  inputs?: readonly PhysicalOperationParameter[];
   /** 検証済み数値を公式APIのparameter文字列へ埋め込むための宣言的な形式。 */
   parameterFormat?: { prefix: string; suffix: string };
+  /**
+   * 複数入力から型を保ったJSON parameterを生成するための宣言。
+   * catalogを実行コード化せず、PI previewと実送信で同じBuilderを利用できる形を維持する。
+   */
+  parameterJson?: Readonly<Record<string, PhysicalJsonParameterValue>>;
   /** 誤操作で物理的なアクセス状態を変え得る操作は、キー上で再押下確認を必須にする。 */
   confirmationRequired?: boolean;
 }
@@ -206,6 +231,99 @@ const ROLLER_SHADE: readonly PhysicalOperationDefinition[] = [
   numeric("set-position", "Set Position", "位置を設定", "setPosition", 0, 100, 1, "Closed Position", "閉じ具合", "%")
 ];
 
+
+const select = (
+  key: string,
+  en: string,
+  ja: string,
+  options: readonly PhysicalSelectOption[]
+): PhysicalOperationParameter => ({ kind: "select", key, label: { en, ja }, options });
+
+const cleaningCycles = (): PhysicalOperationParameter => ({
+  kind: "number", key: "times", label: { en: "Cleaning Cycles", ja: "清掃回数" },
+  min: 1, max: 2_639_999, step: 1
+});
+const cleaningFanLevel = (): PhysicalOperationParameter => select(
+  "fanLevel", "Suction Power", "吸引力",
+  [1, 2, 3, 4].map(value => ({ label: { en: `Level ${value}`, ja: `レベル${value}` }, value: String(value), wireValue: value }))
+);
+const cleaningMode = (
+  options: readonly [value: string, en: string, ja: string][]
+): PhysicalOperationParameter => select(
+  "mode", "Cleaning Mode", "清掃モード",
+  options.map(([value, en, ja]) => ({ label: { en, ja }, value, wireValue: value }))
+);
+const setVolume = numeric("set-volume", "Set Volume", "音量を設定", "setVolume", 0, 100, 1, "Volume", "音量", "%");
+
+const LEGACY_CLEANING: readonly PhysicalOperationDefinition[] = [
+  fixed("start-cleaning", "Start Cleaning", "清掃を開始", "start", "default"),
+  fixed("stop", "Stop", "停止", "stop", "default"),
+  fixed("return-to-dock", "Return to Dock", "ドックに戻る", "dock", "default"),
+  {
+    id: "set-suction-power", label: { en: "Set Suction Power", ja: "吸引力を設定" },
+    command: "PowLevel", parameter: "", commandType: "command",
+    input: select("value", "Suction Power", "吸引力", [
+      { label: { en: "Quiet", ja: "静音" }, value: "0", wireValue: 0 },
+      { label: { en: "Standard", ja: "標準" }, value: "1", wireValue: 1 },
+      { label: { en: "Strong", ja: "強" }, value: "2", wireValue: 2 },
+      { label: { en: "Max", ja: "最大" }, value: "3", wireValue: 3 }
+    ])
+  }
+];
+
+const S10_S20_START_CLEANING: PhysicalOperationDefinition = {
+  id: "start-cleaning", label: { en: "Start Cleaning", ja: "清掃を開始" },
+  command: "startClean", parameter: "", commandType: "command",
+  inputs: [
+    cleaningMode([["sweep", "Sweep", "掃除"], ["sweep_mop", "Sweep & Mop", "掃除＆モップ"]]),
+    cleaningFanLevel(),
+    select("waterLevel", "Water Level", "水量", [1, 2].map(value => ({
+      label: { en: `Level ${value}`, ja: `レベル${value}` }, value: String(value), wireValue: value
+    }))),
+    cleaningCycles()
+  ],
+  parameterJson: {
+    action: { parameter: "mode" },
+    param: {
+      fanLevel: { parameter: "fanLevel" },
+      waterLevel: { parameter: "waterLevel" },
+      times: { parameter: "times" }
+    }
+  }
+};
+const S10_S20_CLEANING: readonly PhysicalOperationDefinition[] = [
+  S10_S20_START_CLEANING,
+  fixed("pause", "Pause", "一時停止", "pause", "default"),
+  fixed("return-to-dock", "Return to Dock", "ドックに戻る", "dock", "default"),
+  setVolume,
+  fixed("wash-mop", "Wash Mop", "モップを洗浄", "selfClean", "1"),
+  fixed("dry", "Dry", "乾燥", "selfClean", "2"),
+  fixed("stop-self-cleaning", "Stop Self Cleaning", "セルフクリーニングを停止", "selfClean", "3")
+];
+
+const COMBO_START_CLEANING: PhysicalOperationDefinition = {
+  id: "start-cleaning", label: { en: "Start Cleaning", ja: "清掃を開始" },
+  command: "startClean", parameter: "", commandType: "command",
+  inputs: [
+    cleaningMode([["sweep", "Sweep", "掃除"], ["mop", "Mop", "モップ"]]),
+    cleaningFanLevel(),
+    cleaningCycles()
+  ],
+  parameterJson: {
+    action: { parameter: "mode" },
+    param: {
+      fanLevel: { parameter: "fanLevel" },
+      times: { parameter: "times" }
+    }
+  }
+};
+const COMBO_CLEANING: readonly PhysicalOperationDefinition[] = [
+  COMBO_START_CLEANING,
+  fixed("pause", "Pause", "一時停止", "pause", "default"),
+  fixed("return-to-dock", "Return to Dock", "ドックに戻る", "dock", "default"),
+  setVolume
+];
+
 const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
@@ -256,7 +374,18 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   // 製品名は「Curtain 3」だが、/devices が返すdeviceTypeは空白なしの「Curtain3」なのでAPI値を使用する。
   { deviceType: "Curtain3", action: "curtains-blinds", operations: CURTAIN },
   { deviceType: "Blind Tilt", action: "curtains-blinds", operations: BLIND_TILT },
-  { deviceType: "Roller Shade", action: "curtains-blinds", operations: ROLLER_SHADE }
+  { deviceType: "Roller Shade", action: "curtains-blinds", operations: ROLLER_SHADE },
+  // 製品名やCLI aliasではなく、/devicesが返す正確なdeviceTypeだけをControl対象として扱う。
+  // 未知機種を既存familyへ推測で割り当てると別仕様のcommandを誤送信する可能性があるためである。
+  { deviceType: "Robot Vacuum Cleaner S1", action: "cleaning", operations: LEGACY_CLEANING },
+  { deviceType: "Robot Vacuum Cleaner S1 Plus", action: "cleaning", operations: LEGACY_CLEANING },
+  { deviceType: "K10+", action: "cleaning", operations: LEGACY_CLEANING },
+  { deviceType: "K10+ Pro", action: "cleaning", operations: LEGACY_CLEANING },
+  { deviceType: "Robot Vacuum Cleaner S10", action: "cleaning", operations: S10_S20_CLEANING },
+  { deviceType: "Robot Vacuum Cleaner S20", action: "cleaning", operations: S10_S20_CLEANING },
+  { deviceType: "Robot Vacuum Cleaner K10+ Pro Combo", action: "cleaning", operations: COMBO_CLEANING },
+  { deviceType: "Robot Vacuum Cleaner K20 Plus Pro", action: "cleaning", operations: COMBO_CLEANING },
+  { deviceType: "Robot Vacuum Cleaner K11+", action: "cleaning", operations: COMBO_CLEANING }
 ];
 
 /** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
