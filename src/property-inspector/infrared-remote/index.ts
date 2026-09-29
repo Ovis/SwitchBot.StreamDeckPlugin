@@ -1,7 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
-import { checked, queryRequired, valueOf } from "../shared/dom.js";
+import { checked, queryRequired, valueOf, createSettingsPatchQueue } from "../shared/dom.js";
 import {
   InfraredCommandPropertyInspectorItem,
   InfraredRemotePropertyInspectorItem,
@@ -67,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let suppressBodyChange = false;
   let typeModeInitialized = false;
   let savedOperation = "";
-  let settingsUpdateQueue = Promise.resolve();
 
   function setControlDisabled(element: SdpiValueElement, disabled: boolean): void {
     // sdpi-components は disabled プロパティを参照して内部 input を描画するため、
@@ -79,17 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectedRemote = () => remotes.get(valueOf(remote));
   const selectedCommand = () => selectedRemote()?.commands?.find(item => item.value === valueOf(operation));
 
-  function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
-    // 複数のPIイベントが近接しても、古いread-modify-writeが新しい設定を巻き戻さないよう直列化する。
-    const update = settingsUpdateQueue.then(async () => {
-      const settings = settingsRecord(await streamDeckClient.getSettings());
-      mutator(settings);
-      await streamDeckClient.setSettings(settings);
-    });
-    // SDKエラーが一度発生しても後続の設定変更まで停止しないよう、内部キューは成功状態へ戻す。
-    settingsUpdateQueue = update.catch(() => undefined);
-    return update;
-  }
+  const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
   function emptyOverrides(settings: Record<string, unknown>): void {
     settings.overrides = {
