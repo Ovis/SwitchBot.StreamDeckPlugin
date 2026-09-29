@@ -1,5 +1,5 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, parse } from "node:path";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -19,13 +19,30 @@ const visited = new Set();
  * package-lock上のpathはnpmのhoisting後の物理配置を保証しないため、
  * lockfileのnode_modules pathを直接ファイルパスとして扱わない。
  */
-function collectDependency(name, fromDirectory) {
-  const packageJsonPath = require.resolve(`${name}/package.json`, { paths: [fromDirectory] });
-  if (visited.has(packageJsonPath)) return;
-  visited.add(packageJsonPath);
+async function findPackageRoot(entryPath, expectedName) {
+  let directory = dirname(entryPath);
+  const root = parse(directory).root;
 
-  const packageJson = require(packageJsonPath);
-  const packageDirectory = dirname(packageJsonPath);
+  while (directory !== root) {
+    try {
+      const packageJsonPath = join(directory, "package.json");
+      const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
+      if (packageJson.name === expectedName) return { packageJson, packageDirectory: directory };
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    directory = dirname(directory);
+  }
+
+  throw new Error(`Package root not found for ${expectedName} from ${entryPath}`);
+}
+
+async function collectDependency(name, fromDirectory) {
+  // package.jsonをexportsしていないpackageもあるため、公開entry pointからpackage rootを逆探索する。
+  const entryPath = require.resolve(name, { paths: [fromDirectory] });
+  const { packageJson, packageDirectory } = await findPackageRoot(entryPath, name);
+  if (visited.has(packageDirectory)) return;
+  visited.add(packageDirectory);
   dependencies.push({
     path: packageDirectory,
     name: packageJson.name,
@@ -34,12 +51,12 @@ function collectDependency(name, fromDirectory) {
   });
 
   for (const childName of Object.keys(packageJson.dependencies ?? {})) {
-    collectDependency(childName, packageDirectory);
+    await collectDependency(childName, packageDirectory);
   }
 }
 
 for (const name of Object.keys(rootPackage.dependencies ?? {})) {
-  collectDependency(name, process.cwd());
+  await collectDependency(name, process.cwd());
 }
 
 dependencies.sort((a, b) => `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`));
