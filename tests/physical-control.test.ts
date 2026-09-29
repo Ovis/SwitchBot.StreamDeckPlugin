@@ -238,7 +238,7 @@ describe("Climate physical control", () => {
     ["Humidifier2", "auto", undefined, "setMode", '{"mode":7,"targetHumidify":0}'],
     ["Humidifier2", "target-humidity", 55, "setMode", '{"mode":5,"targetHumidify":55}'],
     ["Humidifier2", "child-lock-on", undefined, "setChildLock", "true"],
-    ["Air Purifier VOC", "normal", 2, "setMode", '{"mode":1,"fanGear":2}'],
+    ["Air Purifier VOC", "normal", 2, "setMode", { mode: 1, fanGear: 2 }],
     ["Air Purifier VOC", "sleep", undefined, "setMode", '{"mode":3}'],
     ["Air Purifier VOC", "child-lock-off", undefined, "setChildLock", "0"],
     ["Smart Radiator Thermostat", "eco", undefined, "setMode", "3"],
@@ -469,7 +469,7 @@ describe("Cleaning physical control", () => {
       operationParameters: { mode: "sweep_mop", fanLevel: "2", waterLevel: "1", times: 3 }
     });
     expect(built.command?.command).toBe("startClean");
-    expect(JSON.parse(built.command?.parameter ?? "")).toEqual({
+    expect(built.command?.parameter).toEqual({
       action: "sweep_mop", param: { fanLevel: 2, waterLevel: 1, times: 3 }
     });
   });
@@ -479,7 +479,7 @@ describe("Cleaning physical control", () => {
       action: "cleaning", deviceId: "K20", deviceType: "Robot Vacuum Cleaner K20 Plus Pro", operationId: "start-cleaning",
       operationParameters: { mode: "mop", fanLevel: "2", times: 3 }
     });
-    expect(JSON.parse(built.command?.parameter ?? "")).toEqual({
+    expect(built.command?.parameter).toEqual({
       action: "mop", param: { fanLevel: 2, times: 3 }
     });
   });
