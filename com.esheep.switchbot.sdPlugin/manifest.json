@@ -5,13 +5,13 @@
       "Name": "Bot",
       "Tooltip": "Control a SwitchBot Bot.",
       "UUID": "com.esheep.switchbot.bot",
-      "Icon": "imgs/action",
+      "Icon": "imgs/bot-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/bot-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -20,13 +20,13 @@
       "Name": "Power",
       "Tooltip": "Control SwitchBot power and relay devices.",
       "UUID": "com.esheep.switchbot.power",
-      "Icon": "imgs/action",
+      "Icon": "imgs/power-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/power-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -35,13 +35,13 @@
       "Name": "Lighting",
       "Tooltip": "Control SwitchBot lights.",
       "UUID": "com.esheep.switchbot.lighting",
-      "Icon": "imgs/action",
+      "Icon": "imgs/lighting-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/lighting-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -50,13 +50,13 @@
       "Name": "Climate",
       "Tooltip": "Control SwitchBot climate devices.",
       "UUID": "com.esheep.switchbot.climate",
-      "Icon": "imgs/action",
+      "Icon": "imgs/climate-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/climate-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -65,13 +65,13 @@
       "Name": "Security",
       "Tooltip": "Control SwitchBot locks and security devices.",
       "UUID": "com.esheep.switchbot.security",
-      "Icon": "imgs/action",
+      "Icon": "imgs/security-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/security-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -80,13 +80,13 @@
       "Name": "Curtains & Blinds",
       "Tooltip": "Control SwitchBot curtains, blinds, and roller shades.",
       "UUID": "com.esheep.switchbot.curtains-blinds",
-      "Icon": "imgs/action",
+      "Icon": "imgs/curtains-blinds-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/curtains-blinds-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -95,13 +95,13 @@
       "Name": "Cleaning",
       "Tooltip": "Control SwitchBot robot vacuums.",
       "UUID": "com.esheep.switchbot.cleaning",
-      "Icon": "imgs/action",
+      "Icon": "imgs/cleaning-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/cleaning-key"
         }
       ],
       "PropertyInspectorPath": "ui/physical-control.html"
@@ -110,13 +110,13 @@
       "Name": "Infrared Remote",
       "Tooltip": "Send commands to a SwitchBot virtual infrared remote.",
       "UUID": "com.esheep.switchbot.infrared-remote",
-      "Icon": "imgs/action",
+      "Icon": "imgs/infrared-remote-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/infrared-remote-key"
         }
       ],
       "PropertyInspectorPath": "ui/infrared-remote.html"
@@ -125,13 +125,13 @@
       "Name": "Get Status",
       "Tooltip": "Get the selected SwitchBot device status.",
       "UUID": "com.esheep.switchbot.get-status",
-      "Icon": "imgs/action",
+      "Icon": "imgs/get-status-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/get-status-key"
         }
       ],
       "PropertyInspectorPath": "ui/get-status.html",
@@ -141,13 +141,13 @@
       "Name": "API Request",
       "Tooltip": "Send a configured request to SwitchBot OpenAPI.",
       "UUID": "com.esheep.switchbot.api-request",
-      "Icon": "imgs/action",
+      "Icon": "imgs/api-request-action",
       "Controllers": [
         "Keypad"
       ],
       "States": [
         {
-          "Image": "imgs/key"
+          "Image": "imgs/api-request-key"
         }
       ],
       "PropertyInspectorPath": "ui/api-request.html"
