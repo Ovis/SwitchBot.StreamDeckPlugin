@@ -1,7 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
-import { checked, queryRequired, valueOf } from "../shared/dom.js";
+import { checked, queryRequired, valueOf, createSettingsPatchQueue } from "../shared/dom.js";
 import {
   InfraredCommandPropertyInspectorItem,
   InfraredRemotePropertyInspectorItem,
@@ -78,11 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectedRemote = () => remotes.get(valueOf(remote));
   const selectedCommand = () => selectedRemote()?.commands?.find(item => item.value === valueOf(operation));
 
-  async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
-    const settings = settingsRecord(await streamDeckClient.getSettings());
-    mutator(settings);
-    await streamDeckClient.setSettings(settings);
-  }
+  const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
   function emptyOverrides(settings: Record<string, unknown>): void {
     settings.overrides = {

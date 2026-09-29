@@ -152,8 +152,8 @@ describe("Physical Control HTTP contract", () => {
 
   it.each([
     ["Humidifier", "target-humidity", 50, "setMode", "50"],
-    ["Humidifier2", "target-humidity", 60, "setMode", '{"mode":5,"targetHumidify":60}'],
-    ["Air Purifier VOC", "normal", 2, "setMode", '{"mode":1,"fanGear":2}'],
+    ["Humidifier2", "target-humidity", 60, "setMode", { mode: 5, targetHumidify: 60 }],
+    ["Air Purifier VOC", "normal", 2, "setMode", { mode: 1, fanGear: 2 }],
     ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"],
     ["Battery Circulator Fan", "close-delay", 1800, "closeDelay", "1800"],
     ["Battery Circulator Fan 2 Pro", "wind-speed", 50, "setWindSpeed", "50"]
@@ -244,11 +244,11 @@ describe("Physical Control HTTP contract", () => {
     ["Robot Vacuum Cleaner S1 Plus", "start-cleaning", {}, "start", "default"],
     ["K10+", "start-cleaning", {}, "start", "default"],
     ["K10+ Pro", "start-cleaning", {}, "start", "default"],
-    ["Robot Vacuum Cleaner S10", "start-cleaning", { mode: "sweep_mop", fanLevel: "2", waterLevel: "1", times: 3 }, "startClean", JSON.stringify({ action: "sweep_mop", param: { fanLevel: 2, waterLevel: 1, times: 3 } })],
-    ["Robot Vacuum Cleaner S20", "start-cleaning", { mode: "sweep", fanLevel: "1", waterLevel: "2", times: 1 }, "startClean", JSON.stringify({ action: "sweep", param: { fanLevel: 1, waterLevel: 2, times: 1 } })],
-    ["Robot Vacuum Cleaner K10+ Pro Combo", "start-cleaning", { mode: "mop", fanLevel: "2", times: 3 }, "startClean", JSON.stringify({ action: "mop", param: { fanLevel: 2, times: 3 } })],
-    ["Robot Vacuum Cleaner K20 Plus Pro", "start-cleaning", { mode: "sweep", fanLevel: "3", times: 2 }, "startClean", JSON.stringify({ action: "sweep", param: { fanLevel: 3, times: 2 } })],
-    ["Robot Vacuum Cleaner K11+", "start-cleaning", { mode: "mop", fanLevel: "4", times: 1 }, "startClean", JSON.stringify({ action: "mop", param: { fanLevel: 4, times: 1 } })]
+    ["Robot Vacuum Cleaner S10", "start-cleaning", { mode: "sweep_mop", fanLevel: "2", waterLevel: "1", times: 3 }, "startClean", { action: "sweep_mop", param: { fanLevel: 2, waterLevel: 1, times: 3 } }],
+    ["Robot Vacuum Cleaner S20", "start-cleaning", { mode: "sweep", fanLevel: "1", waterLevel: "2", times: 1 }, "startClean", { action: "sweep", param: { fanLevel: 1, waterLevel: 2, times: 1 } }],
+    ["Robot Vacuum Cleaner K10+ Pro Combo", "start-cleaning", { mode: "mop", fanLevel: "2", times: 3 }, "startClean", { action: "mop", param: { fanLevel: 2, times: 3 } }],
+    ["Robot Vacuum Cleaner K20 Plus Pro", "start-cleaning", { mode: "sweep", fanLevel: "3", times: 2 }, "startClean", { action: "sweep", param: { fanLevel: 3, times: 2 } }],
+    ["Robot Vacuum Cleaner K11+", "start-cleaning", { mode: "mop", fanLevel: "4", times: 1 }, "startClean", { action: "mop", param: { fanLevel: 4, times: 1 } }]
   ] as const)("%sをCleaning catalogからHTTP境界まで検証する", async (deviceType, operationId, operationParameters, command, parameter) => {
     const fetchMock = vi.fn<FetchLike>(async () => new Response(
       JSON.stringify({ statusCode: 100, message: "success", body: {} }),

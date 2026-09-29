@@ -12,5 +12,33 @@
   "com.esheep.switchbot.infrared-remote": {
     "Name": "赤外線リモコン",
     "Tooltip": "SwitchBotの仮想赤外線リモコンへコマンドを送信します。"
+  },
+  "com.esheep.switchbot.bot": {
+    "Name": "Bot",
+    "Tooltip": "SwitchBot Botを操作します。"
+  },
+  "com.esheep.switchbot.power": {
+    "Name": "電源",
+    "Tooltip": "SwitchBotの電源・リレーデバイスを操作します。"
+  },
+  "com.esheep.switchbot.lighting": {
+    "Name": "照明",
+    "Tooltip": "SwitchBotの照明デバイスを操作します。"
+  },
+  "com.esheep.switchbot.climate": {
+    "Name": "空調",
+    "Tooltip": "SwitchBotの空調デバイスを操作します。"
+  },
+  "com.esheep.switchbot.security": {
+    "Name": "セキュリティ",
+    "Tooltip": "SwitchBotのロック・セキュリティデバイスを操作します。"
+  },
+  "com.esheep.switchbot.curtains-blinds": {
+    "Name": "カーテン・ブラインド",
+    "Tooltip": "SwitchBotのカーテン・ブラインド・ロールスクリーンを操作します。"
+  },
+  "com.esheep.switchbot.cleaning": {
+    "Name": "掃除",
+    "Tooltip": "SwitchBotのロボット掃除機を操作します。"
   }
 }

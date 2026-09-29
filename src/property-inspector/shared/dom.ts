@@ -28,3 +28,36 @@ export function valueOf(element: SdpiValueElement, fallback = ""): string {
 export function checked(element: SdpiValueElement): boolean {
   return element.value === true || element.value === "true";
 }
+
+
+/**
+ * Property Inspector内のsettings read-modify-writeを直列化する。
+ *
+ * SDKのgetSettings/setSettingsは部分更新ではないため、複数イベントが並行すると
+ * 古い取得結果が後から保存され、新しい入力を巻き戻す可能性がある。
+ */
+export function createSettingsPatchQueue(
+  streamDeckClient: { getSettings(): Promise<unknown>; setSettings(settings: Record<string, unknown>): Promise<unknown> }
+): (mutator: (settings: Record<string, unknown>) => void) => Promise<void> {
+  let queue = Promise.resolve();
+
+  return mutator => {
+    const update = queue.then(async () => {
+      const value = await streamDeckClient.getSettings();
+      const record = typeof value === "object" && value !== null && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : {};
+      // SDK/テストダブルのどちらの応答形でも、実際のAction settingsだけを更新する。
+      // { settings: {...} }をそのままsetSettingsへ返すとsettingsキー自体を保存してしまうため展開する。
+      const nested = record.settings;
+      const settings = typeof nested === "object" && nested !== null && !Array.isArray(nested)
+        ? { ...(nested as Record<string, unknown>) }
+        : { ...record };
+      mutator(settings);
+      await streamDeckClient.setSettings(settings);
+    });
+    // 一度のSDKエラーで後続更新まで停止しないよう、内部キューだけ成功状態へ戻す。
+    queue = update.catch(() => undefined);
+    return update.then(() => undefined);
+  };
+}

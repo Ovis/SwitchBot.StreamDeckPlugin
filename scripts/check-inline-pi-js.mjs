@@ -3,7 +3,9 @@ import vm from "node:vm";
 
 const files = [
   "com.esheep.switchbot.sdPlugin/ui/api-request.html",
-  "com.esheep.switchbot.sdPlugin/ui/get-status.html"
+  "com.esheep.switchbot.sdPlugin/ui/get-status.html",
+  "com.esheep.switchbot.sdPlugin/ui/infrared-remote.html",
+  "com.esheep.switchbot.sdPlugin/ui/physical-control.html"
 ];
 
 for (const file of files) {

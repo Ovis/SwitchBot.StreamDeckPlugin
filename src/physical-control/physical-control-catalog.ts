@@ -74,9 +74,13 @@ const color = (command = "setColor", id = "set-color", en = "Set Color", ja = "�
   input: { kind: "rgb", key: "value", label: { en: "Color", ja: "色" } }
 });
 
-const relayMode = (id = "set-mode", prefix?: string): PhysicalOperationDefinition => ({
+const relayMode = (
+  id = "set-mode",
+  prefix?: string,
+  label: { en: string; ja: string } = { en: "Set Switch Mode", ja: "スイッチモードを設定" }
+): PhysicalOperationDefinition => ({
   id,
-  label: { en: "Set Switch Mode", ja: "スイッチモードを設定" },
+  label,
   command: "setMode",
   parameter: "",
   commandType: "command",
@@ -129,8 +133,8 @@ const RELAY_SWITCH_2PM: readonly PhysicalOperationDefinition[] = [
   relayChannelOperation("toggle", "Toggle", "切り替え", "toggle"),
   // setModeは「channel;mode」というwire形式なので、チャンネルをOperation側へ固定して
   // 既存Builderに暗黙の複数値文字列結合規則を持ち込まない。
-  relayMode("set-mode-channel-1", "1;"),
-  relayMode("set-mode-channel-2", "2;"),
+  relayMode("set-mode-channel-1", "1;", { en: "Set Switch Mode — Channel 1", ja: "スイッチモードを設定 — チャンネル1" }),
+  relayMode("set-mode-channel-2", "2;", { en: "Set Switch Mode — Channel 2", ja: "スイッチモードを設定 — チャンネル2" }),
   {
     id: "set-position",
     label: { en: "Set Roller Blind Position", ja: "ローラーブラインド位置を設定" },
@@ -161,6 +165,18 @@ const RGBICWW_CEILING: readonly PhysicalOperationDefinition[] = [
 
 const fixed = (id: string, en: string, ja: string, command: string, parameter: string): PhysicalOperationDefinition =>
   ({ id, label: { en, ja }, command, parameter, commandType: "command" });
+
+/**
+ * OpenAPIがcommand parameterをJSON objectとして要求する固定Operationを定義する。
+ *
+ * JSON文字列をparameterへ格納するとHTTP body上でも文字列として送信されるため、
+ * object契約の機種ではparameterJsonを使ってwire型を保持する。
+ */
+const fixedJson = (
+  id: string, en: string, ja: string, command: string, parameterJson: Readonly<Record<string, PhysicalJsonParameterValue>>
+): PhysicalOperationDefinition => ({
+  id, label: { en, ja }, command, parameter: "", commandType: "command", parameterJson
+});
 const numeric = (
   id: string, en: string, ja: string, command: string, min: number, max: number, step: number,
   inputEn: string, inputJa: string, unit?: string, parameterFormat?: PhysicalOperationDefinition["parameterFormat"]
@@ -180,23 +196,31 @@ const HUMIDIFIER: readonly PhysicalOperationDefinition[] = [
 ];
 const HUMIDIFIER2: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  fixed("level-4", "Level 4", "レベル4", "setMode", '{"mode":1,"targetHumidify":0}'),
-  fixed("level-3", "Level 3", "レベル3", "setMode", '{"mode":2,"targetHumidify":0}'),
-  fixed("level-2", "Level 2", "レベル2", "setMode", '{"mode":3,"targetHumidify":0}'),
-  fixed("level-1", "Level 1", "レベル1", "setMode", '{"mode":4,"targetHumidify":0}'),
-  numeric("target-humidity", "Humidity Mode", "湿度指定", "setMode", 0, 100, 1, "Humidity", "湿度", "%", { prefix: '{"mode":5,"targetHumidify":', suffix: "}" }),
-  fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":6,"targetHumidify":0}'),
-  fixed("auto", "Auto", "自動", "setMode", '{"mode":7,"targetHumidify":0}'),
-  fixed("drying", "Drying", "乾燥", "setMode", '{"mode":8,"targetHumidify":0}'),
+  fixedJson("level-4", "Level 4", "レベル4", "setMode", { mode: 1, targetHumidify: 0 }),
+  fixedJson("level-3", "Level 3", "レベル3", "setMode", { mode: 2, targetHumidify: 0 }),
+  fixedJson("level-2", "Level 2", "レベル2", "setMode", { mode: 3, targetHumidify: 0 }),
+  fixedJson("level-1", "Level 1", "レベル1", "setMode", { mode: 4, targetHumidify: 0 }),
+  {
+    id: "target-humidity", label: { en: "Humidity Mode", ja: "湿度指定" }, command: "setMode", parameter: "", commandType: "command",
+    input: { kind: "number", key: "value", label: { en: "Humidity", ja: "湿度" }, min: 0, max: 100, step: 1, unit: "%" },
+    parameterJson: { mode: 5, targetHumidify: { parameter: "value" } }
+  },
+  fixedJson("sleep", "Sleep", "睡眠", "setMode", { mode: 6, targetHumidify: 0 }),
+  fixedJson("auto", "Auto", "自動", "setMode", { mode: 7, targetHumidify: 0 }),
+  fixedJson("drying", "Drying", "乾燥", "setMode", { mode: 8, targetHumidify: 0 }),
   fixed("child-lock-on", "Child Lock On", "チャイルドロック ON", "setChildLock", "true"),
   fixed("child-lock-off", "Child Lock Off", "チャイルドロック OFF", "setChildLock", "false")
 ];
 const AIR_PURIFIER: readonly PhysicalOperationDefinition[] = [
   ...ON_OFF,
-  numeric("normal", "Normal", "通常", "setMode", 1, 3, 1, "Fan Gear", "風量", undefined, { prefix: '{"mode":1,"fanGear":', suffix: "}" }),
-  fixed("auto", "Auto", "自動", "setMode", '{"mode":2}'),
-  fixed("sleep", "Sleep", "睡眠", "setMode", '{"mode":3}'),
-  fixed("pet", "Pet", "ペット", "setMode", '{"mode":4}'),
+  {
+    id: "normal", label: { en: "Normal", ja: "通常" }, command: "setMode", parameter: "", commandType: "command",
+    input: { kind: "number", key: "value", label: { en: "Fan Gear", ja: "風量" }, min: 1, max: 3, step: 1 },
+    parameterJson: { mode: 1, fanGear: { parameter: "value" } }
+  },
+  fixedJson("auto", "Auto", "自動", "setMode", { mode: 2 }),
+  fixedJson("sleep", "Sleep", "睡眠", "setMode", { mode: 3 }),
+  fixedJson("pet", "Pet", "ペット", "setMode", { mode: 4 }),
   fixed("child-lock-on", "Child Lock On", "チャイルドロック ON", "setChildLock", "1"),
   fixed("child-lock-off", "Child Lock Off", "チャイルドロック OFF", "setChildLock", "0")
 ];
@@ -391,7 +415,7 @@ const COMBO_CLEANING: readonly PhysicalOperationDefinition[] = [
   setVolume
 ];
 
-const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
+const PHYSICAL_DEVICE_DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Bot", action: "bot", operations: BOT_OPERATIONS },
   // Plugは公式仕様上toggleを持たないため、Plug Mini系とはOperation定義を分ける。
   { deviceType: "Plug", action: "power", operations: ON_OFF },
@@ -458,9 +482,18 @@ const DEFINITIONS: readonly PhysicalDeviceDefinition[] = [
   { deviceType: "Robot Vacuum Cleaner K11+", action: "cleaning", operations: COMBO_CLEANING }
 ];
 
-/** APIから返るdeviceTypeをNormal Controlの明示的な定義へ解決する。未知typeは推測しない。 */
+const PHYSICAL_DEVICE_DEFINITIONS_BY_TYPE = new Map(
+  PHYSICAL_DEVICE_DEFINITIONS.map(definition => [definition.deviceType, definition] as const)
+);
+
+/** Physical Controlが明示的に対応するdevice定義を列挙する。 */
+export function physicalDeviceDefinitions(): readonly PhysicalDeviceDefinition[] {
+  return PHYSICAL_DEVICE_DEFINITIONS;
+}
+
+/** APIから返るdeviceTypeをPhysical Controlの明示的な定義へ解決する。未知typeは推測しない。 */
 export function physicalDeviceDefinition(deviceType: string): PhysicalDeviceDefinition | undefined {
-  return DEFINITIONS.find(definition => definition.deviceType === deviceType);
+  return PHYSICAL_DEVICE_DEFINITIONS_BY_TYPE.get(deviceType);
 }
 
 /** 指定Actionで選択可能なdeviceTypeかを判定する。 */

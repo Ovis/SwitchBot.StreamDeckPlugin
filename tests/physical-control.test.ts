@@ -79,6 +79,19 @@ describe("Power physical control", () => {
     expect(built.error).toBe("unsupported-operation");
   });
 
+  it("Relay Switch 2PMのチャンネル別setModeを表示上も区別する", () => {
+    const definition = physicalDeviceDefinition("Relay Switch 2PM");
+    const modes = definition?.operations.filter(operation => operation.id.startsWith("set-mode-channel-")) ?? [];
+    expect(modes.map(operation => operation.label.en)).toEqual([
+      "Set Switch Mode — Channel 1",
+      "Set Switch Mode — Channel 2"
+    ]);
+    expect(modes.map(operation => operation.label.ja)).toEqual([
+      "スイッチモードを設定 — チャンネル1",
+      "スイッチモードを設定 — チャンネル2"
+    ]);
+  });
+
   it.each([
     ["Relay Switch 1", ["turn-on", "turn-off", "toggle", "set-mode"]],
     ["Relay Switch 1PM", ["turn-on", "turn-off", "toggle", "set-mode"]],
@@ -235,11 +248,11 @@ describe("Climate physical control", () => {
     ["Humidifier", "mode-auto", undefined, "setMode", "auto"],
     ["Humidifier", "mode-34", undefined, "setMode", "101"],
     ["Humidifier", "target-humidity", 55, "setMode", "55"],
-    ["Humidifier2", "auto", undefined, "setMode", '{"mode":7,"targetHumidify":0}'],
-    ["Humidifier2", "target-humidity", 55, "setMode", '{"mode":5,"targetHumidify":55}'],
+    ["Humidifier2", "auto", undefined, "setMode", { mode: 7, targetHumidify: 0 }],
+    ["Humidifier2", "target-humidity", 55, "setMode", { mode: 5, targetHumidify: 55 }],
     ["Humidifier2", "child-lock-on", undefined, "setChildLock", "true"],
-    ["Air Purifier VOC", "normal", 2, "setMode", '{"mode":1,"fanGear":2}'],
-    ["Air Purifier VOC", "sleep", undefined, "setMode", '{"mode":3}'],
+    ["Air Purifier VOC", "normal", 2, "setMode", { mode: 1, fanGear: 2 }],
+    ["Air Purifier VOC", "sleep", undefined, "setMode", { mode: 3 }],
     ["Air Purifier VOC", "child-lock-off", undefined, "setChildLock", "0"],
     ["Smart Radiator Thermostat", "eco", undefined, "setMode", "3"],
     ["Smart Radiator Thermostat", "manual-temperature", 22, "setManualModeTemperature", "22"],
@@ -469,7 +482,7 @@ describe("Cleaning physical control", () => {
       operationParameters: { mode: "sweep_mop", fanLevel: "2", waterLevel: "1", times: 3 }
     });
     expect(built.command?.command).toBe("startClean");
-    expect(JSON.parse(built.command?.parameter ?? "")).toEqual({
+    expect(built.command?.parameter).toEqual({
       action: "sweep_mop", param: { fanLevel: 2, waterLevel: 1, times: 3 }
     });
   });
@@ -479,7 +492,7 @@ describe("Cleaning physical control", () => {
       action: "cleaning", deviceId: "K20", deviceType: "Robot Vacuum Cleaner K20 Plus Pro", operationId: "start-cleaning",
       operationParameters: { mode: "mop", fanLevel: "2", times: 3 }
     });
-    expect(JSON.parse(built.command?.parameter ?? "")).toEqual({
+    expect(built.command?.parameter).toEqual({
       action: "mop", param: { fanLevel: 2, times: 3 }
     });
   });

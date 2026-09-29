@@ -1,6 +1,6 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
-import { queryRequired, valueOf } from "../shared/dom.js";
+import { queryRequired, valueOf, createSettingsPatchQueue } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
 import { shouldResyncInitialSelection } from "./initial-selection-resync.js";
@@ -32,11 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let parameterPreviewResyncKey = "";
   let renderedParameterOperationId = "";
 
-  async function patchSettings(mutator: (settings: Record<string, unknown>) => void): Promise<void> {
-    const settings = settingsRecord(await streamDeckClient.getSettings());
-    mutator(settings);
-    await streamDeckClient.setSettings(settings);
-  }
+  const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
   function sendCatalog(
     isRefresh = false,
