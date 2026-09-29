@@ -4,12 +4,20 @@
 
 The plugin is an advanced-user Stream Deck client for SwitchBot OpenAPI v1.1. It calls only the fixed origin `https://api.switch-bot.com`.
 
-The current plugin exposes two actions:
+The current plugin exposes ten actions:
 
-1. **Get Status**
-2. **API Request**
+1. **Bot**
+2. **Power**
+3. **Lighting**
+4. **Climate**
+5. **Security**
+6. **Curtains & Blinds**
+7. **Cleaning**
+8. **Infrared Remote**
+9. **Get Status**
+10. **API Request**
 
-Device and scene discovery are supporting catalog operations exposed through Property Inspector selectors rather than separate Stream Deck actions.
+The first seven actions share the Physical Control architecture. Device and scene discovery remain supporting catalog operations exposed through Property Inspector selectors rather than separate Stream Deck actions.
 
 ## 2. Platform
 
@@ -71,7 +79,32 @@ Selectors normally hide deleted entries but retain a deleted entry when it is th
 
 An explicit refresh failure MUST be reported to the Property Inspector. The previously saved catalog may still be displayed, but it must not be presented as a successful refresh.
 
-## 6. Get Status
+## 6. Physical Control
+
+Bot, Power, Lighting, Climate, Security, Curtains & Blinds, and Cleaning use one shared Physical Control implementation.
+
+The Physical Device Catalog is the canonical source for supported `deviceType` values, operations, localized labels, parameter constraints, confirmation requirements, and command wire shapes. Category action classes contain only their UUID/action identity and do not duplicate model-specific command logic.
+
+The API Request Control Commands capability list is derived from the same Physical Device Catalog. Devices intentionally kept outside Physical Control, such as passcode/special-purpose command devices, are maintained only as an explicit API Request-only supplement.
+
+Physical Control:
+- filters the cached device catalog by action category and exact documented `deviceType`;
+- fails closed for unknown, deleted, mismatched, or unsupported devices and operations;
+- preserves invalid saved values until the user explicitly corrects them rather than silently selecting another command;
+- validates number, RGB, and select parameters before request construction;
+- preserves JSON object parameters as objects on the HTTP wire;
+- uses the same command builder for Property Inspector preview and actual execution;
+- serializes Property Inspector read-modify-write settings updates to prevent stale updates from overwriting newer user input;
+- queues key presses per action instance with a bounded FIFO;
+- requires a second key press for operations marked as requiring confirmation.
+
+Only the normal `unlock` operation may opt out of the second-press confirmation. Other sensitive operations such as deadbolt/latch and garage-door opening retain mandatory confirmation.
+
+## 7. Infrared Remote
+
+Infrared Remote selects virtual infrared devices from the cached catalog and maps their supported operations to documented SwitchBot infrared command bodies. Advanced overrides remain available for commands that require manual control.
+
+## 8. Get Status
 
 Settings:
 - selected device ID;
@@ -91,7 +124,7 @@ Execution:
 
 The temporary-title timer is cleared when settings change, the action disappears, or a new temporary title replaces it. Asynchronous title restoration failures are caught and sanitized.
 
-## 7. API Request
+## 9. API Request
 
 API Request supports centrally defined presets plus Custom.
 
@@ -108,7 +141,7 @@ Current presets:
 - Update webhook configuration
 - Delete webhook
 
-Parameterized device/scene presets use the cached selectors. For `Send device control command`, the physical-device selector is filtered through an explicit allow-list of `deviceType` values that the official SwitchBot API feature matrix documents as supporting Command; read-only/non-command devices and unknown future types are excluded (fail closed). For `Send device control command`, selecting a known physical device type may populate an editable sample request body derived from the official SwitchBot control-command documentation. Unknown device types are not guessed. A user-edited body is not overwritten merely by changing the selected device.
+Parameterized device/scene presets use the cached selectors. For `Send device control command`, the physical-device selector is filtered through the shared Control Commands capability catalog derived from Physical Control plus an explicit API Request-only supplement; read-only/non-command devices and unknown future types are excluded (fail closed). For `Send device control command`, selecting a known physical device type may populate an editable sample request body derived from the official SwitchBot control-command documentation. Unknown device types are not guessed. A user-edited body is not overwritten merely by changing the selected device.
 
 Each preset defines its HTTP method, path, parameter requirement, body policy, localized labels, and optional default request body. Bodyless presets MUST NOT send a request body. Webhook templates follow the documented SwitchBot v1.1 request shapes.
 
@@ -116,7 +149,7 @@ Custom mode supports GET, POST, PUT, and DELETE. Only Custom exposes editable Me
 
 Legacy API Request settings without an endpoint normalize to Custom.
 
-## 8. Output and clipboard
+## 10. Output and clipboard
 
 `OutputProcessor` is responsible for success/failure feedback and optional clipboard output.
 
@@ -124,13 +157,13 @@ Clipboard writes are abstracted through `ClipboardService`. Windows uses PowerSh
 
 Get Status suppresses the normal success overlay when successful; its key title is the primary result display.
 
-## 9. Property Inspector localization
+## 11. Property Inspector localization
 
 English and Japanese are supported. The locale is taken from Stream Deck registration data. sdpi-components localization attributes are refreshed after the locale is applied.
 
 Temporary diagnostic console logging MUST NOT be shipped in the release PI code.
 
-## 10. Security
+## 12. Security
 
 - API origin is fixed.
 - Credentials exist only in global settings.
@@ -140,7 +173,7 @@ Temporary diagnostic console logging MUST NOT be shipped in the release PI code.
 - Source maps are not distributed.
 - CI checks distributable contents for credential-like material and unsupported PI API usage.
 
-## 11. Testing and CI
+## 13. Testing and CI
 
 CI runs:
 1. `npm ci`
@@ -157,7 +190,7 @@ Unit coverage includes authentication, path validation, settings normalization, 
 
 Real Stream Deck UI rendering, real SwitchBot credentials, OS clipboard integration, and hardware behavior remain manual acceptance tests.
 
-## 12. Release readiness
+## 14. Release readiness
 
 Before removing Draft status:
 - CI must pass on the latest PR head.
