@@ -18,7 +18,7 @@
     },
     {
       "Name": "Power",
-      "Tooltip": "Control a SwitchBot Plug or Plug Mini.",
+      "Tooltip": "Control SwitchBot power and relay devices.",
       "UUID": "com.esheep.switchbot.power",
       "Icon": "imgs/action",
       "Controllers": [
