@@ -12,5 +12,33 @@
   "com.esheep.switchbot.infrared-remote": {
     "Name": "Infrared Remote",
     "Tooltip": "Send commands to a SwitchBot virtual infrared remote."
+  },
+  "com.esheep.switchbot.bot": {
+    "Name": "Bot",
+    "Tooltip": "Control a SwitchBot Bot."
+  },
+  "com.esheep.switchbot.power": {
+    "Name": "Power",
+    "Tooltip": "Control SwitchBot power and relay devices."
+  },
+  "com.esheep.switchbot.lighting": {
+    "Name": "Lighting",
+    "Tooltip": "Control SwitchBot lights."
+  },
+  "com.esheep.switchbot.climate": {
+    "Name": "Climate",
+    "Tooltip": "Control SwitchBot climate devices."
+  },
+  "com.esheep.switchbot.security": {
+    "Name": "Security",
+    "Tooltip": "Control SwitchBot locks and security devices."
+  },
+  "com.esheep.switchbot.curtains-blinds": {
+    "Name": "Curtains & Blinds",
+    "Tooltip": "Control SwitchBot curtains, blinds, and roller shades."
+  },
+  "com.esheep.switchbot.cleaning": {
+    "Name": "Cleaning",
+    "Tooltip": "Control SwitchBot robot vacuums."
   }
 }
