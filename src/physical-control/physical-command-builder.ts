@@ -46,11 +46,7 @@ export function physicalCommandBody(command: PhysicalCommand, pretty = false): s
   }, null, pretty ? 2 : undefined);
 }
 
-/**
- * 保存済みdeviceTypeとcatalog定義を照合してControl Commandを構築する。
- *
- * deviceTypeやoperationが未知の場合は推測せずfail closedし、別製品へ誤送信しない。
- */
+/** 単一inputと複数inputsをBuilder内部で同じ配列形式として扱う。 */
 function operationInputs(operation: PhysicalOperationDefinition): readonly PhysicalOperationParameter[] {
   if (operation.inputs) return operation.inputs;
   return operation.input ? [operation.input] : [];
