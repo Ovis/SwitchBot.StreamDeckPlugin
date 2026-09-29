@@ -4,7 +4,7 @@ import { physicalDeviceDefinitions } from "../src/physical-control/physical-cont
 
 describe("Control Commands device support", () => {
   it("Physical Control対象deviceTypeをすべてAPI Requestでも選択可能にする", () => {
-    for (const definition of physicalDeviceDefinitions) {
+    for (const definition of physicalDeviceDefinitions()) {
       expect(supportsControlCommands(definition.deviceType), definition.deviceType).toBe(true);
     }
   });
