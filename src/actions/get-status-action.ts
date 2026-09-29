@@ -13,7 +13,7 @@ import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../setting
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 
-const TRANSPARENT_KEY_IMAGE = `<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"></svg>`;
+const TRANSPARENT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="none"/></svg>`)}`;
 
 @action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
