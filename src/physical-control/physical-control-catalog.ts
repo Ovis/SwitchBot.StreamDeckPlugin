@@ -74,9 +74,13 @@ const color = (command = "setColor", id = "set-color", en = "Set Color", ja = "�
   input: { kind: "rgb", key: "value", label: { en: "Color", ja: "色" } }
 });
 
-const relayMode = (id = "set-mode", prefix?: string): PhysicalOperationDefinition => ({
+const relayMode = (
+  id = "set-mode",
+  prefix?: string,
+  label: LocalizedText = { en: "Set Switch Mode", ja: "スイッチモードを設定" }
+): PhysicalOperationDefinition => ({
   id,
-  label: { en: "Set Switch Mode", ja: "スイッチモードを設定" },
+  label,
   command: "setMode",
   parameter: "",
   commandType: "command",
@@ -129,8 +133,8 @@ const RELAY_SWITCH_2PM: readonly PhysicalOperationDefinition[] = [
   relayChannelOperation("toggle", "Toggle", "切り替え", "toggle"),
   // setModeは「channel;mode」というwire形式なので、チャンネルをOperation側へ固定して
   // 既存Builderに暗黙の複数値文字列結合規則を持ち込まない。
-  relayMode("set-mode-channel-1", "1;"),
-  relayMode("set-mode-channel-2", "2;"),
+  relayMode("set-mode-channel-1", "1;", { en: "Set Switch Mode — Channel 1", ja: "スイッチモードを設定 — チャンネル1" }),
+  relayMode("set-mode-channel-2", "2;", { en: "Set Switch Mode — Channel 2", ja: "スイッチモードを設定 — チャンネル2" }),
   {
     id: "set-position",
     label: { en: "Set Roller Blind Position", ja: "ローラーブラインド位置を設定" },
