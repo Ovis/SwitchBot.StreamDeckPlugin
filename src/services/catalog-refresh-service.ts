@@ -12,13 +12,27 @@ export interface CatalogRefreshResult<T> {
 }
 
 export class CatalogRefreshService {
+  private deviceRefresh: Promise<CatalogRefreshResult<DeviceCatalog>> | undefined;
+  private sceneRefresh: Promise<CatalogRefreshResult<SceneCatalog>> | undefined;
+
   constructor(
     private readonly executor: RequestExecutor,
     private readonly deviceCatalogStore: DeviceCatalogStore,
     private readonly sceneCatalogStore: SceneCatalogStore
   ) {}
 
-  async refreshDevices(): Promise<CatalogRefreshResult<DeviceCatalog>> {
+  refreshDevices(): Promise<CatalogRefreshResult<DeviceCatalog>> {
+    if (this.deviceRefresh) return this.deviceRefresh;
+
+    const operation = this.refreshDevicesCore();
+    this.deviceRefresh = operation;
+    void operation.finally(() => {
+      if (this.deviceRefresh === operation) this.deviceRefresh = undefined;
+    });
+    return operation;
+  }
+
+  private async refreshDevicesCore(): Promise<CatalogRefreshResult<DeviceCatalog>> {
     const result = await this.executor.execute({ method: "GET", path: "/v1.1/devices" });
     if (!result.success) {
       this.logFailure("Device catalog refresh", result);
@@ -39,7 +53,18 @@ export class CatalogRefreshService {
     }
   }
 
-  async refreshScenes(): Promise<CatalogRefreshResult<SceneCatalog>> {
+  refreshScenes(): Promise<CatalogRefreshResult<SceneCatalog>> {
+    if (this.sceneRefresh) return this.sceneRefresh;
+
+    const operation = this.refreshScenesCore();
+    this.sceneRefresh = operation;
+    void operation.finally(() => {
+      if (this.sceneRefresh === operation) this.sceneRefresh = undefined;
+    });
+    return operation;
+  }
+
+  private async refreshScenesCore(): Promise<CatalogRefreshResult<SceneCatalog>> {
     const result = await this.executor.execute({ method: "GET", path: "/v1.1/scenes" });
     if (!result.success) {
       this.logFailure("Scene catalog refresh", result);
