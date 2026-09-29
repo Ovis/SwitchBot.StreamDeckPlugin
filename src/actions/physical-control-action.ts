@@ -256,6 +256,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
   }
 
   override onWillDisappear(ev: WillDisappearEvent<PhysicalControlSettingsV1>): void {
+    super.onWillDisappear(ev);
     this.confirmationGate.clear(ev.action.id);
     this.commandQueue.dispose(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
