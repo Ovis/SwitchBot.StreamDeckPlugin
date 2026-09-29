@@ -79,10 +79,46 @@ describe("Power physical control", () => {
     expect(built.error).toBe("unsupported-operation");
   });
 
-  it("Relay Switchはパラメータ付き仕様を実装するまでPower対象にしない", () => {
-    expect(supportsPhysicalAction("Relay Switch 1", "power")).toBe(false);
-    expect(supportsPhysicalAction("Relay Switch 1PM", "power")).toBe(false);
-    expect(supportsPhysicalAction("Relay Switch 2PM", "power")).toBe(false);
+  it.each([
+    ["Relay Switch 1", ["turn-on", "turn-off", "toggle", "set-mode"]],
+    ["Relay Switch 1PM", ["turn-on", "turn-off", "toggle", "set-mode"]],
+    ["Relay Switch 2PM", ["turn-on", "turn-off", "toggle", "set-mode-channel-1", "set-mode-channel-2", "set-position"]]
+  ] as const)("%sの公式Control CommandsをPowerとして公開する", (deviceType, operationIds) => {
+    const definition = physicalDeviceDefinition(deviceType);
+    expect(definition?.action).toBe("power");
+    expect(definition?.operations.map(operation => operation.id)).toEqual(operationIds);
+    expect(supportsPhysicalAction(deviceType, "power")).toBe(true);
+  });
+
+  it.each([
+    ["Relay Switch 1", "set-mode", { value: "0" }, "setMode", "0"],
+    ["Relay Switch 1PM", "set-mode", { value: "3" }, "setMode", "3"],
+    ["Relay Switch 2PM", "turn-on", { channel: "1" }, "turnOn", "1"],
+    ["Relay Switch 2PM", "turn-off", { channel: "2" }, "turnOff", "2"],
+    ["Relay Switch 2PM", "toggle", { channel: "1" }, "toggle", "1"],
+    ["Relay Switch 2PM", "set-mode-channel-1", { value: "2" }, "setMode", "1;2"],
+    ["Relay Switch 2PM", "set-mode-channel-2", { value: "1" }, "setMode", "2;1"],
+    ["Relay Switch 2PM", "set-position", { value: 75 }, "setPosition", "75"]
+  ] as const)("%sの%sを公式wire parameterへ変換する", (deviceType, operationId, operationParameters, command, parameter) => {
+    const built = buildPhysicalCommand({
+      action: "power", deviceId: "RELAY-001", deviceType, operationId, operationParameters
+    });
+    expect(built.command).toMatchObject({ command, parameter, commandType: "command" });
+  });
+
+  it("Relay Switchの入力値を公式範囲外ではfail closedする", () => {
+    expect(buildPhysicalCommand({
+      action: "power", deviceId: "R1", deviceType: "Relay Switch 1", operationId: "set-mode",
+      operationParameters: { value: "4" }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "power", deviceId: "R2", deviceType: "Relay Switch 2PM", operationId: "turn-on",
+      operationParameters: { channel: "3" }
+    }).error).toBe("invalid-parameter");
+    expect(buildPhysicalCommand({
+      action: "power", deviceId: "R2", deviceType: "Relay Switch 2PM", operationId: "set-position",
+      operationParameters: { value: 101 }
+    }).error).toBe("invalid-parameter");
   });
 });
 
