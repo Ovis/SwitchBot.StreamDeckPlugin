@@ -134,6 +134,7 @@ export class InfraredRemoteAction extends AuthenticatedAction {
   }
 
   override onWillDisappear(ev: WillDisappearEvent<InfraredRemoteSettingsV1>): void {
+    super.onWillDisappear(ev);
     this.commandQueue.dispose(ev.action.id);
     this.clearTemporaryTitle(ev.action.id);
   }
