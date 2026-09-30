@@ -40,6 +40,17 @@
   <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
     <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
   </sdpi-item>
+  <sdpi-item id="refresh-interval-item" label="Refresh interval">
+    <sdpi-select id="refresh-interval" setting="output.refreshIntervalMinutes" default="0">
+      <option value="0">Manual only</option>
+      <option value="1">1 minute</option>
+      <option value="2">2 minutes</option>
+      <option value="5">5 minutes</option>
+      <option value="10">10 minutes</option>
+      <option value="30">30 minutes</option>
+      <option value="60">60 minutes</option>
+    </sdpi-select>
+  </sdpi-item>
   <div class="status-template-row">
     <label id="status-template-label" class="status-template-label" for="status-template">Template</label>
     <textarea id="status-template" class="status-template-textarea" rows="5"></textarea>
