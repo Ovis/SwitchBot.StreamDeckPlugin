@@ -44,9 +44,12 @@ export class GetStatusRefreshCoordinator<T> {
 
     const request = start();
     this.inFlight.set(actionId, { deviceId, request });
-    void request.finally(() => {
+    const cleanup = (): void => {
       if (this.inFlight.get(actionId)?.request === request) this.inFlight.delete(actionId);
-    });
+    };
+    // finally()が返す別Promiseを破棄すると、requestがrejectした場合に未処理rejectionを
+    // 生成し得るため、成功・失敗の両経路をthenで明示的にcleanupする。
+    void request.then(cleanup, cleanup);
     return request;
   }
 }
