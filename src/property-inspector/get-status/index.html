@@ -10,11 +10,16 @@
   <style>
     .execution-diagnostics { margin-top: 12px; border-top: 1px solid #555; padding-top: 8px; }
     .diagnostics-preview { margin: 6px 8px 10px; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.45 ui-monospace, "Cascadia Mono", monospace; color: #d8d8d8; }
+    .template-help { margin: 4px 8px 8px; font-size: 11px; line-height: 1.45; color: #c8c8c8; }
+    .status-field-list { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 8px 10px; }
+    .status-field-button { border: 1px solid #666; border-radius: 4px; padding: 3px 6px; background: #3a3a3a; color: #eee; cursor: pointer; font: 11px ui-monospace, "Cascadia Mono", monospace; }
+    .status-field-button:hover { background: #4a4a4a; }
   </style>
 </head>
 <body>
-<sdpi-item id="device-item" label="__MSG_device__">
+  <sdpi-item id="device-item" label="__MSG_device__">
     <sdpi-select
+      id="device-select"
       setting="deviceId"
       label-setting="deviceLabel"
       datasource="getDevices"
@@ -32,6 +37,12 @@
   <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
     <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
   </sdpi-item>
+  <sdpi-item id="status-template-item" label="Template">
+    <sdpi-textarea id="status-template" setting="output.statusTemplate" rows="5"></sdpi-textarea>
+  </sdpi-item>
+  <div id="template-help" class="template-help"></div>
+  <div id="status-fields-heading" class="template-help"></div>
+  <div id="status-field-list" class="status-field-list"></div>
   <sdpi-item id="copy-json-item" label="__MSG_copyJson__">
     <sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox>
   </sdpi-item>
