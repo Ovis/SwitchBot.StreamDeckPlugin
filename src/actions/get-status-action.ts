@@ -108,9 +108,9 @@ export class GetStatusAction extends AuthenticatedAction {
       });
     }
 
-    if (result.success && settings.output.showStatusOnKey) {
+    if (result.success) {
       const fields = observedStatusFields(result.response.body);
-      // 候補は最新の正常レスポンスを正とし、古いフィールドを残さない。
+      // 候補は表示設定とは独立して最新の正常レスポンスから更新する。
       // Global Settingsへ保存することで、同じdeviceIdを使う別のGet Statusキーからも共有できる。
       await this.globalSettings.update(current => ({
         ...current,
@@ -118,7 +118,9 @@ export class GetStatusAction extends AuthenticatedAction {
         observedStatusFields: { ...(current.observedStatusFields ?? {}), [deviceId]: fields }
       }));
       await streamDeck.ui.sendToPropertyInspector({ event: "observedStatusFields", deviceId, fields });
+    }
 
+    if (result.success && settings.output.showStatusOnKey) {
       const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
       if (title) {
         this.clearRestoreTimer(ev.action.id);
