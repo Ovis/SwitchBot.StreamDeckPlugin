@@ -164,7 +164,7 @@ export class GetStatusAction extends AuthenticatedAction {
     this.logFailure(result);
 
     if (result.success) {
-      await this.rememberObservedFields(deviceId, result.response.body);
+      await this.rememberObservedFields(ev.action.id, deviceId, result.response.body);
       this.lastSuccessfulResponses.set(ev.action.id, result.response.body);
     }
 
@@ -222,7 +222,7 @@ export class GetStatusAction extends AuthenticatedAction {
     this.logFailure(result);
 
     if (result.success) {
-      await this.rememberObservedFields(deviceId, result.response.body);
+      await this.rememberObservedFields(actionInstance.id, deviceId, result.response.body);
       this.lastSuccessfulResponses.set(actionInstance.id, result.response.body);
       const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
       if (title) {
@@ -260,7 +260,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }));
   }
 
-  private async rememberObservedFields(deviceId: string, responseBody: unknown): Promise<void> {
+  private async rememberObservedFields(actionId: string, deviceId: string, responseBody: unknown): Promise<void> {
     const fields = observedStatusFields(responseBody);
     // 候補は表示設定とは独立して最新の正常レスポンスから更新する。
     // Global Settingsへ保存することで、同じdeviceIdを使う別のGet Statusキーからも共有できる。
@@ -271,9 +271,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }));
     // 状態取得はキー押下・自動更新のどちらからも発生するため、現在そのActionのPIを
     // 開いている場合だけ候補をpushし、別Actionへ切り替えた後の誤表示を防ぐ。
-    if (streamDeck.ui.action?.id) {
-      await this.sendToCurrentPropertyInspector(streamDeck.ui.action.id, { event: "observedStatusFields", deviceId, fields });
-    }
+    await this.sendToCurrentPropertyInspector(actionId, { event: "observedStatusFields", deviceId, fields });
   }
 
   private shouldAutoRefresh(settings: GetStatusSettingsV1): boolean {
