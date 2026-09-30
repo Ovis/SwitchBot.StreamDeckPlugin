@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GetStatusRefreshCoordinator } from "../src/actions/get-status-refresh-coordinator.js";
+import { GetStatusRefreshCoordinator, hasRefreshConfigurationChanged } from "../src/actions/get-status-refresh-coordinator.js";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -78,5 +78,26 @@ describe("Get Status refresh lifecycle", () => {
     expect(await second).toBe("B");
     resolveA("A");
     await first;
+  });
+});
+
+
+describe("Get Status refresh configuration", () => {
+  const base = {
+    deviceId: "device-a",
+    output: { showStatusOnKey: true, refreshIntervalMinutes: 5 }
+  };
+
+  it("restarts polling for device, enabled-state, or interval changes", () => {
+    expect(hasRefreshConfigurationChanged(base, { ...base, deviceId: "device-b" })).toBe(true);
+    expect(hasRefreshConfigurationChanged(base, { ...base, output: { ...base.output, showStatusOnKey: false } })).toBe(true);
+    expect(hasRefreshConfigurationChanged(base, { ...base, output: { ...base.output, refreshIntervalMinutes: 10 } })).toBe(true);
+  });
+
+  it("does not restart polling when refresh-relevant settings are unchanged", () => {
+    expect(hasRefreshConfigurationChanged(base, {
+      deviceId: " device-a ",
+      output: { showStatusOnKey: true, refreshIntervalMinutes: 5 }
+    })).toBe(false);
   });
 });
