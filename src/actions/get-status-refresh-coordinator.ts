@@ -66,3 +66,27 @@ export function hasRefreshConfigurationChanged(
     || previous.output.showStatusOnKey !== current.output.showStatusOnKey
     || previous.output.refreshIntervalMinutes !== current.output.refreshIntervalMinutes;
 }
+
+
+export type RefreshSettingsTransition = "unchanged" | "restore" | "schedule" | "refresh-now";
+
+/**
+ * 設定変更時にGet Status表示をどう遷移させるかを判定する。
+ *
+ * 更新間隔だけを変更した場合はAPIを即時実行せず、新しい間隔の経過を待つ。
+ * 手動のみに戻す、または表示を無効化した場合はStatus表示を即座に解除する。
+ */
+export function refreshSettingsTransition(
+  previous: RefreshRelevantSettings | undefined,
+  current: RefreshRelevantSettings
+): RefreshSettingsTransition {
+  if (!hasRefreshConfigurationChanged(previous, current)) return "unchanged";
+  if (current.output.refreshIntervalMinutes === 0 || !current.output.showStatusOnKey) return "restore";
+  if (!previous) return "refresh-now";
+
+  const intervalChanged = previous.output.refreshIntervalMinutes !== current.output.refreshIntervalMinutes;
+  const deviceChanged = previous.deviceId.trim() !== current.deviceId.trim();
+  const displayEnabledChanged = previous.output.showStatusOnKey !== current.output.showStatusOnKey;
+
+  return intervalChanged && !deviceChanged && !displayEnabledChanged ? "schedule" : "refresh-now";
+}
