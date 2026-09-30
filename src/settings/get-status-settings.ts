@@ -6,7 +6,10 @@ const OutputSchema = z.object({
   copyResponseToClipboard: z.boolean().catch(false).default(false),
   prettyPrint: z.boolean().catch(true).default(true),
   statusTemplate: z.string().catch("").default(""),
-  refreshIntervalMinutes: z.preprocess(\n    value => typeof value === "string" && value.trim() !== "" ? Number(value) : value,\n    z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(5), z.literal(10), z.literal(30), z.literal(60)]).catch(0).default(0)\n  )
+  refreshIntervalMinutes: z.preprocess(
+    value => typeof value === "string" && value.trim() !== "" ? Number(value) : value,
+    z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(5), z.literal(10), z.literal(30), z.literal(60)]).catch(0).default(0)
+  )
 });
 
 const GetStatusSettingsSchema = z.object({
