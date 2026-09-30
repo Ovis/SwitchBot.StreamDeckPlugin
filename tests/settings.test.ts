@@ -22,7 +22,7 @@ describe("settings normalization", () => {
   it("applies Get Status defaults", () => {
     expect(normalizeGetStatusSettings({})).toEqual({
       version: 1, deviceId: "", buttonName: "",
-      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true, statusTemplate: "" }
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true, statusTemplate: "", refreshIntervalMinutes: 0 }
     });
   });
 
@@ -56,7 +56,7 @@ describe("settings normalization", () => {
       version: 1, deviceId: "device", buttonName: "Bedroom", output: { prettyPrint: "invalid" }
     })).toEqual({
       version: 1, deviceId: "device", buttonName: "Bedroom",
-      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true, statusTemplate: "" }
+      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true, statusTemplate: "", refreshIntervalMinutes: 0 }
     });
   });
 });
