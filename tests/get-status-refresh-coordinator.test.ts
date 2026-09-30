@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GetStatusRefreshCoordinator, hasRefreshConfigurationChanged } from "../src/actions/get-status-refresh-coordinator.js";
+import { GetStatusRefreshCoordinator, hasRefreshConfigurationChanged, refreshSettingsTransition } from "../src/actions/get-status-refresh-coordinator.js";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -92,6 +92,29 @@ describe("Get Status refresh configuration", () => {
     expect(hasRefreshConfigurationChanged(base, { ...base, deviceId: "device-b" })).toBe(true);
     expect(hasRefreshConfigurationChanged(base, { ...base, output: { ...base.output, showStatusOnKey: false } })).toBe(true);
     expect(hasRefreshConfigurationChanged(base, { ...base, output: { ...base.output, refreshIntervalMinutes: 10 } })).toBe(true);
+  });
+
+
+  it("waits for the newly selected interval instead of refreshing immediately", () => {
+    expect(refreshSettingsTransition(base, {
+      ...base,
+      output: { ...base.output, refreshIntervalMinutes: 10 }
+    })).toBe("schedule");
+  });
+
+  it("restores the normal key immediately when switching to manual-only", () => {
+    expect(refreshSettingsTransition(base, {
+      ...base,
+      output: { ...base.output, refreshIntervalMinutes: 0 }
+    })).toBe("restore");
+  });
+
+  it("refreshes immediately when the device changes or status display is enabled", () => {
+    expect(refreshSettingsTransition(base, { ...base, deviceId: "device-b" })).toBe("refresh-now");
+    expect(refreshSettingsTransition({
+      ...base,
+      output: { ...base.output, showStatusOnKey: false }
+    }, base)).toBe("refresh-now");
   });
 
   it("does not restart polling when refresh-relevant settings are unchanged", () => {
