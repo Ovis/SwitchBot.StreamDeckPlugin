@@ -60,11 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const next = current.slice(0, start) + insertion + current.slice(end);
 
     textarea.value = next;
-    await saveTemplate(next);
-
     textarea.focus();
     const caret = start + insertion.length;
     textarea.setSelectionRange(caret, caret);
+
+    // 設定保存を待つと、その間のPI更新で選択位置が失われる可能性がある。
+    // 表示とcaretを先に確定し、保存だけを既存の直列化キューへ委譲する。
+    await saveTemplate(next);
   }
 
   async function saveTemplate(value: string): Promise<void> {
