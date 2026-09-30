@@ -3,6 +3,8 @@ import type { SwitchBotCredentials } from "../api/switchbot-auth.js";
 import { DeviceCatalogSchema } from "./device-catalog.js";
 import { SceneCatalogSchema } from "./scene-catalog.js";
 
+const ObservedStatusFieldsSchema = z.record(z.string(), z.array(z.string()));
+
 const GlobalSettingsSchema = z.object({
   version: z.literal(1).default(1),
   credentials: z.object({
@@ -10,7 +12,8 @@ const GlobalSettingsSchema = z.object({
     secret: z.string().default("")
   }).optional(),
   deviceCatalog: DeviceCatalogSchema.optional().catch(undefined),
-  sceneCatalog: SceneCatalogSchema.optional().catch(undefined)
+  sceneCatalog: SceneCatalogSchema.optional().catch(undefined),
+  observedStatusFields: ObservedStatusFieldsSchema.optional().catch(undefined)
 });
 
 export type GlobalSettingsV1 = z.infer<typeof GlobalSettingsSchema>;
