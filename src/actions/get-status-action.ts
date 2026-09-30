@@ -76,7 +76,7 @@ export class GetStatusAction extends AuthenticatedAction {
       const response = this.lastSuccessfulResponses.get(ev.action.id);
       if (response !== undefined) {
         const title = formatStatusTemplate(response, settings.output.statusTemplate, this.locale);
-        if (title) await ev.action.setTitle(title);
+        if (title) {\n          await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);\n          await ev.action.setTitle(title);\n        }
       }
       return;
     }
@@ -157,8 +157,9 @@ export class GetStatusAction extends AuthenticatedAction {
       if (title) {
         this.clearRestoreTimer(ev.action.id);
         if (settings.output.refreshIntervalMinutes > 0) {
-          // 定期更新時はStatusを通常表示として扱うため、結果表示用の一時アイコンへ切り替えない。
-          await ev.action.setImage();
+          // Status文字列とmanifestアイコンが重ならないよう、自動更新中も文字表示用の黒背景を維持する。
+          // 「成功時のアイコン表示なし」は成功フィードバックを出さない意味であり、通常アイコンを残す意味ではない。
+          await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);
           await ev.action.setTitle(title);
         } else {
           // 手動のみの場合は従来どおり15秒間だけ結果表示に切り替える。
@@ -206,7 +207,8 @@ export class GetStatusAction extends AuthenticatedAction {
       this.lastSuccessfulResponses.set(actionInstance.id, result.response.body);
       const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
       if (title) {
-        // 自動更新ではアイコンや成功フィードバックを変更せず、最後の正常なStatusだけを更新する。
+        // 自動更新では成功フィードバックを出さないが、文字列と通常アイコンの重なりは避ける。
+        await actionInstance.setImage(STATUS_RESULT_KEY_IMAGE);
         await actionInstance.setTitle(title);
       }
     }
