@@ -11,7 +11,7 @@ interface GetStatusGlobalSettings {
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
   const patchSettings = createSettingsPatchQueue(streamDeckClient);
-  const textarea = queryRequired<SdpiValueElement>("#status-template");
+  const textarea = queryRequired<HTMLTextAreaElement>("#status-template");
   const deviceSelect = queryRequired<SdpiValueElement>("#device-select");
   let observedFields: Record<string, string[]> = {};
 
@@ -53,26 +53,42 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function insertField(field: string): Promise<void> {
-    const element = textarea as SdpiValueElement & { selectionStart?: number | null; selectionEnd?: number | null; focus(): void };
-    const current = valueOf(textarea);
-    const start = typeof element.selectionStart === "number" ? element.selectionStart : current.length;
-    const end = typeof element.selectionEnd === "number" ? element.selectionEnd : start;
+    const current = textarea.value;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
     const insertion = `{${field}}`;
     const next = current.slice(0, start) + insertion + current.slice(end);
 
     textarea.value = next;
+    await saveTemplate(next);
+
+    textarea.focus();
+    const caret = start + insertion.length;
+    textarea.setSelectionRange(caret, caret);
+  }
+
+  async function saveTemplate(value: string): Promise<void> {
     await patchSettings(settings => {
       const output = typeof settings.output === "object" && settings.output !== null && !Array.isArray(settings.output)
         ? { ...(settings.output as Record<string, unknown>) }
         : {};
-      output.statusTemplate = next;
+      output.statusTemplate = value;
       settings.output = output;
     });
+  }
 
-    element.focus();
-    const caret = start + insertion.length;
-    element.selectionStart = caret;
-    element.selectionEnd = caret;
+  async function loadTemplate(): Promise<void> {
+    const value = await streamDeckClient.getSettings();
+    const record = typeof value === "object" && value !== null && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : {};
+    const source = typeof record.settings === "object" && record.settings !== null && !Array.isArray(record.settings)
+      ? record.settings as Record<string, unknown>
+      : record;
+    const output = typeof source.output === "object" && source.output !== null && !Array.isArray(source.output)
+      ? source.output as Record<string, unknown>
+      : {};
+    textarea.value = typeof output.statusTemplate === "string" ? output.statusTemplate : "";
   }
 
   async function loadObservedFields(): Promise<void> {
@@ -101,7 +117,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   deviceSelect.addEventListener("change", renderFields);
+  textarea.addEventListener("change", () => void saveTemplate(textarea.value));
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
+  void loadTemplate();
   void loadObservedFields();
 });
