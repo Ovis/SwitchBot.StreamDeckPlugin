@@ -47,8 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRefreshIntervalOptions();
     updateRefreshIntervalAvailability();
     queryRequired<HTMLElement>("#template-help").textContent = t(
-      "Wrap a Status API field name in {}, for example {temperature}. Leave blank to use automatic display.",
-      "Status APIのフィールド名を{}で囲みます（例: {temperature}）。空欄なら自動表示します。"
+      "Wrap the item you want to display in {}, for example {temperature}. If left blank, major items are automatically selected from the retrieved information. After retrieving the status once, available items are shown and can be clicked to insert them.",
+      "表示したい項目を {} で囲んで指定できます（例: {temperature}）。空欄の場合は、取得した情報から主要な項目を自動的に選んで表示します。一度ステータスを取得すると、利用可能な項目が表示され、クリックして入力できます。"
     );
     renderFields();
   }
