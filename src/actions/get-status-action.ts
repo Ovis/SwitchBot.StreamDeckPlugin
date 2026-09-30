@@ -10,7 +10,7 @@ import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
-import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
+import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatusFields, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 
 const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
@@ -24,11 +24,11 @@ export class GetStatusAction extends AuthenticatedAction {
     private readonly output: OutputProcessor,
     private readonly catalogStore: DeviceCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
-    globalSettings: GlobalSettingsStore,
+    private readonly statusGlobalSettings: GlobalSettingsStore,
     executionDiagnostics: ExecutionDiagnosticsStore,
     locale?: string
   ) {
-    super(executor, globalSettings, executionDiagnostics);
+    super(executor, statusGlobalSettings, executionDiagnostics);
     this.locale = displayLocale(locale);
   }
 
@@ -108,8 +108,20 @@ export class GetStatusAction extends AuthenticatedAction {
       });
     }
 
+    if (result.success) {
+      const fields = observedStatusFields(result.response.body);
+      // 候補は表示設定とは独立して最新の正常レスポンスから更新する。
+      // Global Settingsへ保存することで、同じdeviceIdを使う別のGet Statusキーからも共有できる。
+      await this.statusGlobalSettings.update(current => ({
+        ...current,
+        version: 1,
+        observedStatusFields: { ...(current.observedStatusFields ?? {}), [deviceId]: fields }
+      }));
+      await streamDeck.ui.sendToPropertyInspector({ event: "observedStatusFields", deviceId, fields });
+    }
+
     if (result.success && settings.output.showStatusOnKey) {
-      const title = formatStatusForKey(result.response.body, this.locale);
+      const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
       if (title) {
         this.clearRestoreTimer(ev.action.id);
         // Stream Deckでは透明なruntime画像の背後にmanifestのState画像が見えるため、

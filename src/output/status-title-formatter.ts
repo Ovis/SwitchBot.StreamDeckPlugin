@@ -39,6 +39,40 @@ export function formatStatusForKey(responseBody: unknown, locale: DisplayLocale 
   return lines.length > 0 ? lines.join("\n") : undefined;
 }
 
+/**
+ * Status APIのbody直下をテンプレートへ展開する。
+ *
+ * 未解決の項目はタイプミスを実機で発見できるようプレースホルダーを残し、
+ * nullだけは明示的に空文字として扱う。
+ */
+export function formatStatusTemplate(
+  responseBody: unknown,
+  template: string,
+  locale: DisplayLocale = "en"
+): string | undefined {
+  if (template.trim().length === 0) return formatStatusForKey(responseBody, locale);
+  const status = statusBody(responseBody);
+  if (!status) return template;
+
+  return template.replace(/\{([^{}]+)\}/g, (placeholder, key: string) => {
+    if (!(key in status)) return placeholder;
+    const value = status[key];
+    if (value === null) return "";
+    return isPrimitive(value) ? localizeValue(value, locale) : placeholder;
+  });
+}
+
+/**
+ * Property Inspectorの入力支援に使うprimitiveフィールド名を最新レスポンスから抽出する。
+ */
+export function observedStatusFields(responseBody: unknown): string[] {
+  const status = statusBody(responseBody);
+  if (!status) return [];
+  return Object.entries(status)
+    .filter(([key, value]) => key !== "deviceId" && key !== "deviceType" && isPrimitive(value))
+    .map(([key]) => key);
+}
+
 export function localizeDeviceLabel(name: string, type: string, id: string, deleted: boolean, locale: DisplayLocale): string {
   const displayName = name.trim() || (locale === "ja" ? "名称未設定" : "Unnamed device");
   const displayType = type.trim() || (locale === "ja" ? "種類不明" : "Unknown type");

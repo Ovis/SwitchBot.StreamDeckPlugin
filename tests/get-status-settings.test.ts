@@ -7,12 +7,22 @@ describe("Get Status settings", () => {
       version: 1,
       deviceId: "ABC/123",
       buttonName: "Living room",
-      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: false }
+      output: {
+        showStatusOnKey: true,
+        copyResponseToClipboard: false,
+        prettyPrint: false,
+        statusTemplate: "Temp:{temperature}"
+      }
     })).toEqual({
       version: 1,
       deviceId: "ABC/123",
       buttonName: "Living room",
-      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: false }
+      output: {
+        showStatusOnKey: true,
+        copyResponseToClipboard: false,
+        prettyPrint: false,
+        statusTemplate: "Temp:{temperature}"
+      }
     });
   });
 
@@ -23,8 +33,17 @@ describe("Get Status settings", () => {
     }).output).toEqual({
       showStatusOnKey: true,
       copyResponseToClipboard: true,
-      prettyPrint: true
+      prettyPrint: true,
+      statusTemplate: ""
     });
+  });
+
+  it("keeps version 1 persisted settings backward compatible", () => {
+    expect(normalizeGetStatusSettings({
+      version: 1,
+      deviceId: "A",
+      output: { showStatusOnKey: false, prettyPrint: false }
+    }).output.statusTemplate).toBe("");
   });
 
   it("falls back to safe defaults for malformed persisted settings", () => {
@@ -32,7 +51,12 @@ describe("Get Status settings", () => {
       version: 1,
       deviceId: "",
       buttonName: "",
-      output: { showStatusOnKey: true, copyResponseToClipboard: false, prettyPrint: true }
+      output: {
+        showStatusOnKey: true,
+        copyResponseToClipboard: false,
+        prettyPrint: true,
+        statusTemplate: ""
+      }
     });
   });
 });
