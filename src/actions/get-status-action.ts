@@ -151,6 +151,7 @@ export class GetStatusAction extends AuthenticatedAction {
 
     if (result.success) {
       await this.rememberObservedFields(deviceId, result.response.body);
+      this.lastSuccessfulResponses.set(ev.action.id, result.response.body);
     }
 
     // 設定変更や画面遷移の途中で完了した古いリクエストは、現在のキー表示を上書きしない。
@@ -230,7 +231,9 @@ export class GetStatusAction extends AuthenticatedAction {
     if (!this.shouldAutoRefresh(settings) || generation !== this.refresh.currentGeneration(actionInstance.id)) return;
 
     this.refresh.schedule(actionInstance.id, settings.output.refreshIntervalMinutes * 60_000, generation, () => {
-      void this.performAutomaticRefresh(actionInstance, settings, generation);
+      // テンプレート等は周期をリセットしないが、次回取得には最新設定を使う。
+      const current = this.activeSettings.get(actionInstance.id) ?? settings;
+      void this.performAutomaticRefresh(actionInstance, current, generation);
     });
   }
 
