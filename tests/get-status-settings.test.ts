@@ -28,7 +28,14 @@ describe("Get Status settings", () => {
     });
   });
 
-  it("accepts refresh interval values persisted by the PI select as strings", () => {\n    expect(normalizeGetStatusSettings({ version: 1, output: { refreshIntervalMinutes: "5" } }).output.refreshIntervalMinutes).toBe(5);\n  });\n\n  it("preserves individual output values when sibling fields are missing", () => {
+  it("accepts refresh interval values persisted by the PI select as strings", () => {
+    expect(normalizeGetStatusSettings({
+      version: 1,
+      output: { refreshIntervalMinutes: "5" }
+    }).output.refreshIntervalMinutes).toBe(5);
+  });
+
+  it("preserves individual output values when sibling fields are missing", () => {
     expect(normalizeGetStatusSettings({
       version: 1,
       output: { copyResponseToClipboard: true }
