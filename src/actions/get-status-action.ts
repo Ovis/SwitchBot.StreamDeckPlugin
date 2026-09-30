@@ -13,7 +13,7 @@ import { parsePropertyInspectorToPluginMessage } from "../protocol/property-insp
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatusFields, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
-import { GetStatusRefreshCoordinator, hasRefreshConfigurationChanged } from "./get-status-refresh-coordinator.js";
+import { GetStatusRefreshCoordinator, refreshSettingsTransition } from "./get-status-refresh-coordinator.js";
 
 const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
 type GetStatusKeyAction = KeyDownEvent<GetStatusSettingsV1>["action"];
@@ -59,25 +59,20 @@ export class GetStatusAction extends AuthenticatedAction {
     const previous = this.activeSettings.get(ev.action.id);
     this.activeSettings.set(ev.action.id, settings);
 
-    if (hasRefreshConfigurationChanged(previous, settings)) {
+    const transition = refreshSettingsTransition(previous, settings);
+    if (transition !== "unchanged") {
       this.clearRestoreTimer(ev.action.id);
       this.refresh.clearTimer(ev.action.id);
       const generation = this.refresh.nextGeneration(ev.action.id);
-      const intervalChanged = previous !== undefined
-        && previous.output.refreshIntervalMinutes !== settings.output.refreshIntervalMinutes;
-      const deviceChanged = previous !== undefined
-        && previous.deviceId.trim() !== settings.deviceId.trim();
-      const displayEnabledChanged = previous !== undefined
-        && previous.output.showStatusOnKey !== settings.output.showStatusOnKey;
 
-      if (settings.output.refreshIntervalMinutes === 0 || !settings.output.showStatusOnKey) {
+      if (transition === "restore") {
         // 手動のみに戻した時点で、定期表示として残っているStatusを即座に解除する。
         await ev.action.setTitle(settings.buttonName);
         await ev.action.setImage();
         return;
       }
 
-      if (intervalChanged && !deviceChanged && !displayEnabledChanged) {
+      if (transition === "schedule") {
         // 更新間隔の選択自体をAPI呼び出しの契機にはしない。
         // 変更した時点を新しい周期の起点として、選択時間が経過してから最初の自動取得を行う。
         this.scheduleAutomaticRefresh(ev.action, settings, generation);
