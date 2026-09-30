@@ -1,31 +1,107 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
-import { queryRequired } from "../shared/dom.js";
+import { createSettingsPatchQueue, queryRequired, valueOf } from "../shared/dom.js";
 import { parsePluginToPropertyInspectorMessage } from "../../protocol/property-inspector-protocol.js";
 
+interface GetStatusGlobalSettings {
+  observedStatusFields?: Record<string, string[]>;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
+  const patchSettings = createSettingsPatchQueue(streamDeckClient);
+  const textarea = queryRequired<SdpiValueElement>("#status-template");
+  const deviceSelect = queryRequired<SdpiValueElement>("#device-select");
+  let observedFields: Record<string, string[]> = {};
+
   attachExecutionDiagnostics(streamDeckClient);
 
+  function t(en: string, ja: string): string {
+    return window.SwitchBotI18n?.t(en, ja) ?? en;
+  }
+
   function localizeUi(): void {
-    queryRequired<HTMLElement>("#output-heading").textContent =
-      window.SwitchBotI18n?.t("Output", "出力") ?? "Output";
+    queryRequired<HTMLElement>("#output-heading").textContent = t("Output", "出力");
+    queryRequired<HTMLElement>("#status-template-item").setAttribute("label", t("Display template", "表示テンプレート"));
+    queryRequired<HTMLElement>("#template-help").textContent = t(
+      "Wrap a Status API field name in {}, for example {temperature}. Leave blank to use automatic display.",
+      "Status APIのフィールド名を{}で囲みます（例: {temperature}）。空欄なら自動表示します。"
+    );
+    renderFields();
+  }
+
+  function selectedDeviceId(): string {
+    return valueOf(deviceSelect);
+  }
+
+  function renderFields(): void {
+    const fields = observedFields[selectedDeviceId()] ?? [];
+    const heading = queryRequired<HTMLElement>("#status-fields-heading");
+    const host = queryRequired<HTMLElement>("#status-field-list");
+    heading.textContent = fields.length > 0 ? t("Available fields:", "利用可能な項目:") : "";
+    host.replaceChildren();
+
+    for (const field of fields) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "status-field-button";
+      button.textContent = `{${field}}`;
+      button.addEventListener("click", () => void insertField(field));
+      host.appendChild(button);
+    }
+  }
+
+  async function insertField(field: string): Promise<void> {
+    const element = textarea as SdpiValueElement & { selectionStart?: number | null; selectionEnd?: number | null; focus(): void };
+    const current = valueOf(textarea);
+    const start = typeof element.selectionStart === "number" ? element.selectionStart : current.length;
+    const end = typeof element.selectionEnd === "number" ? element.selectionEnd : start;
+    const insertion = `{${field}}`;
+    const next = current.slice(0, start) + insertion + current.slice(end);
+
+    textarea.value = next;
+    await patchSettings(settings => {
+      const output = typeof settings.output === "object" && settings.output !== null && !Array.isArray(settings.output)
+        ? { ...(settings.output as Record<string, unknown>) }
+        : {};
+      output.statusTemplate = next;
+      settings.output = output;
+    });
+
+    element.focus();
+    const caret = start + insertion.length;
+    element.selectionStart = caret;
+    element.selectionEnd = caret;
+  }
+
+  async function loadObservedFields(): Promise<void> {
+    const value = await streamDeckClient.getGlobalSettings();
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return;
+    const fields = (value as GetStatusGlobalSettings).observedStatusFields;
+    if (fields && typeof fields === "object") observedFields = fields;
+    renderFields();
   }
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
-    const payload = message?.event === "getDevices" ? message : undefined;
-    if (!payload) return;
-    queryRequired<HTMLElement>("#catalog-status").textContent = payload.refreshFailed
-      ? window.SwitchBotI18n?.t(
-          "Refresh failed. Showing the saved catalog.",
-          "更新に失敗しました。保存済みの一覧を表示しています。"
-        ) ?? "Refresh failed. Showing the saved catalog."
-      : "";
+    if (!message) return;
+
+    if (message.event === "observedStatusFields") {
+      observedFields = { ...observedFields, [message.deviceId]: [...message.fields] };
+      renderFields();
+      return;
+    }
+
+    if (message.event === "getDevices") {
+      queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
+        ? t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
+        : "";
+    }
   });
 
+  deviceSelect.addEventListener("change", renderFields);
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
+  void loadObservedFields();
 });
