@@ -4,7 +4,8 @@ import { nestedRecord, normalizeVersionedSettings } from "./settings-lifecycle.j
 const OutputSchema = z.object({
   showStatusOnKey: z.boolean().catch(true).default(true),
   copyResponseToClipboard: z.boolean().catch(false).default(false),
-  prettyPrint: z.boolean().catch(true).default(true)
+  prettyPrint: z.boolean().catch(true).default(true),
+  statusTemplate: z.string().catch("").default("")
 });
 
 const GetStatusSettingsSchema = z.object({
