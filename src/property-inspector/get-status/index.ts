@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function localizeUi(): void {
     queryRequired<HTMLElement>("#output-heading").textContent = t("Output", "出力");
-    queryRequired<HTMLElement>("#status-template-item").setAttribute("label", t("Display template", "表示テンプレート"));
+    queryRequired<HTMLElement>("#status-template-label").textContent = t("Display template", "表示テンプレート");
     queryRequired<HTMLElement>("#template-help").textContent = t(
       "Wrap a Status API field name in {}, for example {temperature}. Leave blank to use automatic display.",
       "Status APIのフィールド名を{}で囲みます（例: {temperature}）。空欄なら自動表示します。"
