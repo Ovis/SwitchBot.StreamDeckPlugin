@@ -13,7 +13,7 @@ import { parsePropertyInspectorToPluginMessage } from "../protocol/property-insp
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatusFields, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
-import { GetStatusRefreshCoordinator } from "./get-status-refresh-coordinator.js";
+import { GetStatusRefreshCoordinator, hasRefreshConfigurationChanged } from "./get-status-refresh-coordinator.js";
 
 const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
 type GetStatusKeyAction = KeyDownEvent<GetStatusSettingsV1>["action"];
@@ -59,12 +59,7 @@ export class GetStatusAction extends AuthenticatedAction {
     const previous = this.activeSettings.get(ev.action.id);
     this.activeSettings.set(ev.action.id, settings);
 
-    const refreshConfigurationChanged = !previous
-      || previous.deviceId.trim() !== settings.deviceId.trim()
-      || previous.output.showStatusOnKey !== settings.output.showStatusOnKey
-      || previous.output.refreshIntervalMinutes !== settings.output.refreshIntervalMinutes;
-
-    if (refreshConfigurationChanged) {
+    if (hasRefreshConfigurationChanged(previous, settings)) {
       this.clearRestoreTimer(ev.action.id);
       this.refresh.clearTimer(ev.action.id);
       const generation = this.refresh.nextGeneration(ev.action.id);
