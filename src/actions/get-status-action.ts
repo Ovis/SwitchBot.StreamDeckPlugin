@@ -135,7 +135,7 @@ export class GetStatusAction extends AuthenticatedAction {
         })),
         refreshFailed: result.refreshFailed
       };
-      await streamDeck.ui.sendToPropertyInspector({ ...message });
+      await this.sendToCurrentPropertyInspector(ev.context, message);
       return;
     }
 
@@ -269,7 +269,11 @@ export class GetStatusAction extends AuthenticatedAction {
       version: 1,
       observedStatusFields: { ...(current.observedStatusFields ?? {}), [deviceId]: fields }
     }));
-    await streamDeck.ui.sendToPropertyInspector({ event: "observedStatusFields", deviceId, fields });
+    // 状態取得はキー押下・自動更新のどちらからも発生するため、現在そのActionのPIを
+    // 開いている場合だけ候補をpushし、別Actionへ切り替えた後の誤表示を防ぐ。
+    if (streamDeck.ui.action?.id) {
+      await this.sendToCurrentPropertyInspector(streamDeck.ui.action.id, { event: "observedStatusFields", deviceId, fields });
+    }
   }
 
   private shouldAutoRefresh(settings: GetStatusSettingsV1): boolean {
