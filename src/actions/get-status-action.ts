@@ -63,7 +63,28 @@ export class GetStatusAction extends AuthenticatedAction {
       this.clearRestoreTimer(ev.action.id);
       this.refresh.clearTimer(ev.action.id);
       const generation = this.refresh.nextGeneration(ev.action.id);
-      // Device・有効状態・周期が変わった場合だけ取得周期を作り直す。PIの他設定変更ではAPIを呼ばない。
+      const intervalChanged = previous !== undefined
+        && previous.output.refreshIntervalMinutes !== settings.output.refreshIntervalMinutes;
+      const deviceChanged = previous !== undefined
+        && previous.deviceId.trim() !== settings.deviceId.trim();
+      const displayEnabledChanged = previous !== undefined
+        && previous.output.showStatusOnKey !== settings.output.showStatusOnKey;
+
+      if (settings.output.refreshIntervalMinutes === 0 || !settings.output.showStatusOnKey) {
+        // 手動のみに戻した時点で、定期表示として残っているStatusを即座に解除する。
+        await ev.action.setTitle(settings.buttonName);
+        await ev.action.setImage();
+        return;
+      }
+
+      if (intervalChanged && !deviceChanged && !displayEnabledChanged) {
+        // 更新間隔の選択自体をAPI呼び出しの契機にはしない。
+        // 変更した時点を新しい周期の起点として、選択時間が経過してから最初の自動取得を行う。
+        this.scheduleAutomaticRefresh(ev.action, settings, generation);
+        return;
+      }
+
+      // Device変更や表示の有効化では従来どおり現在の対象を即時取得する。
       await ev.action.setTitle(settings.buttonName);
       await ev.action.setImage();
       if (this.shouldAutoRefresh(settings)) {
