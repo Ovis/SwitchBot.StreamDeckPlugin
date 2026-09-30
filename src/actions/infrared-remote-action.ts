@@ -103,6 +103,22 @@ export class InfraredRemoteAction extends AuthenticatedAction {
 
   override async onKeyDown(ev: KeyDownEvent<InfraredRemoteSettingsV1>): Promise<void> {
     const settings = normalizeInfraredRemoteSettings(await ev.action.getSettings());
+    const catalog = await this.catalogStore.get();
+    const selected = catalog?.infraredRemotes.find(remote => remote.deviceId === settings.deviceId);
+
+    // PIで保存したdeviceId/remoteTypeだけを信用すると、SwitchBot側で削除・再設定された
+    // リモコンへ古い設定のままコマンドを送れるため、実行直前に最新Catalogと照合する。
+    if (!selected || selected.deleted || selected.remoteType !== settings.remoteType) {
+      this.clearTemporaryTitle(ev.action.id);
+      streamDeck.logger.error("Infrared Remote command was not sent", {
+        category: "configuration",
+        reason: "remote-unavailable-or-type-mismatch"
+      });
+      await this.restoreNormalTitle(ev.action);
+      await ev.action.showAlert();
+      return;
+    }
+
     const built = buildInfraredRequest(settings);
 
     if (!built.request || !built.displayText) {
