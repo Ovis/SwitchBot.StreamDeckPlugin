@@ -1,5 +1,6 @@
 import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
@@ -14,11 +15,16 @@ import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatu
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 
 const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
+type GetStatusKeyAction = KeyDownEvent<GetStatusSettingsV1>["action"];
 
 @action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly refreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly inFlightRequests = new Map<string, Promise<ExecutionResult>>();
+  private readonly generations = new Map<string, number>();
+
   constructor(
     private readonly executor: RequestExecutor,
     private readonly output: OutputProcessor,
@@ -35,22 +41,36 @@ export class GetStatusAction extends AuthenticatedAction {
   override async onWillAppear(ev: WillAppearEvent<GetStatusSettingsV1>): Promise<void> {
     if (!ev.action.isKey()) return;
     const settings = normalizeGetStatusSettings(ev.payload.settings);
+    const generation = this.nextGeneration(ev.action.id);
     await ev.action.setTitle(settings.buttonName);
     await ev.action.setImage();
+
+    if (this.shouldAutoRefresh(settings)) {
+      await this.performAutomaticRefresh(ev.action, settings, generation);
+    }
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GetStatusSettingsV1>): Promise<void> {
     this.clearRestoreTimer(ev.action.id);
+    this.clearRefreshTimer(ev.action.id);
     if (!ev.action.isKey()) return;
+
+    const generation = this.nextGeneration(ev.action.id);
     const settings = normalizeGetStatusSettings(ev.payload.settings);
+    // 設定変更前のデバイスから取得した値を現在値として見せないため、いったん通常表示へ戻す。
     await ev.action.setTitle(settings.buttonName);
-    // 設定変更で一時表示タイマーを破棄した場合も、結果表示用の透明画像が残らないよう既定画像へ戻す。
     await ev.action.setImage();
+
+    if (this.shouldAutoRefresh(settings)) {
+      await this.performAutomaticRefresh(ev.action, settings, generation);
+    }
   }
 
   override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
     super.onWillDisappear(ev);
     this.clearRestoreTimer(ev.action.id);
+    this.clearRefreshTimer(ev.action.id);
+    this.nextGeneration(ev.action.id);
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {
@@ -92,47 +112,41 @@ export class GetStatusAction extends AuthenticatedAction {
       return;
     }
 
-    const result = await this.executor.execute({
-      method: "GET",
-      path: `/v1.1/devices/${encodeURIComponent(deviceId)}/status`
-    });
-    this.recordExecutionDiagnostics(ev.action.id, result);
-
-    if (!result.success) {
-      streamDeck.logger.error("Get Status failed", {
-        category: result.error.category,
-        method: result.request.method,
-        path: result.request.path,
-        httpStatus: result.response?.httpStatus,
-        switchBotStatus: result.response?.switchBot?.statusCode
-      });
+    // 手動取得を新しい周期の起点とし、直後に定期取得が重ならないようタイマーを張り直す。
+    this.clearRefreshTimer(ev.action.id);
+    const generation = this.currentGeneration(ev.action.id);
+    if (this.shouldAutoRefresh(settings)) {
+      this.scheduleAutomaticRefresh(ev.action, settings, generation);
     }
+
+    const result = await this.getStatus(ev.action.id, deviceId);
+    this.recordExecutionDiagnostics(ev.action.id, result);
+    this.logFailure(result);
 
     if (result.success) {
-      const fields = observedStatusFields(result.response.body);
-      // 候補は表示設定とは独立して最新の正常レスポンスから更新する。
-      // Global Settingsへ保存することで、同じdeviceIdを使う別のGet Statusキーからも共有できる。
-      await this.statusGlobalSettings.update(current => ({
-        ...current,
-        version: 1,
-        observedStatusFields: { ...(current.observedStatusFields ?? {}), [deviceId]: fields }
-      }));
-      await streamDeck.ui.sendToPropertyInspector({ event: "observedStatusFields", deviceId, fields });
+      await this.rememberObservedFields(deviceId, result.response.body);
     }
+
+    // 設定変更や画面遷移の途中で完了した古いリクエストは、現在のキー表示を上書きしない。
+    if (generation !== this.currentGeneration(ev.action.id)) return;
 
     if (result.success && settings.output.showStatusOnKey) {
       const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
       if (title) {
         this.clearRestoreTimer(ev.action.id);
-        // Stream Deckでは透明なruntime画像の背後にmanifestのState画像が見えるため、
-        // ステータス文字列の表示中は黒一色の画像でアイコンを覆い、文字の可読性を確保する。
-        // 引数なしのsetImageでmanifestの画像へ戻せるので、元画像のパスをAction側で重複管理しない。
-        await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);
-        await ev.action.setTitle(title);
-        this.restoreTimers.set(ev.action.id, setTimeout(() => {
-          this.restoreTimers.delete(ev.action.id);
-          void this.restoreNormalAppearance(ev.action);
-        }, 15_000));
+        if (settings.output.refreshIntervalMinutes > 0) {
+          // 定期更新時はStatusを通常表示として扱うため、結果表示用の一時アイコンへ切り替えない。
+          await ev.action.setImage();
+          await ev.action.setTitle(title);
+        } else {
+          // 手動のみの場合は従来どおり15秒間だけ結果表示に切り替える。
+          await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);
+          await ev.action.setTitle(title);
+          this.restoreTimers.set(ev.action.id, setTimeout(() => {
+            this.restoreTimers.delete(ev.action.id);
+            void this.restoreNormalAppearance(ev.action);
+          }, 15_000));
+        }
       }
     } else if (result.success) {
       this.clearRestoreTimer(ev.action.id);
@@ -150,7 +164,95 @@ export class GetStatusAction extends AuthenticatedAction {
       ev.action
     );
   }
-  private async restoreNormalAppearance(actionInstance: KeyDownEvent<GetStatusSettingsV1>["action"]): Promise<void> {
+
+  private async performAutomaticRefresh(
+    actionInstance: GetStatusKeyAction,
+    settings: GetStatusSettingsV1,
+    generation: number
+  ): Promise<void> {
+    const deviceId = settings.deviceId.trim();
+    if (!deviceId || generation !== this.currentGeneration(actionInstance.id)) return;
+
+    const result = await this.getStatus(actionInstance.id, deviceId);
+    if (generation !== this.currentGeneration(actionInstance.id)) return;
+
+    this.recordExecutionDiagnostics(actionInstance.id, result);
+    this.logFailure(result);
+
+    if (result.success) {
+      await this.rememberObservedFields(deviceId, result.response.body);
+      const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
+      if (title) {
+        // 自動更新ではアイコンや成功フィードバックを変更せず、最後の正常なStatusだけを更新する。
+        await actionInstance.setTitle(title);
+      }
+    }
+
+    // 失敗時も最後の正常表示を維持したまま、完了時点から次の周期を開始する。
+    if (generation === this.currentGeneration(actionInstance.id)) {
+      this.scheduleAutomaticRefresh(actionInstance, settings, generation);
+    }
+  }
+
+  private scheduleAutomaticRefresh(
+    actionInstance: GetStatusKeyAction,
+    settings: GetStatusSettingsV1,
+    generation: number
+  ): void {
+    this.clearRefreshTimer(actionInstance.id);
+    if (!this.shouldAutoRefresh(settings) || generation !== this.currentGeneration(actionInstance.id)) return;
+
+    this.refreshTimers.set(actionInstance.id, setTimeout(() => {
+      this.refreshTimers.delete(actionInstance.id);
+      void this.performAutomaticRefresh(actionInstance, settings, generation);
+    }, settings.output.refreshIntervalMinutes * 60_000));
+  }
+
+  private getStatus(actionId: string, deviceId: string): Promise<ExecutionResult> {
+    const existing = this.inFlightRequests.get(actionId);
+    if (existing) return existing;
+
+    const request = this.executor.execute({
+      method: "GET",
+      path: `/v1.1/devices/${encodeURIComponent(deviceId)}/status`
+    });
+    this.inFlightRequests.set(actionId, request);
+    void request.finally(() => {
+      if (this.inFlightRequests.get(actionId) === request) this.inFlightRequests.delete(actionId);
+    });
+    return request;
+  }
+
+  private async rememberObservedFields(deviceId: string, responseBody: unknown): Promise<void> {
+    const fields = observedStatusFields(responseBody);
+    // 候補は表示設定とは独立して最新の正常レスポンスから更新する。
+    // Global Settingsへ保存することで、同じdeviceIdを使う別のGet Statusキーからも共有できる。
+    await this.statusGlobalSettings.update(current => ({
+      ...current,
+      version: 1,
+      observedStatusFields: { ...(current.observedStatusFields ?? {}), [deviceId]: fields }
+    }));
+    await streamDeck.ui.sendToPropertyInspector({ event: "observedStatusFields", deviceId, fields });
+  }
+
+  private shouldAutoRefresh(settings: GetStatusSettingsV1): boolean {
+    return settings.output.showStatusOnKey
+      && settings.output.refreshIntervalMinutes > 0
+      && settings.deviceId.trim().length > 0;
+  }
+
+  private logFailure(result: ExecutionResult): void {
+    if (result.success) return;
+    streamDeck.logger.error("Get Status failed", {
+      category: result.error.category,
+      method: result.request.method,
+      path: result.request.path,
+      httpStatus: result.response?.httpStatus,
+      switchBotStatus: result.response?.switchBot?.statusCode
+    });
+  }
+
+  private async restoreNormalAppearance(actionInstance: GetStatusKeyAction): Promise<void> {
     try {
       // 一時表示中にPIでbuttonNameが変更される場合があるため、押下時のsnapshotではなく現在設定から復元する。
       const current = normalizeGetStatusSettings(await actionInstance.getSettings());
@@ -163,11 +265,29 @@ export class GetStatusAction extends AuthenticatedAction {
     }
   }
 
+  private currentGeneration(actionId: string): number {
+    return this.generations.get(actionId) ?? 0;
+  }
+
+  private nextGeneration(actionId: string): number {
+    const next = this.currentGeneration(actionId) + 1;
+    this.generations.set(actionId, next);
+    return next;
+  }
+
   private clearRestoreTimer(actionId: string): void {
     const timer = this.restoreTimers.get(actionId);
     if (timer !== undefined) {
       clearTimeout(timer);
       this.restoreTimers.delete(actionId);
+    }
+  }
+
+  private clearRefreshTimer(actionId: string): void {
+    const timer = this.refreshTimers.get(actionId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.refreshTimers.delete(actionId);
     }
   }
 }
