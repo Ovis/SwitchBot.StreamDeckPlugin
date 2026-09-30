@@ -112,11 +112,15 @@ Devices such as meters, contact sensors, and hubs may support status retrieval w
 
 ## Disclaimer
 
+This is an unofficial plugin developed and provided by an individual. **It is not developed, provided, endorsed, or supported by SwitchBot.**
+
 This plugin uses SwitchBot OpenAPI to control devices, but **does not guarantee support for every device or operation available through SwitchBot OpenAPI**.
 
 Only a limited set of physical devices has been tested by the developer. Even when a device is shown as supported by the plugin, it may not operate correctly depending on the device, firmware, or changes to SwitchBot OpenAPI.
 
 Physical-device testing during development has been performed on Windows. macOS is a supported target of the plugin, but has not been tested on physical hardware by the developer.
+
+**The developer assumes no responsibility for any damage, loss, or other disadvantage arising from the use of this plugin. Use this plugin at your own risk.**
 
 ## Development
 
