@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const textarea = queryRequired<HTMLTextAreaElement>("#status-template");
   const deviceSelect = queryRequired<SdpiValueElement>("#device-select");
   const showStatusOnKey = queryRequired<SdpiValueElement>("#show-status-on-key");
-  const refreshInterval = queryRequired<HTMLSelectElement>("#refresh-interval");
+  const refreshInterval = queryRequired<SdpiValueElement>("#refresh-interval");
   let observedFields: Record<string, string[]> = {};
 
   attachExecutionDiagnostics(streamDeckClient);
@@ -23,23 +23,52 @@ document.addEventListener("DOMContentLoaded", () => {
     return window.SwitchBotI18n?.t(en, ja) ?? en;
   }
 
+  function logPiState(reason: string): void {
+    console.info("[GetStatus PI]", reason, {
+      locale: window.SwitchBotI18n?.locale,
+      showStatusOnKey: showStatusOnKey.value,
+      refreshInterval: refreshInterval.value,
+      refreshDisabled: refreshInterval.hasAttribute("disabled")
+    });
+  }
+
+  function renderRefreshIntervalOptions(): void {
+    const current = valueOf(refreshInterval, "0");
+    const options = [
+      ["0", t("Manual only", "手動のみ")],
+      ["1", t("1 minute", "1分")],
+      ["2", t("2 minutes", "2分")],
+      ["5", t("5 minutes", "5分")],
+      ["10", t("10 minutes", "10分")],
+      ["30", t("30 minutes", "30分")],
+      ["60", t("60 minutes", "60分")]
+    ];
+    // sdpi-selectを維持してStream Deck標準テーマを使用する。
+    // locale確定後にoption自体を再構築し、Shadow DOM側の表示にも翻訳済みラベルを反映させる。
+    refreshInterval.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+    refreshInterval.value = current;
+  }
+
   function localizeUi(): void {
     queryRequired<HTMLElement>("#output-heading").textContent = t("Output", "出力");
     queryRequired<HTMLElement>("#status-template-label").textContent = t("Display template", "表示テンプレート");
     queryRequired<HTMLElement>("#refresh-interval-item").setAttribute("label", t("Refresh interval", "更新間隔"));
-    const labels = [t("Manual only", "手動のみ"), t("1 minute", "1分"), t("2 minutes", "2分"), t("5 minutes", "5分"), t("10 minutes", "10分"), t("30 minutes", "30分"), t("60 minutes", "60分")];
-    queryRequired<HTMLElement>("#refresh-interval").querySelectorAll("option").forEach((option, index) => { option.textContent = labels[index] ?? option.textContent; });
+    renderRefreshIntervalOptions();
     updateRefreshIntervalAvailability();
     queryRequired<HTMLElement>("#template-help").textContent = t(
       "Wrap a Status API field name in {}, for example {temperature}. Leave blank to use automatic display.",
       "Status APIのフィールド名を{}で囲みます（例: {temperature}）。空欄なら自動表示します。"
     );
     renderFields();
+    logPiState("localizeUi");
   }
 
   function updateRefreshIntervalAvailability(): void {
-    // ステータスをキーへ表示しない間は定期取得にも実益がないため、保存値を残したままUIだけ無効化する。
-    refreshInterval.disabled = !checked(showStatusOnKey);
+    // sdpi-checkboxはnative checkboxではないためvalueを基準に判定する。
+    // checked()が初期復元前の値を返す場合はloadOutputSettings()で永続settingsから再確定する。
+    if (checked(showStatusOnKey)) refreshInterval.removeAttribute("disabled");
+    else refreshInterval.setAttribute("disabled", "");
+    logPiState("updateRefreshIntervalAvailability");
   }
 
   function selectedDeviceId(): string {
@@ -101,12 +130,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const output = typeof source.output === "object" && source.output !== null && !Array.isArray(source.output)
       ? source.output as Record<string, unknown>
       : {};
+
     textarea.value = typeof output.statusTemplate === "string" ? output.statusTemplate : "";
     const interval = output.refreshIntervalMinutes;
     refreshInterval.value = typeof interval === "number" || typeof interval === "string" ? String(interval) : "0";
-    // sdpi-checkboxの初期値反映タイミングに依存せず、永続settingsを基準に活性状態を確定する。
+
     const show = typeof output.showStatusOnKey === "boolean" ? output.showStatusOnKey : true;
-    refreshInterval.disabled = !show;
+    if (show) refreshInterval.removeAttribute("disabled");
+    else refreshInterval.setAttribute("disabled", "");
+    logPiState("loadOutputSettings");
   }
 
   async function loadObservedFields(): Promise<void> {
@@ -135,9 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   deviceSelect.addEventListener("change", renderFields);
-  showStatusOnKey.addEventListener("change", updateRefreshIntervalAvailability);
-  // sdpi-componentsの初期settings反映がDOMContentLoadedより後になる場合にも追従する。
-  showStatusOnKey.addEventListener("input", updateRefreshIntervalAvailability);
+  showStatusOnKey.addEventListener("valuechange", () => {
+    updateRefreshIntervalAvailability();
+    logPiState("showStatusOnKey.valuechange");
+  });
+  refreshInterval.addEventListener("valuechange", () => logPiState("refreshInterval.valuechange"));
   textarea.addEventListener("change", () => void saveTemplate(textarea.value));
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
