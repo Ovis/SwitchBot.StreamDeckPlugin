@@ -76,7 +76,10 @@ export class GetStatusAction extends AuthenticatedAction {
       const response = this.lastSuccessfulResponses.get(ev.action.id);
       if (response !== undefined) {
         const title = formatStatusTemplate(response, settings.output.statusTemplate, this.locale);
-        if (title) {\n          await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);\n          await ev.action.setTitle(title);\n        }
+        if (title) {
+          await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);
+          await ev.action.setTitle(title);
+        }
       }
       return;
     }
