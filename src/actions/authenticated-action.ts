@@ -66,10 +66,10 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
    */
   protected async sendToCurrentPropertyInspector(
     actionId: string | undefined,
-    message: Record<string, unknown>
+    message: object
   ): Promise<void> {
     if (!actionId || streamDeck.ui.action?.id !== actionId) return;
-    await streamDeck.ui.sendToPropertyInspector(message);
+    await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
 
   /**
