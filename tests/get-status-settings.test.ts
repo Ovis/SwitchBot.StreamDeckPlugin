@@ -11,7 +11,8 @@ describe("Get Status settings", () => {
         showStatusOnKey: true,
         copyResponseToClipboard: false,
         prettyPrint: false,
-        statusTemplate: "Temp:{temperature}"
+        statusTemplate: "Temp:{temperature}",
+        refreshIntervalMinutes: 5
       }
     })).toEqual({
       version: 1,
@@ -21,9 +22,17 @@ describe("Get Status settings", () => {
         showStatusOnKey: true,
         copyResponseToClipboard: false,
         prettyPrint: false,
-        statusTemplate: "Temp:{temperature}"
+        statusTemplate: "Temp:{temperature}",
+        refreshIntervalMinutes: 5
       }
     });
+  });
+
+  it("accepts refresh interval values persisted by the PI select as strings", () => {
+    expect(normalizeGetStatusSettings({
+      version: 1,
+      output: { refreshIntervalMinutes: "5" }
+    }).output.refreshIntervalMinutes).toBe(5);
   });
 
   it("preserves individual output values when sibling fields are missing", () => {
@@ -34,7 +43,8 @@ describe("Get Status settings", () => {
       showStatusOnKey: true,
       copyResponseToClipboard: true,
       prettyPrint: true,
-      statusTemplate: ""
+      statusTemplate: "",
+      refreshIntervalMinutes: 0
     });
   });
 
@@ -43,7 +53,7 @@ describe("Get Status settings", () => {
       version: 1,
       deviceId: "A",
       output: { showStatusOnKey: false, prettyPrint: false }
-    }).output.statusTemplate).toBe("");
+    }).output).toMatchObject({ statusTemplate: "", refreshIntervalMinutes: 0 });
   });
 
   it("falls back to safe defaults for malformed persisted settings", () => {
@@ -55,7 +65,8 @@ describe("Get Status settings", () => {
         showStatusOnKey: true,
         copyResponseToClipboard: false,
         prettyPrint: true,
-        statusTemplate: ""
+        statusTemplate: "",
+        refreshIntervalMinutes: 0
       }
     });
   });

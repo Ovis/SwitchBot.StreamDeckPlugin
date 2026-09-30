@@ -38,7 +38,10 @@
   <div id="catalog-status" aria-live="polite"></div>
   <div id="output-heading" class="section-heading" data-ja-text="出力">Output</div>
   <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
-    <sdpi-checkbox setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
+    <sdpi-checkbox id="show-status-on-key" setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
+  </sdpi-item>
+  <sdpi-item id="refresh-interval-item" label="Refresh interval">
+    <sdpi-select id="refresh-interval" setting="output.refreshIntervalMinutes" default="0"></sdpi-select>
   </sdpi-item>
   <div class="status-template-row">
     <label id="status-template-label" class="status-template-label" for="status-template">Template</label>

@@ -1,7 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
-import { createSettingsPatchQueue, queryRequired, valueOf } from "../shared/dom.js";
+import { checked, createSettingsPatchQueue, queryRequired, valueOf } from "../shared/dom.js";
 import { parsePluginToPropertyInspectorMessage } from "../../protocol/property-inspector-protocol.js";
 
 interface GetStatusGlobalSettings {
@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const patchSettings = createSettingsPatchQueue(streamDeckClient);
   const textarea = queryRequired<HTMLTextAreaElement>("#status-template");
   const deviceSelect = queryRequired<SdpiValueElement>("#device-select");
+  const showStatusOnKey = queryRequired<SdpiValueElement>("#show-status-on-key");
+  const refreshInterval = queryRequired<SdpiValueElement>("#refresh-interval");
   let observedFields: Record<string, string[]> = {};
 
   attachExecutionDiagnostics(streamDeckClient);
@@ -21,14 +23,41 @@ document.addEventListener("DOMContentLoaded", () => {
     return window.SwitchBotI18n?.t(en, ja) ?? en;
   }
 
+  function renderRefreshIntervalOptions(): void {
+    const current = valueOf(refreshInterval, "0");
+    const options = [
+      ["0", t("Manual only", "手動のみ")],
+      ["1", t("1 minute", "1分")],
+      ["2", t("2 minutes", "2分")],
+      ["5", t("5 minutes", "5分")],
+      ["10", t("10 minutes", "10分")],
+      ["30", t("30 minutes", "30分")],
+      ["60", t("60 minutes", "60分")]
+    ];
+    // sdpi-selectを維持してStream Deck標準テーマを使用する。
+    // locale確定後にoption自体を再構築し、Shadow DOM側の表示にも翻訳済みラベルを反映させる。
+    refreshInterval.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+    refreshInterval.value = current;
+  }
+
   function localizeUi(): void {
     queryRequired<HTMLElement>("#output-heading").textContent = t("Output", "出力");
     queryRequired<HTMLElement>("#status-template-label").textContent = t("Display template", "表示テンプレート");
+    queryRequired<HTMLElement>("#refresh-interval-item").setAttribute("label", t("Refresh interval", "更新間隔"));
+    renderRefreshIntervalOptions();
+    updateRefreshIntervalAvailability();
     queryRequired<HTMLElement>("#template-help").textContent = t(
-      "Wrap a Status API field name in {}, for example {temperature}. Leave blank to use automatic display.",
-      "Status APIのフィールド名を{}で囲みます（例: {temperature}）。空欄なら自動表示します。"
+      "Wrap the item you want to display in {}, for example {temperature}. If left blank, major items are automatically selected from the retrieved information. After retrieving the status once, available items are shown and can be clicked to insert them.",
+      "表示したい項目を {} で囲んで指定できます（例: {temperature}）。空欄の場合は、取得した情報から主要な項目を自動的に選んで表示します。一度ステータスを取得すると、利用可能な項目が表示され、クリックして入力できます。"
     );
     renderFields();
+  }
+
+  function updateRefreshIntervalAvailability(): void {
+    // sdpi-checkboxはnative checkboxではないためvalueを基準に判定する。
+    // checked()が初期復元前の値を返す場合はloadOutputSettings()で永続settingsから再確定する。
+    if (checked(showStatusOnKey)) refreshInterval.removeAttribute("disabled");
+    else refreshInterval.setAttribute("disabled", "");
   }
 
   function selectedDeviceId(): string {
@@ -79,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function loadTemplate(): Promise<void> {
+  async function loadOutputSettings(): Promise<void> {
     const value = await streamDeckClient.getSettings();
     const record = typeof value === "object" && value !== null && !Array.isArray(value)
       ? value as Record<string, unknown>
@@ -90,7 +119,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const output = typeof source.output === "object" && source.output !== null && !Array.isArray(source.output)
       ? source.output as Record<string, unknown>
       : {};
+
     textarea.value = typeof output.statusTemplate === "string" ? output.statusTemplate : "";
+    const interval = output.refreshIntervalMinutes;
+    refreshInterval.value = typeof interval === "number" || typeof interval === "string" ? String(interval) : "0";
+
+    const show = typeof output.showStatusOnKey === "boolean" ? output.showStatusOnKey : true;
+    if (show) refreshInterval.removeAttribute("disabled");
+    else refreshInterval.setAttribute("disabled", "");
   }
 
   async function loadObservedFields(): Promise<void> {
@@ -119,9 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   deviceSelect.addEventListener("change", renderFields);
+  showStatusOnKey.addEventListener("valuechange", updateRefreshIntervalAvailability);
   textarea.addEventListener("change", () => void saveTemplate(textarea.value));
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
-  void loadTemplate();
+  void loadOutputSettings();
   void loadObservedFields();
 });

@@ -96,7 +96,8 @@ describe("Get Status output settings", () => {
       showStatusOnKey: true,
       copyResponseToClipboard: false,
       prettyPrint: true,
-      statusTemplate: ""
+      statusTemplate: "",
+      refreshIntervalMinutes: 0
     });
   });
 });
