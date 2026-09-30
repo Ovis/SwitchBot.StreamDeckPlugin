@@ -13,6 +13,8 @@ import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../setting
 import { displayLocale, formatStatusForKey, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 
+const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
+
 @action({ UUID: "com.esheep.switchbot.get-status" })
 export class GetStatusAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
@@ -34,6 +36,7 @@ export class GetStatusAction extends AuthenticatedAction {
     if (!ev.action.isKey()) return;
     const settings = normalizeGetStatusSettings(ev.payload.settings);
     await ev.action.setTitle(settings.buttonName);
+    await ev.action.setImage();
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GetStatusSettingsV1>): Promise<void> {
@@ -41,6 +44,8 @@ export class GetStatusAction extends AuthenticatedAction {
     if (!ev.action.isKey()) return;
     const settings = normalizeGetStatusSettings(ev.payload.settings);
     await ev.action.setTitle(settings.buttonName);
+    // 設定変更で一時表示タイマーを破棄した場合も、結果表示用の透明画像が残らないよう既定画像へ戻す。
+    await ev.action.setImage();
   }
 
   override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
@@ -107,15 +112,20 @@ export class GetStatusAction extends AuthenticatedAction {
       const title = formatStatusForKey(result.response.body, this.locale);
       if (title) {
         this.clearRestoreTimer(ev.action.id);
+        // Stream Deckでは透明なruntime画像の背後にmanifestのState画像が見えるため、
+        // ステータス文字列の表示中は黒一色の画像でアイコンを覆い、文字の可読性を確保する。
+        // 引数なしのsetImageでmanifestの画像へ戻せるので、元画像のパスをAction側で重複管理しない。
+        await ev.action.setImage(STATUS_RESULT_KEY_IMAGE);
         await ev.action.setTitle(title);
         this.restoreTimers.set(ev.action.id, setTimeout(() => {
           this.restoreTimers.delete(ev.action.id);
-          void this.restoreNormalTitle(ev.action);
+          void this.restoreNormalAppearance(ev.action);
         }, 15_000));
       }
     } else if (result.success) {
       this.clearRestoreTimer(ev.action.id);
       await ev.action.setTitle(settings.buttonName);
+      await ev.action.setImage();
     }
 
     await this.output.process(
@@ -128,13 +138,14 @@ export class GetStatusAction extends AuthenticatedAction {
       ev.action
     );
   }
-  private async restoreNormalTitle(actionInstance: KeyDownEvent<GetStatusSettingsV1>["action"]): Promise<void> {
+  private async restoreNormalAppearance(actionInstance: KeyDownEvent<GetStatusSettingsV1>["action"]): Promise<void> {
     try {
       // 一時表示中にPIでbuttonNameが変更される場合があるため、押下時のsnapshotではなく現在設定から復元する。
       const current = normalizeGetStatusSettings(await actionInstance.getSettings());
       await actionInstance.setTitle(current.buttonName);
+      await actionInstance.setImage();
     } catch (error) {
-      streamDeck.logger.warn("Failed to restore Get Status button title", {
+      streamDeck.logger.warn("Failed to restore Get Status button appearance", {
         errorName: error instanceof Error ? error.name : "UnknownError"
       });
     }
