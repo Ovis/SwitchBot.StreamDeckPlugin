@@ -24,11 +24,11 @@ export class GetStatusAction extends AuthenticatedAction {
     private readonly output: OutputProcessor,
     private readonly catalogStore: DeviceCatalogStore,
     private readonly catalogRefresh: CatalogRefreshService,
-    private readonly globalSettings: GlobalSettingsStore,
+    private readonly statusGlobalSettings: GlobalSettingsStore,
     executionDiagnostics: ExecutionDiagnosticsStore,
     locale?: string
   ) {
-    super(executor, globalSettings, executionDiagnostics);
+    super(executor, statusGlobalSettings, executionDiagnostics);
     this.locale = displayLocale(locale);
   }
 
@@ -112,7 +112,7 @@ export class GetStatusAction extends AuthenticatedAction {
       const fields = observedStatusFields(result.response.body);
       // 候補は表示設定とは独立して最新の正常レスポンスから更新する。
       // Global Settingsへ保存することで、同じdeviceIdを使う別のGet Statusキーからも共有できる。
-      await this.globalSettings.update(current => ({
+      await this.statusGlobalSettings.update(current => ({
         ...current,
         version: 1,
         observedStatusFields: { ...(current.observedStatusFields ?? {}), [deviceId]: fields }
