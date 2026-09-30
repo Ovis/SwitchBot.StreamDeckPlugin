@@ -132,6 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   deviceSelect.addEventListener("change", renderFields);
   showStatusOnKey.addEventListener("change", updateRefreshIntervalAvailability);
+  // sdpi-componentsの初期settings反映がDOMContentLoadedより後になる場合にも追従する。
+  showStatusOnKey.addEventListener("input", updateRefreshIntervalAvailability);
   textarea.addEventListener("change", () => void saveTemplate(textarea.value));
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
