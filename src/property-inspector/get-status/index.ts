@@ -23,15 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return window.SwitchBotI18n?.t(en, ja) ?? en;
   }
 
-  function logPiState(reason: string): void {
-    console.info("[GetStatus PI]", reason, {
-      locale: window.SwitchBotI18n?.locale,
-      showStatusOnKey: showStatusOnKey.value,
-      refreshInterval: refreshInterval.value,
-      refreshDisabled: refreshInterval.hasAttribute("disabled")
-    });
-  }
-
   function renderRefreshIntervalOptions(): void {
     const current = valueOf(refreshInterval, "0");
     const options = [
@@ -60,7 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
       "Status APIのフィールド名を{}で囲みます（例: {temperature}）。空欄なら自動表示します。"
     );
     renderFields();
-    logPiState("localizeUi");
   }
 
   function updateRefreshIntervalAvailability(): void {
@@ -68,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // checked()が初期復元前の値を返す場合はloadOutputSettings()で永続settingsから再確定する。
     if (checked(showStatusOnKey)) refreshInterval.removeAttribute("disabled");
     else refreshInterval.setAttribute("disabled", "");
-    logPiState("updateRefreshIntervalAvailability");
   }
 
   function selectedDeviceId(): string {
@@ -138,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const show = typeof output.showStatusOnKey === "boolean" ? output.showStatusOnKey : true;
     if (show) refreshInterval.removeAttribute("disabled");
     else refreshInterval.setAttribute("disabled", "");
-    logPiState("loadOutputSettings");
   }
 
   async function loadObservedFields(): Promise<void> {
@@ -167,11 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   deviceSelect.addEventListener("change", renderFields);
-  showStatusOnKey.addEventListener("valuechange", () => {
-    updateRefreshIntervalAvailability();
-    logPiState("showStatusOnKey.valuechange");
-  });
-  refreshInterval.addEventListener("valuechange", () => logPiState("refreshInterval.valuechange"));
+  showStatusOnKey.addEventListener("valuechange", updateRefreshIntervalAvailability);
   textarea.addEventListener("change", () => void saveTemplate(textarea.value));
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
