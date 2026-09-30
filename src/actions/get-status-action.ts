@@ -13,6 +13,7 @@ import { parsePropertyInspectorToPluginMessage } from "../protocol/property-insp
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatusFields, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
+import { GetStatusRefreshCoordinator } from "./get-status-refresh-coordinator.js";
 
 const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
 type GetStatusKeyAction = KeyDownEvent<GetStatusSettingsV1>["action"];
@@ -21,9 +22,9 @@ type GetStatusKeyAction = KeyDownEvent<GetStatusSettingsV1>["action"];
 export class GetStatusAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly refreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly inFlightRequests = new Map<string, { deviceId: string; request: Promise<ExecutionResult> }>();
-  private readonly generations = new Map<string, number>();
+  private readonly refresh = new GetStatusRefreshCoordinator<ExecutionResult>();
+  private readonly activeSettings = new Map<string, GetStatusSettingsV1>();
+  private readonly lastSuccessfulResponses = new Map<string, unknown>();
 
   constructor(
     private readonly executor: RequestExecutor,
@@ -41,7 +42,8 @@ export class GetStatusAction extends AuthenticatedAction {
   override async onWillAppear(ev: WillAppearEvent<GetStatusSettingsV1>): Promise<void> {
     if (!ev.action.isKey()) return;
     const settings = normalizeGetStatusSettings(ev.payload.settings);
-    const generation = this.nextGeneration(ev.action.id);
+    const generation = this.refresh.nextGeneration(ev.action.id);
+    this.activeSettings.set(ev.action.id, settings);
     await ev.action.setTitle(settings.buttonName);
     await ev.action.setImage();
 
@@ -51,26 +53,50 @@ export class GetStatusAction extends AuthenticatedAction {
   }
 
   override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GetStatusSettingsV1>): Promise<void> {
-    this.clearRestoreTimer(ev.action.id);
-    this.clearRefreshTimer(ev.action.id);
     if (!ev.action.isKey()) return;
 
-    const generation = this.nextGeneration(ev.action.id);
     const settings = normalizeGetStatusSettings(ev.payload.settings);
-    // 設定変更前のデバイスから取得した値を現在値として見せないため、いったん通常表示へ戻す。
-    await ev.action.setTitle(settings.buttonName);
-    await ev.action.setImage();
+    const previous = this.activeSettings.get(ev.action.id);
+    this.activeSettings.set(ev.action.id, settings);
 
-    if (this.shouldAutoRefresh(settings)) {
-      await this.performAutomaticRefresh(ev.action, settings, generation);
+    const refreshConfigurationChanged = !previous
+      || previous.deviceId.trim() !== settings.deviceId.trim()
+      || previous.output.showStatusOnKey !== settings.output.showStatusOnKey
+      || previous.output.refreshIntervalMinutes !== settings.output.refreshIntervalMinutes;
+
+    if (refreshConfigurationChanged) {
+      this.clearRestoreTimer(ev.action.id);
+      this.refresh.clearTimer(ev.action.id);
+      const generation = this.refresh.nextGeneration(ev.action.id);
+      // Device・有効状態・周期が変わった場合だけ取得周期を作り直す。PIの他設定変更ではAPIを呼ばない。
+      await ev.action.setTitle(settings.buttonName);
+      await ev.action.setImage();
+      if (this.shouldAutoRefresh(settings)) {
+        await this.performAutomaticRefresh(ev.action, settings, generation);
+      }
+      return;
     }
+
+    if (previous?.output.statusTemplate !== settings.output.statusTemplate && this.shouldAutoRefresh(settings)) {
+      const response = this.lastSuccessfulResponses.get(ev.action.id);
+      if (response !== undefined) {
+        const title = formatStatusTemplate(response, settings.output.statusTemplate, this.locale);
+        if (title) await ev.action.setTitle(title);
+      }
+      return;
+    }
+
+    // buttonName等の非ポーリング設定は周期を維持したまま反映する。
+    if (!this.shouldAutoRefresh(settings)) await ev.action.setTitle(settings.buttonName);
   }
 
   override onWillDisappear(ev: WillDisappearEvent<GetStatusSettingsV1>): void {
     super.onWillDisappear(ev);
     this.clearRestoreTimer(ev.action.id);
-    this.clearRefreshTimer(ev.action.id);
-    this.nextGeneration(ev.action.id);
+    this.refresh.clearTimer(ev.action.id);
+    this.refresh.nextGeneration(ev.action.id);
+    this.activeSettings.delete(ev.action.id);
+    this.lastSuccessfulResponses.delete(ev.action.id);
   }
 
   override async onSendToPlugin(value: unknown): Promise<void> {
@@ -113,8 +139,8 @@ export class GetStatusAction extends AuthenticatedAction {
     }
 
     // 手動取得を新しい周期の起点とし、直後に定期取得が重ならないようタイマーを張り直す。
-    this.clearRefreshTimer(ev.action.id);
-    const generation = this.currentGeneration(ev.action.id);
+    this.refresh.clearTimer(ev.action.id);
+    const generation = this.refresh.currentGeneration(ev.action.id);
     if (this.shouldAutoRefresh(settings)) {
       this.scheduleAutomaticRefresh(ev.action, settings, generation);
     }
@@ -128,7 +154,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }
 
     // 設定変更や画面遷移の途中で完了した古いリクエストは、現在のキー表示を上書きしない。
-    if (generation !== this.currentGeneration(ev.action.id)) return;
+    if (generation !== this.refresh.currentGeneration(ev.action.id)) return;
 
     if (result.success && settings.output.showStatusOnKey) {
       const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
@@ -171,16 +197,17 @@ export class GetStatusAction extends AuthenticatedAction {
     generation: number
   ): Promise<void> {
     const deviceId = settings.deviceId.trim();
-    if (!deviceId || generation !== this.currentGeneration(actionInstance.id)) return;
+    if (!deviceId || generation !== this.refresh.currentGeneration(actionInstance.id)) return;
 
     const result = await this.getStatus(actionInstance.id, deviceId);
-    if (generation !== this.currentGeneration(actionInstance.id)) return;
+    if (generation !== this.refresh.currentGeneration(actionInstance.id)) return;
 
     this.recordExecutionDiagnostics(actionInstance.id, result);
     this.logFailure(result);
 
     if (result.success) {
       await this.rememberObservedFields(deviceId, result.response.body);
+      this.lastSuccessfulResponses.set(actionInstance.id, result.response.body);
       const title = formatStatusTemplate(result.response.body, settings.output.statusTemplate, this.locale);
       if (title) {
         // 自動更新ではアイコンや成功フィードバックを変更せず、最後の正常なStatusだけを更新する。
@@ -189,7 +216,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }
 
     // 失敗時も最後の正常表示を維持したまま、完了時点から次の周期を開始する。
-    if (generation === this.currentGeneration(actionInstance.id)) {
+    if (generation === this.refresh.currentGeneration(actionInstance.id)) {
       this.scheduleAutomaticRefresh(actionInstance, settings, generation);
     }
   }
@@ -199,30 +226,19 @@ export class GetStatusAction extends AuthenticatedAction {
     settings: GetStatusSettingsV1,
     generation: number
   ): void {
-    this.clearRefreshTimer(actionInstance.id);
-    if (!this.shouldAutoRefresh(settings) || generation !== this.currentGeneration(actionInstance.id)) return;
+    this.refresh.clearTimer(actionInstance.id);
+    if (!this.shouldAutoRefresh(settings) || generation !== this.refresh.currentGeneration(actionInstance.id)) return;
 
-    this.refreshTimers.set(actionInstance.id, setTimeout(() => {
-      this.refreshTimers.delete(actionInstance.id);
+    this.refresh.schedule(actionInstance.id, settings.output.refreshIntervalMinutes * 60_000, generation, () => {
       void this.performAutomaticRefresh(actionInstance, settings, generation);
-    }, settings.output.refreshIntervalMinutes * 60_000));
+    });
   }
 
   private getStatus(actionId: string, deviceId: string): Promise<ExecutionResult> {
-    const existing = this.inFlightRequests.get(actionId);
-    // 同一ActionでもPIでDeviceを変更した直後は旧Deviceのリクエストが残り得る。
-    // 共有対象を同じDeviceへの取得に限定し、旧レスポンスを新DeviceのStatusとして扱わないようにする。
-    if (existing?.deviceId === deviceId) return existing.request;
-
-    const request = this.executor.execute({
+    return this.refresh.getOrStart(actionId, deviceId, () => this.executor.execute({
       method: "GET",
       path: `/v1.1/devices/${encodeURIComponent(deviceId)}/status`
-    });
-    this.inFlightRequests.set(actionId, { deviceId, request });
-    void request.finally(() => {
-      if (this.inFlightRequests.get(actionId)?.request === request) this.inFlightRequests.delete(actionId);
-    });
-    return request;
+    }));
   }
 
   private async rememberObservedFields(deviceId: string, responseBody: unknown): Promise<void> {
@@ -267,16 +283,6 @@ export class GetStatusAction extends AuthenticatedAction {
     }
   }
 
-  private currentGeneration(actionId: string): number {
-    return this.generations.get(actionId) ?? 0;
-  }
-
-  private nextGeneration(actionId: string): number {
-    const next = this.currentGeneration(actionId) + 1;
-    this.generations.set(actionId, next);
-    return next;
-  }
-
   private clearRestoreTimer(actionId: string): void {
     const timer = this.restoreTimers.get(actionId);
     if (timer !== undefined) {
@@ -285,13 +291,7 @@ export class GetStatusAction extends AuthenticatedAction {
     }
   }
 
-  private clearRefreshTimer(actionId: string): void {
-    const timer = this.refreshTimers.get(actionId);
-    if (timer !== undefined) {
-      clearTimeout(timer);
-      this.refreshTimers.delete(actionId);
-    }
-  }
+
 }
 
 export interface SelectableDevice {
