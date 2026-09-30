@@ -144,6 +144,12 @@ export interface ScenesResultMessage extends ProtocolJsonObject {
   refreshFailed?: boolean;
 }
 
+export interface ObservedStatusFieldsMessage extends ProtocolJsonObject {
+  event: "observedStatusFields";
+  deviceId: string;
+  fields: string[];
+}
+
 export type InfraredParameterKind = "default" | "channel" | "air-conditioner" | "custom";
 
 export interface InfraredCommandPropertyInspectorItem extends PropertyInspectorSelectItem {
@@ -205,6 +211,7 @@ export type PluginToPropertyInspectorMessage =
   | ScenesResultMessage
   | InfraredRemotesResultMessage
   | PhysicalControlCatalogMessage
+  | ObservedStatusFieldsMessage
   | ExecutionDiagnosticsMessage;
 
 
@@ -292,6 +299,12 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
       ? Object.fromEntries(Object.entries(value.commandTemplates).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
       : undefined;
     return { event: "getDevices", items, ...(commandTemplates ? { commandTemplates } : {}), ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+  }
+
+  if (value.event === "observedStatusFields") {
+    if (typeof value.deviceId !== "string" || !Array.isArray(value.fields)
+      || !value.fields.every(field => typeof field === "string")) return undefined;
+    return { event: "observedStatusFields", deviceId: value.deviceId, fields: value.fields };
   }
 
   if (value.event === "getApiEndpoints") {
