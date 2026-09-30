@@ -31,7 +31,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       const response: ExecutionDiagnosticsMessage = result
         ? { event: "executionDiagnostics", available: true, ...executionDiagnosticsView(result) }
         : { event: "executionDiagnostics", available: false };
-      await streamDeck.ui.sendToPropertyInspector({ ...response });
+      await this.sendToCurrentPropertyInspector(ev.context, response);
       return;
     }
 
@@ -58,7 +58,18 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
       success: result.success,
       ...(!result.success ? { errorCategory: result.error.category } : {})
     };
-    await streamDeck.ui.sendToPropertyInspector({ ...response });
+    await this.sendToCurrentPropertyInspector(ev.context, response);
+  }
+
+  /**
+   * 非同期処理の完了前に別ActionへPIが切り替わった場合、古い応答を新しいPIへ送らない。
+   */
+  protected async sendToCurrentPropertyInspector(
+    actionId: string | undefined,
+    message: object
+  ): Promise<void> {
+    if (!actionId || streamDeck.ui.action?.id !== actionId) return;
+    await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
 
   /**
