@@ -14,8 +14,8 @@
     .status-field-list { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 8px 10px; }
     .status-field-button { border: 1px solid #666; border-radius: 4px; padding: 3px 6px; background: #3a3a3a; color: #eee; cursor: pointer; font: 11px ui-monospace, "Cascadia Mono", monospace; }
     .status-field-button:hover { background: #4a4a4a; }
-    .status-template-row { display: flex; align-items: flex-start; margin: 4px 8px; }
-    .status-template-label { box-sizing: border-box; width: 110px; flex: 0 0 110px; padding: 5px 8px 0 0; text-align: right; color: #9f9f9f; font-size: 12px; line-height: 1.3; }
+    .status-template-row, .refresh-interval-row { display: flex; align-items: flex-start; margin: 4px 8px; }
+    .status-template-label, .refresh-interval-label { box-sizing: border-box; width: 110px; flex: 0 0 110px; padding: 5px 8px 0 0; text-align: right; color: #9f9f9f; font-size: 12px; line-height: 1.3; }\n    .refresh-interval-select { box-sizing: border-box; flex: 1 1 auto; min-width: 0; height: 28px; background: #3a3a3a; color: #eee; border: 1px solid #555; border-radius: 3px; padding: 0 6px; }\n    .refresh-interval-select:disabled { color: #888; background: #343434; }
     .status-template-textarea { box-sizing: border-box; flex: 1 1 auto; min-width: 0; min-height: 80px; resize: vertical; background: #3a3a3a; color: #eee; border: 1px solid #666; border-radius: 3px; padding: 6px; font: 12px/1.4 ui-monospace, "Cascadia Mono", monospace; }
   </style>
 </head>
@@ -40,8 +40,9 @@
   <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
     <sdpi-checkbox id="show-status-on-key" setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
   </sdpi-item>
-  <sdpi-item id="refresh-interval-item" label="Refresh interval">
-    <sdpi-select id="refresh-interval" setting="output.refreshIntervalMinutes" default="0">
+  <div class="refresh-interval-row">
+    <label id="refresh-interval-label" class="refresh-interval-label" for="refresh-interval">Refresh interval</label>
+    <select id="refresh-interval" class="refresh-interval-select">
       <option value="0">Manual only</option>
       <option value="1">1 minute</option>
       <option value="2">2 minutes</option>
@@ -49,8 +50,8 @@
       <option value="10">10 minutes</option>
       <option value="30">30 minutes</option>
       <option value="60">60 minutes</option>
-    </sdpi-select>
-  </sdpi-item>
+    </select>
+  </div>
   <div class="status-template-row">
     <label id="status-template-label" class="status-template-label" for="status-template">Template</label>
     <textarea id="status-template" class="status-template-textarea" rows="5"></textarea>
