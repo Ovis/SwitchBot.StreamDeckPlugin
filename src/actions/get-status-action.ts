@@ -22,7 +22,7 @@ export class GetStatusAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
   private readonly restoreTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly refreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly inFlightRequests = new Map<string, Promise<ExecutionResult>>();
+  private readonly inFlightRequests = new Map<string, { deviceId: string; request: Promise<ExecutionResult> }>();
   private readonly generations = new Map<string, number>();
 
   constructor(
@@ -210,15 +210,17 @@ export class GetStatusAction extends AuthenticatedAction {
 
   private getStatus(actionId: string, deviceId: string): Promise<ExecutionResult> {
     const existing = this.inFlightRequests.get(actionId);
-    if (existing) return existing;
+    // 同一ActionでもPIでDeviceを変更した直後は旧Deviceのリクエストが残り得る。
+    // 共有対象を同じDeviceへの取得に限定し、旧レスポンスを新DeviceのStatusとして扱わないようにする。
+    if (existing?.deviceId === deviceId) return existing.request;
 
     const request = this.executor.execute({
       method: "GET",
       path: `/v1.1/devices/${encodeURIComponent(deviceId)}/status`
     });
-    this.inFlightRequests.set(actionId, request);
+    this.inFlightRequests.set(actionId, { deviceId, request });
     void request.finally(() => {
-      if (this.inFlightRequests.get(actionId) === request) this.inFlightRequests.delete(actionId);
+      if (this.inFlightRequests.get(actionId)?.request === request) this.inFlightRequests.delete(actionId);
     });
     return request;
   }
