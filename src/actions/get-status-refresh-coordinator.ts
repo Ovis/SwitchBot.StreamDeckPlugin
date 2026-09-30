@@ -50,4 +50,19 @@ export class GetStatusRefreshCoordinator<T> {
     return request;
   }
 }
-\nexport interface RefreshRelevantSettings {\n  deviceId: string;\n  output: { showStatusOnKey: boolean; refreshIntervalMinutes: number };\n}\n\n/** API取得周期を作り直す必要がある設定変更だけを判定する。 */\nexport function hasRefreshConfigurationChanged(previous: RefreshRelevantSettings | undefined, current: RefreshRelevantSettings): boolean {\n  return !previous\n    || previous.deviceId.trim() !== current.deviceId.trim()\n    || previous.output.showStatusOnKey !== current.output.showStatusOnKey\n    || previous.output.refreshIntervalMinutes !== current.output.refreshIntervalMinutes;\n}\n
+
+export interface RefreshRelevantSettings {
+  deviceId: string;
+  output: { showStatusOnKey: boolean; refreshIntervalMinutes: number };
+}
+
+/** API取得周期を作り直す必要がある設定変更だけを判定する。 */
+export function hasRefreshConfigurationChanged(
+  previous: RefreshRelevantSettings | undefined,
+  current: RefreshRelevantSettings
+): boolean {
+  return !previous
+    || previous.deviceId.trim() !== current.deviceId.trim()
+    || previous.output.showStatusOnKey !== current.output.showStatusOnKey
+    || previous.output.refreshIntervalMinutes !== current.output.refreshIntervalMinutes;
+}
