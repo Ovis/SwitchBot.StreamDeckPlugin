@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const textarea = queryRequired<HTMLTextAreaElement>("#status-template");
   const deviceSelect = queryRequired<SdpiValueElement>("#device-select");
   const showStatusOnKey = queryRequired<SdpiValueElement>("#show-status-on-key");
-  const refreshInterval = queryRequired<SdpiValueElement>("#refresh-interval");
+  const refreshInterval = queryRequired<HTMLSelectElement>("#refresh-interval");
   let observedFields: Record<string, string[]> = {};
 
   attachExecutionDiagnostics(streamDeckClient);
@@ -39,8 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateRefreshIntervalAvailability(): void {
     // ステータスをキーへ表示しない間は定期取得にも実益がないため、保存値を残したままUIだけ無効化する。
-    if (checked(showStatusOnKey)) refreshInterval.removeAttribute("disabled");
-    else refreshInterval.setAttribute("disabled", "");
+    refreshInterval.disabled = !checked(showStatusOnKey);
   }
 
   function selectedDeviceId(): string {
@@ -91,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function loadTemplate(): Promise<void> {
+  async function loadOutputSettings(): Promise<void> {
     const value = await streamDeckClient.getSettings();
     const record = typeof value === "object" && value !== null && !Array.isArray(value)
       ? value as Record<string, unknown>
@@ -103,6 +102,11 @@ document.addEventListener("DOMContentLoaded", () => {
       ? source.output as Record<string, unknown>
       : {};
     textarea.value = typeof output.statusTemplate === "string" ? output.statusTemplate : "";
+    const interval = output.refreshIntervalMinutes;
+    refreshInterval.value = typeof interval === "number" || typeof interval === "string" ? String(interval) : "0";
+    // sdpi-checkboxの初期値反映タイミングに依存せず、永続settingsを基準に活性状態を確定する。
+    const show = typeof output.showStatusOnKey === "boolean" ? output.showStatusOnKey : true;
+    refreshInterval.disabled = !show;
   }
 
   async function loadObservedFields(): Promise<void> {
@@ -137,6 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
   textarea.addEventListener("change", () => void saveTemplate(textarea.value));
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
-  void loadTemplate();
+  void loadOutputSettings();
   void loadObservedFields();
 });
