@@ -24,8 +24,8 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     const message = parsePropertyInspectorToPluginMessage(ev.payload);
 
     if (message?.event === "getExecutionDiagnostics") {
-      const actionId = ev.context;
-      const result = actionId ? this.executionDiagnostics.get(actionId) : undefined;
+      const actionId = ev.action.id;
+      const result = this.executionDiagnostics.get(actionId);
       const response: ExecutionDiagnosticsMessage = result
         ? { event: "executionDiagnostics", available: true, ...executionDiagnosticsView(result) }
         : { event: "executionDiagnostics", available: false };
