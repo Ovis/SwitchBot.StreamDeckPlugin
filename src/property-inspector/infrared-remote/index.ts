@@ -91,8 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearOverridesAfterBodyChange(): void {
     if (suppressBodyChange) return;
 
-    // sdpi-components 自身の設定保存と getSettings/setSettings を競合させないため、
-    // 各コンポーネントの value だけを変更して通常の保存経路へ任せる。
+    // Override群は独自settings更新経路で永続化するため、ここではUI値だけを同期する。
+    // setting属性によるSDPI Componentsの自動保存とは混在させない。
     commandOverride.value = false;
     parameterOverride.value = false;
     typeOverride.value = false;
@@ -254,13 +254,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ? generated.parameter ?? ""
         : generated.commandType ?? "";
     const field = kind === "command" ? commandValue : kind === "parameter" ? parameterValue : typeValue;
+    const value = enabled ? generatedValue : "";
 
-    // enabled は checkbox が保存するため、値側も sdpi-textfield の通常保存経路を利用する。
-    field.value = enabled ? generatedValue : "";
+    field.value = value;
     if (kind === "type") {
       typeModeInitialized = false;
       typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
     }
+
+    void patchSettings(settings => {
+      const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+      const key = kind === "type" ? "commandType" : kind;
+      overrides[key] = { enabled, value };
+      settings.overrides = overrides;
+    });
     updateUi();
   }
 
@@ -336,9 +343,22 @@ document.addEventListener("DOMContentLoaded", () => {
     updateUi();
   });
 
-  for (const field of [commandValue, parameterValue, typeValue]) {
+  const overrideFields: Array<[SdpiValueElement, "command" | "parameter" | "commandType"]> = [
+    [commandValue, "command"],
+    [parameterValue, "parameter"],
+    [typeValue, "commandType"]
+  ];
+  for (const [field, key] of overrideFields) {
     field.addEventListener("input", updateUi);
-    field.addEventListener("valuechange", updateUi);
+    field.addEventListener("valuechange", () => {
+      void patchSettings(settings => {
+        const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+        const current = isRecord(overrides[key]) ? overrides[key] : {};
+        overrides[key] = { ...current, value: valueOf(field) };
+        settings.overrides = overrides;
+      });
+      updateUi();
+    });
   }
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
@@ -356,6 +376,17 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         savedOperation = typeof settings.operation === "string" ? settings.operation : "";
         setOperationOptions(info, savedOperation);
+
+        const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+        const command = isRecord(overrides.command) ? overrides.command : {};
+        const parameter = isRecord(overrides.parameter) ? overrides.parameter : {};
+        const commandType = isRecord(overrides.commandType) ? overrides.commandType : {};
+        commandOverride.value = command.enabled === true;
+        parameterOverride.value = parameter.enabled === true;
+        typeOverride.value = commandType.enabled === true;
+        commandValue.value = typeof command.value === "string" ? command.value : "";
+        parameterValue.value = typeof parameter.value === "string" ? parameter.value : "";
+        typeValue.value = typeof commandType.value === "string" ? commandType.value : "";
       } finally {
         suppressBodyChange = false;
       }

@@ -62,18 +62,18 @@
 
   <div class="advanced">
     <div id="advanced-heading" class="section-heading"></div>
-    <sdpi-item label="__MSG_commandOverride__"><sdpi-checkbox id="command-override" setting="overrides.command.enabled"></sdpi-checkbox></sdpi-item>
-    <sdpi-item label="__MSG_command__"><sdpi-textfield id="command-value" setting="overrides.command.value" disabled></sdpi-textfield></sdpi-item>
-    <sdpi-item label="__MSG_parameterOverride__"><sdpi-checkbox id="parameter-override" setting="overrides.parameter.enabled"></sdpi-checkbox></sdpi-item>
-    <sdpi-item label="__MSG_parameter__"><sdpi-textfield id="parameter-value" setting="overrides.parameter.value" disabled></sdpi-textfield></sdpi-item>
-    <sdpi-item label="__MSG_commandTypeOverride__"><sdpi-checkbox id="type-override" setting="overrides.commandType.enabled"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_commandOverride__"><sdpi-checkbox id="command-override"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_command__"><sdpi-textfield id="command-value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_parameterOverride__"><sdpi-checkbox id="parameter-override"></sdpi-checkbox></sdpi-item>
+    <sdpi-item label="__MSG_parameter__"><sdpi-textfield id="parameter-value" disabled></sdpi-textfield></sdpi-item>
+    <sdpi-item label="__MSG_commandTypeOverride__"><sdpi-checkbox id="type-override"></sdpi-checkbox></sdpi-item>
     <sdpi-item label="__MSG_commandType__">
       <sdpi-select id="type-mode" disabled>
         <option value="command">command</option><option value="customize">customize</option><option id="custom-type-option" value="custom">Custom</option>
       </sdpi-select>
     </sdpi-item>
     <sdpi-item id="custom-type-item" label="__MSG_customCommandType__" hidden>
-      <sdpi-textfield id="type-value" setting="overrides.commandType.value"></sdpi-textfield>
+      <sdpi-textfield id="type-value"></sdpi-textfield>
     </sdpi-item>
     <div id="request-preview" class="preview"></div>
   </div>
