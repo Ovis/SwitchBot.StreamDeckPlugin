@@ -78,72 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectedRemote = () => remotes.get(valueOf(remote));
   const selectedCommand = () => selectedRemote()?.commands?.find(item => item.value === valueOf(operation));
 
-  const queuedPatchSettings = createSettingsPatchQueue(streamDeckClient);
-  let patchSequence = 0;
-  let traceSequence = 0;
-  const trace = (stage: string, details: Record<string, unknown> = {}): void => {
-    console.log("[SwitchBot Infrared Race]", {
-      trace: ++traceSequence,
-      time: performance.now(),
-      stage,
-      uiRemoteId: valueOf(remote),
-      uiOperation: valueOf(operation),
-      savedOperation,
-      suppressBodyChange,
-      ...details
-    });
-  };
-  const patchSettings = async (
-    source: string,
-    mutator: (settings: Record<string, unknown>) => void
-  ): Promise<void> => {
-    const sequence = ++patchSequence;
-    trace("PATCH QUEUED", { patchSequence: sequence, source });
-    console.log("[SwitchBot Infrared Remote] settings patch queued", {
-      sequence,
-      source,
-      uiRemoteId: valueOf(remote),
-      uiOperation: valueOf(operation),
-      savedOperation
-    });
-    await queuedPatchSettings(settings => {
-      trace("PATCH EXECUTING", {
-        patchSequence: sequence,
-        source,
-        operationBefore: typeof settings.operation === "string" ? settings.operation : ""
-      });
-      console.log("[SwitchBot Infrared Remote] settings patch executing", {
-        sequence,
-        source,
-        operationBefore: typeof settings.operation === "string" ? settings.operation : "",
-        uiOperation: valueOf(operation),
-        savedOperation
-      });
-      mutator(settings);
-      trace("PATCH MUTATED", {
-        patchSequence: sequence,
-        source,
-        operationAfter: typeof settings.operation === "string" ? settings.operation : ""
-      });
-      console.log("[SwitchBot Infrared Remote] settings patch mutated", {
-        sequence,
-        source,
-        operationAfter: typeof settings.operation === "string" ? settings.operation : ""
-      });
-    });
-    trace("PATCH COMPLETED", { patchSequence: sequence, source });
-    console.log("[SwitchBot Infrared Remote] settings patch completed", { sequence, source });
-  };
-
-  function logInfraredState(stage: string, extra: Record<string, unknown> = {}): void {
-    console.log(`[SwitchBot Infrared Remote] ${stage}`, {
-      uiRemoteId: valueOf(remote),
-      uiOperation: valueOf(operation),
-      savedOperation,
-      suppressBodyChange,
-      ...extra
-    });
-  }
+  const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
   function emptyOverrides(settings: Record<string, unknown>): void {
     settings.overrides = {
@@ -156,8 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearOverridesAfterBodyChange(): void {
     if (suppressBodyChange) return;
 
-    // sdpi-components 自身の設定保存と getSettings/setSettings を競合させないため、
-    // 各コンポーネントの value だけを変更して通常の保存経路へ任せる。
+    // Override群は独自settings更新経路で永続化するため、ここではUI値だけを同期する。
+    // setting属性によるSDPI Componentsの自動保存とは混在させない。
     commandOverride.value = false;
     parameterOverride.value = false;
     typeOverride.value = false;
@@ -319,20 +254,25 @@ document.addEventListener("DOMContentLoaded", () => {
         ? generated.parameter ?? ""
         : generated.commandType ?? "";
     const field = kind === "command" ? commandValue : kind === "parameter" ? parameterValue : typeValue;
+    const value = enabled ? generatedValue : "";
 
-    // enabled は checkbox が保存するため、値側も sdpi-textfield の通常保存経路を利用する。
-    field.value = enabled ? generatedValue : "";
+    field.value = value;
     if (kind === "type") {
       typeModeInitialized = false;
       typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
     }
+
+    void patchSettings(settings => {
+      const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+      const key = kind === "type" ? "commandType" : kind;
+      overrides[key] = { enabled, value };
+      settings.overrides = overrides;
+    });
     updateUi();
   }
 
   remote.addEventListener("valuechange", () => {
     void (async () => {
-      trace("REMOTE START");
-      logInfraredState("remote valuechange", { suppressed: suppressBodyChange });
       if (suppressBodyChange) return;
 
       const next = selectedRemote();
@@ -342,14 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      trace("REMOTE BEFORE getSettings", { nextRemoteId: next.value, nextRemoteType: next.remoteType });
       const settings = settingsRecord(await streamDeckClient.getSettings());
-      trace("REMOTE AFTER getSettings", {
-        nextRemoteId: next.value,
-        nextRemoteType: next.remoteType,
-        settingsRemoteType: typeof settings.remoteType === "string" ? settings.remoteType : "",
-        settingsOperation: typeof settings.operation === "string" ? settings.operation : ""
-      });
       const sameType = settings.remoteType === next.remoteType;
       suppressBodyChange = true;
       try {
@@ -357,15 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const preservedOperation = sameType ? (savedOperation || storedOperation) : "";
         savedOperation = preservedOperation;
         setOperationOptions(next, preservedOperation);
-        logInfraredState("remote operation options applied", {
-          nextRemoteId: next.value,
-          nextRemoteType: next.remoteType,
-          storedOperation,
-          preservedOperation,
-          availableOperations: next.commands.map(item => item.value)
-        });
-        trace("REMOTE BEFORE PATCH", { storedOperation, preservedOperation, sameType });
-        await patchSettings("remote-valuechange", current => {
+        await patchSettings(current => {
           current.deviceId = valueOf(remote);
           current.remoteType = next.remoteType;
           current.operation = preservedOperation;
@@ -374,28 +299,21 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppressBodyChange = false;
       }
-      trace("REMOTE END");
       updateUi();
     })();
   });
 
   operation.addEventListener("valuechange", () => {
     void (async () => {
-      trace("OPERATION START");
-      logInfraredState("operation valuechange", { suppressed: suppressBodyChange });
       if (suppressBodyChange) return;
       const selectedOperation = valueOf(operation);
       savedOperation = selectedOperation;
-      trace("OPERATION SELECTED", { selectedOperation });
 
       // 動的 select の自動保存と競合させず、ユーザー選択だけを明示保存する。
-      trace("OPERATION BEFORE PATCH", { selectedOperation });
-      await patchSettings("operation-valuechange", settings => {
+      await patchSettings(settings => {
         settings.operation = selectedOperation;
         emptyOverrides(settings);
       });
-      trace("OPERATION AFTER PATCH", { selectedOperation });
-      logInfraredState("operation saved", { selectedOperation });
 
       clearOverridesAfterBodyChange();
       updateUi();
@@ -425,9 +343,22 @@ document.addEventListener("DOMContentLoaded", () => {
     updateUi();
   });
 
-  for (const field of [commandValue, parameterValue, typeValue]) {
+  const overrideFields: Array<[SdpiValueElement, "command" | "parameter" | "commandType"]> = [
+    [commandValue, "command"],
+    [parameterValue, "parameter"],
+    [typeValue, "commandType"]
+  ];
+  for (const [field, key] of overrideFields) {
     field.addEventListener("input", updateUi);
-    field.addEventListener("valuechange", updateUi);
+    field.addEventListener("valuechange", () => {
+      void patchSettings(settings => {
+        const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+        const current = isRecord(overrides[key]) ? overrides[key] : {};
+        overrides[key] = { ...current, value: valueOf(field) };
+        settings.overrides = overrides;
+      });
+      updateUi();
+    });
   }
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
@@ -436,9 +367,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!payload) return;
 
     void (async () => {
-      logInfraredState("catalog response received", {
-        remoteIds: payload.remotes.map(item => item.value)
-      });
       remotes = new Map(payload.remotes.map(item => [item.value, item]));
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const deviceId = typeof settings.deviceId === "string" ? settings.deviceId : "";
@@ -448,16 +376,17 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         savedOperation = typeof settings.operation === "string" ? settings.operation : "";
         setOperationOptions(info, savedOperation);
-        console.log("[SwitchBot Infrared Remote] catalog selection applied", {
-          settingsDeviceId: deviceId,
-          settingsRemoteType: typeof settings.remoteType === "string" ? settings.remoteType : "",
-          settingsOperation: savedOperation,
-          remoteFound: Boolean(info),
-          remoteType: info?.remoteType,
-          availableOperations: info?.commands.map(item => item.value) ?? [],
-          uiRemoteId: valueOf(remote),
-          uiOperationAfter: valueOf(operation)
-        });
+
+        const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+        const command = isRecord(overrides.command) ? overrides.command : {};
+        const parameter = isRecord(overrides.parameter) ? overrides.parameter : {};
+        const commandType = isRecord(overrides.commandType) ? overrides.commandType : {};
+        commandOverride.value = command.enabled === true;
+        parameterOverride.value = parameter.enabled === true;
+        typeOverride.value = commandType.enabled === true;
+        commandValue.value = typeof command.value === "string" ? command.value : "";
+        parameterValue.value = typeof parameter.value === "string" ? parameter.value : "";
+        typeValue.value = typeof commandType.value === "string" ? commandType.value : "";
       } finally {
         suppressBodyChange = false;
       }
@@ -472,7 +401,6 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  logInfraredState("PI initialized");
   updateUi();
   document.addEventListener("switchbot-locale-changed", () => {
     applyInfraredLocale();
