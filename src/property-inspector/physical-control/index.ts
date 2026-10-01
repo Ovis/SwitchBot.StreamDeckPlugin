@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let initialSelectionRetryDeviceId = "";
   let parameterPreviewResyncKey = "";
   let renderedParameterOperationId = "";
+  let catalogRequestId = 0;
 
   const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
@@ -42,8 +43,17 @@ document.addEventListener("DOMContentLoaded", () => {
   ): void {
     // Plugin側が保存settingsの反映タイミングだけに依存すると、PI上の選択とOperation一覧がずれる可能性がある。
     // 現在選択中のdeviceIdも送り、catalogの実データを基準にOperationを解決させる。
+    const requestId = ++catalogRequestId;
+    console.log("[SwitchBot Physical Control] catalog request", {
+      requestId,
+      isRefresh,
+      deviceId,
+      operationId,
+      operationParameters
+    });
     streamDeckClient.send("sendToPlugin", {
       event: "getPhysicalControlCatalog",
+      requestId,
       isRefresh,
       deviceId,
       operationId,
@@ -184,6 +194,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
     if (message?.event !== "physicalControlCatalog") return;
     void (async () => {
+      console.log("[SwitchBot Physical Control] catalog response received", {
+        requestId: message.requestId,
+        latestRequestId: catalogRequestId,
+        selectedDeviceId: message.selectedDeviceId,
+        operationIds: message.operations.map(item => item.value),
+        uiDeviceIdBefore: valueOf(device),
+        uiOperationIdBefore: valueOf(operation)
+      });
       devices = new Map(message.devices.map(item => [item.value, item]));
       operations = new Map(message.operations.map(item => [item.value, item]));
       const settings = settingsRecord(await streamDeckClient.getSettings());
@@ -191,6 +209,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
       const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
         ? settings.operationParameters as Record<string, unknown> : {};
+      console.log("[SwitchBot Physical Control] catalog response settings", {
+        requestId: message.requestId,
+        latestRequestId: catalogRequestId,
+        settingsDeviceId: selectedDevice,
+        settingsOperationId: selectedOperation,
+        savedParameters
+      });
       suppress = true;
       try {
         const devicePlaceholder = window.SwitchBotI18n?.t("Select a device", "デバイスを選択") ?? "Select a device";
@@ -219,6 +244,12 @@ document.addEventListener("DOMContentLoaded", () => {
         renderOperationParameters(savedParameters);
       }
       updateRequestPreview();
+      console.log("[SwitchBot Physical Control] catalog response applied", {
+        requestId: message.requestId,
+        latestRequestId: catalogRequestId,
+        uiDeviceIdAfter: valueOf(device),
+        uiOperationIdAfter: valueOf(operation)
+      });
 
       // 保存済みparameterは最初のcatalog要求時にはPI側でまだ取得できていない。
       // parameter付きOperationを復元した場合だけ一度再要求し、実送信と同じbuilderでpreviewを再生成する。
