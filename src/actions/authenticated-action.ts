@@ -24,6 +24,17 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
   override async onSendToPlugin(value: unknown): Promise<void> {
     const ev = propertyInspectorMessage(value);
     const message = parsePropertyInspectorToPluginMessage(ev.payload);
+    const raw = typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
+    const rawAction = typeof raw.action === "object" && raw.action !== null
+      ? raw.action as Record<string, unknown>
+      : undefined;
+    streamDeck.logger.info("Property Inspector request routing", {
+      event: message?.event,
+      extractedActionId: ev.context,
+      sdkActionId: typeof rawAction?.id === "string" ? rawAction.id : undefined,
+      hasRawContext: typeof raw.context === "string",
+      currentActionId: streamDeck.ui.action?.id
+    });
 
     if (message?.event === "getExecutionDiagnostics") {
       const actionId = ev.context;
@@ -68,7 +79,16 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     actionId: string | undefined,
     message: object
   ): Promise<void> {
-    if (!actionId || streamDeck.ui.action?.id !== actionId) return;
+    const currentActionId = streamDeck.ui.action?.id;
+    const event = "event" in message ? message.event : undefined;
+    const willSend = Boolean(actionId && currentActionId === actionId);
+    streamDeck.logger.info("Property Inspector response routing", {
+      requestedActionId: actionId,
+      currentActionId,
+      event,
+      willSend
+    });
+    if (!willSend) return;
     await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
 
