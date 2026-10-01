@@ -161,6 +161,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
 
     const message: PhysicalControlCatalogMessage = {
       event: "physicalControlCatalog",
+      ...(request.requestId !== undefined ? { requestId: request.requestId } : {}),
       devices,
       selectedDeviceId,
       operations: operations.map(operation => {
