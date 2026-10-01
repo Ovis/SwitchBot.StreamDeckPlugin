@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent , type SendToPluginEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent  , type SingletonAction } from "@elgato/streamdeck";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
@@ -21,6 +21,8 @@ import type {
   ScenesResultMessage
 } from "../protocol/property-inspector-protocol.js";
 
+type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
+
 @action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {
   private readonly locale: DisplayLocale;
@@ -39,7 +41,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     this.locale = displayLocale(locale);
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
+  override async onSendToPlugin(ev: PropertyInspectorEvent): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     const event = request?.event;
 

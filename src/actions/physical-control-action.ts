@@ -1,4 +1,4 @@
-import streamDeck, { type Action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent , type SendToPluginEvent } from "@elgato/streamdeck";
+import streamDeck, { type Action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent  , type SingletonAction } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -17,6 +17,8 @@ import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/p
 import { PhysicalControlConfirmationGate } from "../physical-control/physical-control-confirmation-gate.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import { AuthenticatedAction } from "./authenticated-action.js";
+
+type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
 
 interface QueuedPhysicalCommand {
   request: ExecutionRequest;
@@ -87,7 +89,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     await this.updateNormalTitle(ev.action, normalizePhysicalControlSettings(ev.payload.settings));
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
+  override async onSendToPlugin(ev: PropertyInspectorEvent): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event !== "getPhysicalControlCatalog") {
       await super.onSendToPlugin(ev);
