@@ -6,7 +6,14 @@ export class GlobalSettingsStore {
 
   async get(): Promise<GlobalSettingsV1> {
     await this.queue;
-    return normalizeGlobalSettings(await streamDeck.settings.getGlobalSettings());
+    const settings = normalizeGlobalSettings(await streamDeck.settings.getGlobalSettings());
+    streamDeck.logger.info("Global settings loaded", {
+      hasCredentials: Boolean(settings.credentials),
+      hasToken: Boolean(settings.credentials?.token),
+      hasSecret: Boolean(settings.credentials?.secret),
+      hasDeviceCatalog: Boolean(settings.deviceCatalog)
+    });
+    return settings;
   }
 
   async update(mutator: (current: GlobalSettingsV1) => GlobalSettingsV1): Promise<GlobalSettingsV1> {
