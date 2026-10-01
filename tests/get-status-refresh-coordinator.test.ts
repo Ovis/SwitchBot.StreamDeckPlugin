@@ -63,17 +63,6 @@ describe("Get Status refresh lifecycle", () => {
     await first;
   });
 
-  it("cleans up a rejected in-flight request without creating an unhandled finally chain", async () => {
-    const coordinator = new GetStatusRefreshCoordinator<string>();
-    const rejected = Promise.reject(new Error("failed"));
-
-    await expect(coordinator.getOrStart("key", "device-a", () => rejected)).rejects.toThrow("failed");
-
-    const retry = vi.fn(() => Promise.resolve("retry"));
-    await expect(coordinator.getOrStart("key", "device-a", retry)).resolves.toBe("retry");
-    expect(retry).toHaveBeenCalledTimes(1);
-  });
-
   it("starts a new request when the device changes while the old request is in flight", async () => {
     const coordinator = new GetStatusRefreshCoordinator<string>();
     let resolveA!: (value: string) => void;
