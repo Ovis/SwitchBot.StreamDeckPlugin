@@ -68,7 +68,18 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     actionId: string | undefined,
     message: object
   ): Promise<void> {
-    if (!actionId || streamDeck.ui.action?.id !== actionId) return;
+    const currentActionId = streamDeck.ui.action?.id;
+    const event = "event" in message ? message.event : undefined;
+    const willSend = Boolean(actionId && currentActionId === actionId);
+
+    streamDeck.logger.info("Property Inspector response routing", {
+      requestedActionId: actionId,
+      currentActionId,
+      event,
+      willSend
+    });
+
+    if (!willSend) return;
     await streamDeck.ui.sendToPropertyInspector({ ...message });
   }
 
@@ -103,6 +114,12 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
   }
 
   private async saveCredentials(credentials: PropertyInspectorCredentials): Promise<void> {
+    streamDeck.logger.info("Saving credentials", {
+      hasToken: credentials.token.trim().length > 0,
+      hasSecret: credentials.secret.trim().length > 0,
+      tokenLength: credentials.token.length,
+      secretLength: credentials.secret.length
+    });
     await this.globalSettings.update(current => ({
       ...current,
       version: 1,
