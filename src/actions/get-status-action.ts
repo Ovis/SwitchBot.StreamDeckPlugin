@@ -112,7 +112,7 @@ export class GetStatusAction extends AuthenticatedAction {
     this.lastSuccessfulResponses.delete(ev.action.id);
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
+  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event === "getDevices") {
       const refresh = request.isRefresh === true;

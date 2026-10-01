@@ -87,7 +87,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
     await this.updateNormalTitle(ev.action, normalizePhysicalControlSettings(ev.payload.settings));
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
+  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event !== "getPhysicalControlCatalog") {
       await super.onSendToPlugin(ev);

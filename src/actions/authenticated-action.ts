@@ -20,7 +20,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     super();
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
+  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
     const message = parsePropertyInspectorToPluginMessage(ev.payload);
 
     if (message?.event === "getExecutionDiagnostics") {

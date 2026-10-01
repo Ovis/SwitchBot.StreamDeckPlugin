@@ -55,7 +55,7 @@ export class InfraredRemoteAction extends AuthenticatedAction {
     );
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
+  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event !== "getInfraredRemotes") {
       await super.onSendToPlugin(ev);

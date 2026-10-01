@@ -39,7 +39,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     this.locale = displayLocale(locale);
   }
 
-  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
+  override async onSendToPlugin(ev: SendToPluginEvent<any, any>): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     const event = request?.event;
 
