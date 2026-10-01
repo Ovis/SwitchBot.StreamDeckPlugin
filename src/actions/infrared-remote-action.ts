@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent   } from "@elgato/streamdeck";
+import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillDisappearEvent   } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -53,6 +53,19 @@ export class InfraredRemoteAction extends AuthenticatedAction {
         });
       }
     );
+  }
+
+  override onDidReceiveSettings(ev: DidReceiveSettingsEvent<InfraredRemoteSettingsV1>): void {
+    const settings = normalizeInfraredRemoteSettings(ev.payload.settings);
+    streamDeck.logger.info("Infrared Remote settings changed", {
+      actionId: ev.action.id,
+      deviceId: settings.deviceId,
+      remoteType: settings.remoteType,
+      operation: settings.operation,
+      commandOverrideEnabled: settings.overrides.command.enabled,
+      parameterOverrideEnabled: settings.overrides.parameter.enabled,
+      commandTypeOverrideEnabled: settings.overrides.commandType.enabled
+    });
   }
 
   override async onSendToPlugin(ev: PropertyInspectorEvent): Promise<void> {
