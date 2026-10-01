@@ -7,7 +7,7 @@ export class GlobalSettingsStore {
   async get(): Promise<GlobalSettingsV1> {
     await this.queue;
     const settings = normalizeGlobalSettings(await streamDeck.settings.getGlobalSettings());
-    streamDeck.logger.info("Global settings loaded", {
+    streamDeck.logger?.info("Global settings loaded", {
       hasCredentials: Boolean(settings.credentials),
       hasToken: Boolean(settings.credentials?.token),
       hasSecret: Boolean(settings.credentials?.secret),
