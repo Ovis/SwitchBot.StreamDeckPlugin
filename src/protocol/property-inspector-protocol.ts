@@ -47,6 +47,7 @@ export interface ScenesRequest extends ProtocolJsonObject {
 
 export interface PhysicalControlCatalogRequest extends ProtocolJsonObject {
   event: "getPhysicalControlCatalog";
+  requestId?: number;
   isRefresh?: boolean;
   deviceId?: string;
   operationId?: string;
@@ -190,6 +191,7 @@ export interface PhysicalControlOperationItem extends PropertyInspectorSelectIte
 
 export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
   event: "physicalControlCatalog";
+  requestId?: number;
   devices: PhysicalControlDeviceItem[];
   operations: PhysicalControlOperationItem[];
   selectedDeviceId: string;
@@ -238,6 +240,7 @@ export function parsePropertyInspectorToPluginMessage(value: unknown): PropertyI
   if (value.event === "getPhysicalControlCatalog") {
     return {
       event: "getPhysicalControlCatalog",
+      ...(typeof value.requestId === "number" && Number.isSafeInteger(value.requestId) && value.requestId >= 0 ? { requestId: value.requestId } : {}),
       ...(typeof value.isRefresh === "boolean" ? { isRefresh: value.isRefresh } : {}),
       ...(typeof value.deviceId === "string" ? { deviceId: value.deviceId } : {}),
       ...(typeof value.operationId === "string" ? { operationId: value.operationId } : {}),
@@ -319,6 +322,7 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
     const operations = value.operations.map(protocolPhysicalControlOperation).filter(protocolDefined);
     return {
       event: "physicalControlCatalog",
+      ...(typeof value.requestId === "number" && Number.isSafeInteger(value.requestId) && value.requestId >= 0 ? { requestId: value.requestId } : {}),
       devices,
       operations,
       selectedDeviceId: value.selectedDeviceId,
