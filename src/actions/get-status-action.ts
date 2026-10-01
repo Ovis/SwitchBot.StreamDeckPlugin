@@ -133,7 +133,7 @@ export class GetStatusAction extends AuthenticatedAction {
         })),
         refreshFailed: result.refreshFailed
       };
-      await streamDeck.ui.sendToPropertyInspector({ ...message });
+      await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);
       return;
     }
 

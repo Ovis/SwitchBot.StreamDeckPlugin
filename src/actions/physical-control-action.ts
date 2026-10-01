@@ -203,7 +203,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
       refreshFailed: result.refreshFailed,
       configurationInvalid
     };
-    await streamDeck.ui.sendToPropertyInspector({ ...message });
+    await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);
   }
 
   override async onKeyDown(ev: KeyDownEvent<PhysicalControlSettingsV1>): Promise<void> {
