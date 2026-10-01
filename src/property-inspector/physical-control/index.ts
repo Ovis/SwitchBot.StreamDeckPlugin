@@ -240,7 +240,15 @@ document.addEventListener("DOMContentLoaded", () => {
         initialSelectionRetryDeviceId
       )) {
         initialSelectionRetryDeviceId = selectedDevice;
-        sendCatalog(false, selectedDevice);
+        // 初回catalog要求がsettings復元より先行した場合、Deviceだけでなく保存済みOperationと
+        // parametersも明示して再要求する。UI上のoperationは初回応答で空へ戻ることがあるため、
+        // valueOf(operation)に依存すると保存済みOperationを復元できない。
+        sendCatalog(
+          false,
+          selectedDevice,
+          selectedOperation,
+          savedParameters as Record<string, string | number | boolean | null>
+        );
       }
 
       const statusMessages = [
