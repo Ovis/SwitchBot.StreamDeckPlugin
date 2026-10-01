@@ -80,11 +80,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const queuedPatchSettings = createSettingsPatchQueue(streamDeckClient);
   let patchSequence = 0;
+  let traceSequence = 0;
+  const trace = (stage: string, details: Record<string, unknown> = {}): void => {
+    console.log("[SwitchBot Infrared Race]", {
+      trace: ++traceSequence,
+      time: performance.now(),
+      stage,
+      uiRemoteId: valueOf(remote),
+      uiOperation: valueOf(operation),
+      savedOperation,
+      suppressBodyChange,
+      ...details
+    });
+  };
   const patchSettings = async (
     source: string,
     mutator: (settings: Record<string, unknown>) => void
   ): Promise<void> => {
     const sequence = ++patchSequence;
+    trace("PATCH QUEUED", { patchSequence: sequence, source });
     console.log("[SwitchBot Infrared Remote] settings patch queued", {
       sequence,
       source,
@@ -93,6 +107,11 @@ document.addEventListener("DOMContentLoaded", () => {
       savedOperation
     });
     await queuedPatchSettings(settings => {
+      trace("PATCH EXECUTING", {
+        patchSequence: sequence,
+        source,
+        operationBefore: typeof settings.operation === "string" ? settings.operation : ""
+      });
       console.log("[SwitchBot Infrared Remote] settings patch executing", {
         sequence,
         source,
@@ -101,12 +120,18 @@ document.addEventListener("DOMContentLoaded", () => {
         savedOperation
       });
       mutator(settings);
+      trace("PATCH MUTATED", {
+        patchSequence: sequence,
+        source,
+        operationAfter: typeof settings.operation === "string" ? settings.operation : ""
+      });
       console.log("[SwitchBot Infrared Remote] settings patch mutated", {
         sequence,
         source,
         operationAfter: typeof settings.operation === "string" ? settings.operation : ""
       });
     });
+    trace("PATCH COMPLETED", { patchSequence: sequence, source });
     console.log("[SwitchBot Infrared Remote] settings patch completed", { sequence, source });
   };
 
@@ -306,6 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   remote.addEventListener("valuechange", () => {
     void (async () => {
+      trace("REMOTE START");
       logInfraredState("remote valuechange", { suppressed: suppressBodyChange });
       if (suppressBodyChange) return;
 
@@ -316,7 +342,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      trace("REMOTE BEFORE getSettings", { nextRemoteId: next.value, nextRemoteType: next.remoteType });
       const settings = settingsRecord(await streamDeckClient.getSettings());
+      trace("REMOTE AFTER getSettings", {
+        nextRemoteId: next.value,
+        nextRemoteType: next.remoteType,
+        settingsRemoteType: typeof settings.remoteType === "string" ? settings.remoteType : "",
+        settingsOperation: typeof settings.operation === "string" ? settings.operation : ""
+      });
       const sameType = settings.remoteType === next.remoteType;
       suppressBodyChange = true;
       try {
@@ -331,6 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
           preservedOperation,
           availableOperations: next.commands.map(item => item.value)
         });
+        trace("REMOTE BEFORE PATCH", { storedOperation, preservedOperation, sameType });
         await patchSettings("remote-valuechange", current => {
           current.deviceId = valueOf(remote);
           current.remoteType = next.remoteType;
@@ -340,22 +374,27 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         suppressBodyChange = false;
       }
+      trace("REMOTE END");
       updateUi();
     })();
   });
 
   operation.addEventListener("valuechange", () => {
     void (async () => {
+      trace("OPERATION START");
       logInfraredState("operation valuechange", { suppressed: suppressBodyChange });
       if (suppressBodyChange) return;
       const selectedOperation = valueOf(operation);
       savedOperation = selectedOperation;
+      trace("OPERATION SELECTED", { selectedOperation });
 
       // 動的 select の自動保存と競合させず、ユーザー選択だけを明示保存する。
+      trace("OPERATION BEFORE PATCH", { selectedOperation });
       await patchSettings("operation-valuechange", settings => {
         settings.operation = selectedOperation;
         emptyOverrides(settings);
       });
+      trace("OPERATION AFTER PATCH", { selectedOperation });
       logInfraredState("operation saved", { selectedOperation });
 
       clearOverridesAfterBodyChange();
