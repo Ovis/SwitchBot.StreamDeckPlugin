@@ -1,4 +1,4 @@
-import streamDeck, { type Action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { type Action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent   } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -11,13 +11,12 @@ import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import { ActionInstanceFifo } from "../execution/action-instance-fifo.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import { normalizePhysicalControlSettings, type PhysicalControlSettingsV1 } from "../settings/physical-control-settings.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage, type PhysicalControlCatalogMessage, type PhysicalControlOperationParameterItem } from "../protocol/property-inspector-protocol.js";
 import { physicalDeviceDefinition, supportsPhysicalAction, type PhysicalControlActionId } from "../physical-control/physical-control-catalog.js";
 import { buildPhysicalCommand, physicalCommandBody } from "../physical-control/physical-command-builder.js";
 import { PhysicalControlConfirmationGate } from "../physical-control/physical-control-confirmation-gate.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
-import { AuthenticatedAction } from "./authenticated-action.js";
+import { AuthenticatedAction, type PropertyInspectorEvent } from "./authenticated-action.js";
 
 interface QueuedPhysicalCommand {
   request: ExecutionRequest;
@@ -88,15 +87,14 @@ export class PhysicalControlAction extends AuthenticatedAction {
     await this.updateNormalTitle(ev.action, normalizePhysicalControlSettings(ev.payload.settings));
   }
 
-  override async onSendToPlugin(value: unknown): Promise<void> {
-    const ev = propertyInspectorMessage(value);
+  override async onSendToPlugin(ev: PropertyInspectorEvent): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event !== "getPhysicalControlCatalog") {
-      await super.onSendToPlugin(value);
+      await super.onSendToPlugin(ev);
       return;
     }
 
-    const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
+    const actionInstance = ev.action;
     let settings = normalizePhysicalControlSettings(actionInstance ? await actionInstance.getSettings() : {});
     const result = await loadPropertyInspectorCatalog({
       isRefresh: request.isRefresh === true,

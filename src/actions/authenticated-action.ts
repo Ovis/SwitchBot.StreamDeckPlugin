@@ -1,16 +1,17 @@
-import streamDeck, { SingletonAction, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { SingletonAction, type WillDisappearEvent  } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import { executionDiagnosticsView } from "../execution/execution-diagnostics.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import type {
   PropertyInspectorCredentials,
   TestConnectionResultMessage,
   ExecutionDiagnosticsMessage
 } from "../protocol/property-inspector-protocol.js";
+
+export type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
 
 export abstract class AuthenticatedAction extends SingletonAction<any> {
   protected constructor(
@@ -21,13 +22,12 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     super();
   }
 
-  override async onSendToPlugin(value: unknown): Promise<void> {
-    const ev = propertyInspectorMessage(value);
+  override async onSendToPlugin(ev: PropertyInspectorEvent): Promise<void> {
     const message = parsePropertyInspectorToPluginMessage(ev.payload);
 
     if (message?.event === "getExecutionDiagnostics") {
-      const actionId = ev.context;
-      const result = actionId ? this.executionDiagnostics.get(actionId) : undefined;
+      const actionId = ev.action.id;
+      const result = this.executionDiagnostics.get(actionId);
       const response: ExecutionDiagnosticsMessage = result
         ? { event: "executionDiagnostics", available: true, ...executionDiagnosticsView(result) }
         : { event: "executionDiagnostics", available: false };

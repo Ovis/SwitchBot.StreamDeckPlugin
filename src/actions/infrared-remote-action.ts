@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent   } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -7,8 +7,7 @@ import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { AuthenticatedAction } from "./authenticated-action.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
+import { AuthenticatedAction, type PropertyInspectorEvent } from "./authenticated-action.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import { normalizeInfraredRemoteSettings, type InfraredRemoteSettingsV1 } from "../settings/infrared-remote-settings.js";
 import { buildInfraredRequest, truncateInfraredDisplayText } from "../api/infrared-request-builder.js";
@@ -56,11 +55,10 @@ export class InfraredRemoteAction extends AuthenticatedAction {
     );
   }
 
-  override async onSendToPlugin(value: unknown): Promise<void> {
-    const ev = propertyInspectorMessage(value);
+  override async onSendToPlugin(ev: PropertyInspectorEvent): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event !== "getInfraredRemotes") {
-      await super.onSendToPlugin(value);
+      await super.onSendToPlugin(ev);
       return;
     }
 
@@ -70,13 +68,13 @@ export class InfraredRemoteAction extends AuthenticatedAction {
       loadCached: () => this.catalogStore.get(),
       refresh: () => this.catalogRefresh.refreshDevices()
     });
-    const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
+    const actionInstance = ev.action;
     const settings = actionInstance
       ? normalizeInfraredRemoteSettings(await actionInstance.getSettings())
       : normalizeInfraredRemoteSettings({});
 
     streamDeck.logger.info("Infrared Remote PI catalog requested", {
-      actionId: typeof ev.context === "string" ? ev.context : undefined,
+      actionId: ev.action.id,
       deviceId: settings.deviceId,
       remoteType: settings.remoteType,
       operation: settings.operation
