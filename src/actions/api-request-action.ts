@@ -1,9 +1,9 @@
-import streamDeck, { action, type KeyDownEvent  , type SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent   } from "@elgato/streamdeck";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import { apiEndpointPropertyInspectorData, resolveApiEndpoint, resolveApiRequestBody } from "../api/api-endpoints.js";
-import { AuthenticatedAction } from "./authenticated-action.js";
+import { AuthenticatedAction, type PropertyInspectorEvent } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import { displayLocale, localizeDeviceLabel, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
@@ -20,8 +20,6 @@ import type {
   DevicesResultMessage,
   ScenesResultMessage
 } from "../protocol/property-inspector-protocol.js";
-
-type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
 
 @action({ UUID: "com.esheep.switchbot.api-request" })
 export class ApiRequestAction extends AuthenticatedAction {

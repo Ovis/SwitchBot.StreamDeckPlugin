@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent  , type SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent, type WillDisappearEvent   } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import type { ExecutionRequest } from "../execution/execution-request.js";
@@ -7,7 +7,7 @@ import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { AuthenticatedAction } from "./authenticated-action.js";
+import { AuthenticatedAction, type PropertyInspectorEvent } from "./authenticated-action.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import { normalizeInfraredRemoteSettings, type InfraredRemoteSettingsV1 } from "../settings/infrared-remote-settings.js";
 import { buildInfraredRequest, truncateInfraredDisplayText } from "../api/infrared-request-builder.js";
@@ -15,8 +15,6 @@ import { displayLocale, type DisplayLocale } from "../output/status-title-format
 import { infraredCommandPropertyInspectorData } from "../api/infrared-remote-commands.js";
 import type { InfraredRemotesResultMessage } from "../protocol/property-inspector-protocol.js";
 import { ActionInstanceFifo } from "../execution/action-instance-fifo.js";
-
-type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
 
 interface QueuedCommand {
   request: ExecutionRequest;

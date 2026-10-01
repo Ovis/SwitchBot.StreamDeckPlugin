@@ -1,8 +1,8 @@
-import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent  , type SingletonAction } from "@elgato/streamdeck";
+import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent   } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
-import { AuthenticatedAction } from "./authenticated-action.js";
+import { AuthenticatedAction, type PropertyInspectorEvent } from "./authenticated-action.js";
 import type { OutputProcessor } from "../output/output-processor.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
@@ -13,8 +13,6 @@ import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../setting
 import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatusFields, type DisplayLocale } from "../output/status-title-formatter.js";
 import type { DevicesResultMessage } from "../protocol/property-inspector-protocol.js";
 import { GetStatusRefreshCoordinator, refreshSettingsTransition } from "./get-status-refresh-coordinator.js";
-
-type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
 
 const STATUS_RESULT_KEY_IMAGE = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" fill="#000000"/></svg>`)}`;
 type GetStatusKeyAction = KeyDownEvent<GetStatusSettingsV1>["action"];

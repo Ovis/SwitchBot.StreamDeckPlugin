@@ -11,7 +11,7 @@ import type {
   ExecutionDiagnosticsMessage
 } from "../protocol/property-inspector-protocol.js";
 
-type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
+export type PropertyInspectorEvent = Parameters<NonNullable<SingletonAction["onSendToPlugin"]>>[0];
 
 export abstract class AuthenticatedAction extends SingletonAction<any> {
   protected constructor(
