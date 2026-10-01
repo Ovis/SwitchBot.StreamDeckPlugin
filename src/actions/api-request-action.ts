@@ -1,4 +1,4 @@
-import streamDeck, { action, type KeyDownEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type KeyDownEvent , type SendToPluginEvent } from "@elgato/streamdeck";
 import type { ExecutionRequest } from "../execution/execution-request.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
@@ -12,7 +12,6 @@ import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import { DEFAULT_API_REQUEST_BODY, normalizeApiRequestSettings, type ApiRequestSettingsV1 } from "../settings/api-request-settings.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import { getDeviceCommandTemplate } from "../api/device-command-templates.js";
 import { supportsControlCommands } from "../api/device-command-support.js";
@@ -40,8 +39,7 @@ export class ApiRequestAction extends AuthenticatedAction {
     this.locale = displayLocale(locale);
   }
 
-  override async onSendToPlugin(value: unknown): Promise<void> {
-    const ev = propertyInspectorMessage(value);
+  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     const event = request?.event;
 
@@ -52,7 +50,7 @@ export class ApiRequestAction extends AuthenticatedAction {
       return;
     }
 
-    const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
+    const actionInstance = ev.action;
     const settings = actionInstance
       ? normalizeApiRequestSettings(await actionInstance.getSettings())
       : normalizeApiRequestSettings({});
@@ -100,7 +98,7 @@ export class ApiRequestAction extends AuthenticatedAction {
       return;
     }
 
-    await super.onSendToPlugin(value);
+    await super.onSendToPlugin(ev);
   }
 
   override async onKeyDown(ev: KeyDownEvent<ApiRequestSettingsV1>): Promise<void> {

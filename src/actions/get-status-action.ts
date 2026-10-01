@@ -1,4 +1,4 @@
-import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type DidReceiveSettingsEvent, type KeyDownEvent, type WillAppearEvent, type WillDisappearEvent , type SendToPluginEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
@@ -8,7 +8,6 @@ import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import type { CatalogRefreshService } from "../services/catalog-refresh-service.js";
 import { loadPropertyInspectorCatalog } from "../services/property-inspector-catalog-lifecycle.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import { normalizeGetStatusSettings, type GetStatusSettingsV1 } from "../settings/get-status-settings.js";
 import { displayLocale, formatStatusTemplate, localizeDeviceLabel, observedStatusFields, type DisplayLocale } from "../output/status-title-formatter.js";
@@ -113,8 +112,7 @@ export class GetStatusAction extends AuthenticatedAction {
     this.lastSuccessfulResponses.delete(ev.action.id);
   }
 
-  override async onSendToPlugin(value: unknown): Promise<void> {
-    const ev = propertyInspectorMessage(value);
+  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
     const request = parsePropertyInspectorToPluginMessage(ev.payload);
     if (request?.event === "getDevices") {
       const refresh = request.isRefresh === true;
@@ -123,7 +121,7 @@ export class GetStatusAction extends AuthenticatedAction {
         loadCached: () => this.catalogStore.get(),
         refresh: () => this.catalogRefresh.refreshDevices()
       });
-      const actionInstance = typeof ev.context === "string" ? streamDeck.actions.getActionById(ev.context) : undefined;
+      const actionInstance = ev.action;
       const settings = actionInstance
         ? normalizeGetStatusSettings(await actionInstance.getSettings())
         : normalizeGetStatusSettings({});
@@ -139,7 +137,7 @@ export class GetStatusAction extends AuthenticatedAction {
       return;
     }
 
-    await super.onSendToPlugin(value);
+    await super.onSendToPlugin(ev);
   }
 
   override async onKeyDown(ev: KeyDownEvent<GetStatusSettingsV1>): Promise<void> {

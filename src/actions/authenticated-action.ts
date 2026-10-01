@@ -1,10 +1,9 @@
-import streamDeck, { SingletonAction, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { SingletonAction, type WillDisappearEvent , type SendToPluginEvent } from "@elgato/streamdeck";
 import type { RequestExecutor } from "../execution/request-executor.js";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { ExecutionDiagnosticsStore } from "../execution/execution-diagnostics-store.js";
 import { executionDiagnosticsView } from "../execution/execution-diagnostics.js";
 import type { GlobalSettingsStore } from "../settings/global-settings-store.js";
-import { propertyInspectorMessage } from "../settings/property-inspector-messages.js";
 import { parsePropertyInspectorToPluginMessage } from "../protocol/property-inspector-protocol.js";
 import type {
   PropertyInspectorCredentials,
@@ -21,8 +20,7 @@ export abstract class AuthenticatedAction extends SingletonAction<any> {
     super();
   }
 
-  override async onSendToPlugin(value: unknown): Promise<void> {
-    const ev = propertyInspectorMessage(value);
+  override async onSendToPlugin(ev: SendToPluginEvent): Promise<void> {
     const message = parsePropertyInspectorToPluginMessage(ev.payload);
 
     if (message?.event === "getExecutionDiagnostics") {
