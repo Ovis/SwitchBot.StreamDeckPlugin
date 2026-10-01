@@ -80,6 +80,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const patchSettings = createSettingsPatchQueue(streamDeckClient);
 
+  async function logInfraredState(stage: string, extra: Record<string, unknown> = {}): Promise<void> {
+    const settings = settingsRecord(await streamDeckClient.getSettings());
+    console.log(`[SwitchBot Infrared Remote] ${stage}`, {
+      uiRemoteId: valueOf(remote),
+      uiOperation: valueOf(operation),
+      savedOperation,
+      settingsDeviceId: typeof settings.deviceId === "string" ? settings.deviceId : "",
+      settingsRemoteType: typeof settings.remoteType === "string" ? settings.remoteType : "",
+      settingsOperation: typeof settings.operation === "string" ? settings.operation : "",
+      ...extra
+    });
+  }
+
   function emptyOverrides(settings: Record<string, unknown>): void {
     settings.overrides = {
       command: { enabled: false, value: "" },
@@ -266,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   remote.addEventListener("valuechange", () => {
     void (async () => {
+      await logInfraredState("remote valuechange", { suppressed: suppressBodyChange });
       if (suppressBodyChange) return;
 
       const next = selectedRemote();
@@ -283,6 +297,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const preservedOperation = sameType ? (savedOperation || storedOperation) : "";
         savedOperation = preservedOperation;
         setOperationOptions(next, preservedOperation);
+        await logInfraredState("remote operation options applied", {
+          nextRemoteId: next.value,
+          nextRemoteType: next.remoteType,
+          storedOperation,
+          preservedOperation,
+          availableOperations: next.commands.map(item => item.value)
+        });
         await patchSettings(current => {
           current.deviceId = valueOf(remote);
           current.remoteType = next.remoteType;
@@ -298,6 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   operation.addEventListener("valuechange", () => {
     void (async () => {
+      await logInfraredState("operation valuechange", { suppressed: suppressBodyChange });
       if (suppressBodyChange) return;
       const selectedOperation = valueOf(operation);
       savedOperation = selectedOperation;
@@ -307,6 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
         settings.operation = selectedOperation;
         emptyOverrides(settings);
       });
+      await logInfraredState("operation saved", { selectedOperation });
 
       clearOverridesAfterBodyChange();
       updateUi();
@@ -347,6 +370,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!payload) return;
 
     void (async () => {
+      await logInfraredState("catalog response received", {
+        remoteIds: payload.remotes.map(item => item.value)
+      });
       remotes = new Map(payload.remotes.map(item => [item.value, item]));
       const settings = settingsRecord(await streamDeckClient.getSettings());
       const deviceId = typeof settings.deviceId === "string" ? settings.deviceId : "";
@@ -356,6 +382,16 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         savedOperation = typeof settings.operation === "string" ? settings.operation : "";
         setOperationOptions(info, savedOperation);
+        console.log("[SwitchBot Infrared Remote] catalog selection applied", {
+          settingsDeviceId: deviceId,
+          settingsRemoteType: typeof settings.remoteType === "string" ? settings.remoteType : "",
+          settingsOperation: savedOperation,
+          remoteFound: Boolean(info),
+          remoteType: info?.remoteType,
+          availableOperations: info?.commands.map(item => item.value) ?? [],
+          uiRemoteId: valueOf(remote),
+          uiOperationAfter: valueOf(operation)
+        });
       } finally {
         suppressBodyChange = false;
       }
@@ -370,6 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
+  void logInfraredState("PI initialized");
   updateUi();
   document.addEventListener("switchbot-locale-changed", () => {
     applyInfraredLocale();
