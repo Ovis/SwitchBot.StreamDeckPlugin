@@ -78,7 +78,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectedRemote = () => remotes.get(valueOf(remote));
   const selectedCommand = () => selectedRemote()?.commands?.find(item => item.value === valueOf(operation));
 
-  const patchSettings = createSettingsPatchQueue(streamDeckClient);
+  const queuedPatchSettings = createSettingsPatchQueue(streamDeckClient);
+  let patchSequence = 0;
+  const patchSettings = async (
+    source: string,
+    mutator: (settings: Record<string, unknown>) => void
+  ): Promise<void> => {
+    const sequence = ++patchSequence;
+    console.log("[SwitchBot Infrared Remote] settings patch queued", {
+      sequence,
+      source,
+      uiRemoteId: valueOf(remote),
+      uiOperation: valueOf(operation),
+      savedOperation
+    });
+    await queuedPatchSettings(settings => {
+      console.log("[SwitchBot Infrared Remote] settings patch executing", {
+        sequence,
+        source,
+        operationBefore: typeof settings.operation === "string" ? settings.operation : "",
+        uiOperation: valueOf(operation),
+        savedOperation
+      });
+      mutator(settings);
+      console.log("[SwitchBot Infrared Remote] settings patch mutated", {
+        sequence,
+        source,
+        operationAfter: typeof settings.operation === "string" ? settings.operation : ""
+      });
+    });
+    console.log("[SwitchBot Infrared Remote] settings patch completed", { sequence, source });
+  };
 
   function logInfraredState(stage: string, extra: Record<string, unknown> = {}): void {
     console.log(`[SwitchBot Infrared Remote] ${stage}`, {
@@ -301,7 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
           preservedOperation,
           availableOperations: next.commands.map(item => item.value)
         });
-        await patchSettings(current => {
+        await patchSettings("remote-valuechange", current => {
           current.deviceId = valueOf(remote);
           current.remoteType = next.remoteType;
           current.operation = preservedOperation;
@@ -322,7 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
       savedOperation = selectedOperation;
 
       // 動的 select の自動保存と競合させず、ユーザー選択だけを明示保存する。
-      await patchSettings(settings => {
+      await patchSettings("operation-valuechange", settings => {
         settings.operation = selectedOperation;
         emptyOverrides(settings);
       });
