@@ -23,6 +23,33 @@ describe("CatalogRefreshService", () => {
     expect(result).toEqual({ catalog: saved, refreshed: false });
   });
 
+  it("reports HTTP 429 as an API rate limit", async () => {
+    const saved = { fetchedAt: "old", devices: [], infraredRemotes: [] };
+    const executor = { execute: vi.fn(async () => ({
+      success: false, request: { method: "GET", path: "/v1.1/devices" }, executedAt: "now",
+      response: { httpStatus: 429, headers: {}, rawBody: "", body: { statusCode: 190 }, switchBot: { statusCode: 190 } },
+      error: { category: "http", message: "rate limited" }
+    })) } as unknown as RequestExecutor;
+    const devices = { get: vi.fn(async () => saved), set: vi.fn() } as unknown as DeviceCatalogStore;
+    const scenes = { get: vi.fn(), set: vi.fn() } as unknown as SceneCatalogStore;
+
+    const result = await new CatalogRefreshService(executor, devices, scenes).refreshDevices();
+    expect(result).toEqual({ catalog: saved, refreshed: false, refreshFailure: "rate-limit" });
+  });
+
+  it("does not treat SwitchBot status 190 alone as an API rate limit", async () => {
+    const executor = { execute: vi.fn(async () => ({
+      success: false, request: { method: "GET", path: "/v1.1/scenes" }, executedAt: "now",
+      response: { httpStatus: 200, headers: {}, rawBody: "", body: { statusCode: 190 }, switchBot: { statusCode: 190 } },
+      error: { category: "switchbot", message: "system error" }
+    })) } as unknown as RequestExecutor;
+    const devices = { get: vi.fn(), set: vi.fn() } as unknown as DeviceCatalogStore;
+    const scenes = { get: vi.fn(async () => undefined), set: vi.fn() } as unknown as SceneCatalogStore;
+
+    const result = await new CatalogRefreshService(executor, devices, scenes).refreshScenes();
+    expect(result).toEqual({ catalog: undefined, refreshed: false });
+  });
+
   it("shares concurrent device refreshes so an older response cannot overwrite a newer catalog", async () => {
     let resolveExecute!: (value: unknown) => void;
     const pending = new Promise(resolve => { resolveExecute = resolve; });

@@ -75,7 +75,10 @@ export class ApiRequestAction extends AuthenticatedAction {
           return template ? [[device.deviceId, template.body]] : [];
         })
       );
-      const message: DevicesResultMessage = { event: "getDevices", items, commandTemplates, refreshFailed: result.refreshFailed };
+      const message: DevicesResultMessage = {
+        event: "getDevices", items, commandTemplates, refreshFailed: result.refreshFailed,
+        ...(result.refreshFailure ? { refreshFailure: result.refreshFailure } : {})
+      };
       await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);
       return;
     }
@@ -93,7 +96,10 @@ export class ApiRequestAction extends AuthenticatedAction {
           label: sceneLabel(scene.sceneName, scene.sceneId, scene.deleted, this.locale),
           value: scene.sceneId
         }));
-      const message: ScenesResultMessage = { event: "getScenes", items, refreshFailed: result.refreshFailed };
+      const message: ScenesResultMessage = {
+        event: "getScenes", items, refreshFailed: result.refreshFailed,
+        ...(result.refreshFailure ? { refreshFailure: result.refreshFailure } : {})
+      };
       await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);
       return;
     }

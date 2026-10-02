@@ -1,6 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
+import { catalogRefreshStatusMessage } from "../shared/catalog-refresh-status.js";
 import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import { createPropertyInspectorSettingsStore } from "../shared/property-inspector-settings-store.js";
 import { normalizeInfraredRemotePropertyInspectorSettings } from "../shared/managed-settings-normalizers.js";
@@ -462,12 +463,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const settings = await settingsStore.reload();
       applySettingsToUi(settings, true);
 
-      catalogStatus.textContent = payload.refreshFailed
-        ? window.SwitchBotI18n?.t(
-            "Refresh failed. Showing the saved catalog.",
-            "更新に失敗しました。保存済みの一覧を表示しています。"
-          ) ?? "Refresh failed. Showing the saved catalog."
-        : "";
+      catalogStatus.textContent = catalogRefreshStatusMessage(
+        payload.refreshFailed,
+        payload.refreshFailure,
+        (english, japanese) => window.SwitchBotI18n?.t(english, japanese) ?? english
+      );
     })();
   });
 

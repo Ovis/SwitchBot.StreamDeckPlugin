@@ -2,6 +2,7 @@ import "../shared/localization.js";
 import "../shared/authentication.js";
 import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
+import { catalogRefreshStatusMessage } from "../shared/catalog-refresh-status.js";
 import { createPropertyInspectorSettingsStore } from "../shared/property-inspector-settings-store.js";
 import { normalizePhysicalControlPropertyInspectorSettings } from "../shared/managed-settings-normalizers.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
@@ -258,9 +259,11 @@ document.addEventListener("DOMContentLoaded", () => {
             "保存済みのデバイスはこの操作では利用できません。デバイスを選択し直してください。"
           ) ?? ""
           : "",
-        message.refreshFailed
-          ? window.SwitchBotI18n?.t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。") ?? ""
-          : ""
+        catalogRefreshStatusMessage(
+          message.refreshFailed,
+          message.refreshFailure,
+          (english, japanese) => window.SwitchBotI18n?.t(english, japanese) ?? english
+        )
       ].filter(Boolean);
       queryRequired<HTMLElement>("#catalog-status").textContent = statusMessages.join("\n");
     })();

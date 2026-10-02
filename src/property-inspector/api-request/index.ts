@@ -1,6 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
+import { catalogRefreshStatusMessage } from "../shared/catalog-refresh-status.js";
 import { queryRequired, valueOf } from "../shared/dom.js";
 import {
   ApiEndpointPropertyInspectorDefinition,
@@ -13,8 +14,8 @@ import {
 type EndpointDefinition = ApiEndpointPropertyInspectorDefinition;
 type ApiEndpointsPayload = Pick<ApiEndpointsResultMessage, "event" | "definitions">;
 type CatalogPayload =
-  | Pick<DevicesResultMessage, "event" | "commandTemplates" | "refreshFailed">
-  | Pick<ScenesResultMessage, "event" | "refreshFailed">;
+  | Pick<DevicesResultMessage, "event" | "commandTemplates" | "refreshFailed" | "refreshFailure">
+  | Pick<ScenesResultMessage, "event" | "refreshFailed" | "refreshFailure">;
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -153,12 +154,11 @@ document.addEventListener("DOMContentLoaded", () => {
       commandTemplates = new Map(Object.entries(catalog.commandTemplates));
       applyDeviceCommandTemplate();
     }
-    if (catalog.refreshFailed) {
-      catalogStatus.textContent = window.SwitchBotI18n?.t(
-        "Refresh failed. Showing the saved catalog.",
-        "更新に失敗しました。保存済みの一覧を表示しています。"
-      ) ?? "Refresh failed. Showing the saved catalog.";
-    }
+    catalogStatus.textContent = catalogRefreshStatusMessage(
+      catalog.refreshFailed,
+      catalog.refreshFailure,
+      (english, japanese) => window.SwitchBotI18n?.t(english, japanese) ?? english
+    );
   });
 
   updateUi();

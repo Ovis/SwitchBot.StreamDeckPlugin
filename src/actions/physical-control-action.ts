@@ -201,6 +201,7 @@ export class PhysicalControlAction extends AuthenticatedAction {
       };
       }),
       refreshFailed: result.refreshFailed,
+      ...(result.refreshFailure ? { refreshFailure: result.refreshFailure } : {}),
       configurationInvalid
     };
     await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);

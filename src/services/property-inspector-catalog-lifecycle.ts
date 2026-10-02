@@ -1,12 +1,15 @@
+import type { CatalogRefreshFailure } from "../protocol/property-inspector-protocol.js";
+
 export interface PropertyInspectorCatalogLoadResult<T> {
   catalog: T | undefined;
   refreshFailed: boolean;
+  refreshFailure?: CatalogRefreshFailure;
 }
 
 export interface PropertyInspectorCatalogLifecycleOptions<T> {
   isRefresh: boolean;
   loadCached: () => Promise<T | undefined>;
-  refresh: () => Promise<{ catalog: T | undefined; refreshed: boolean }>;
+  refresh: () => Promise<{ catalog: T | undefined; refreshed: boolean; refreshFailure?: CatalogRefreshFailure }>;
 }
 
 /**
@@ -20,12 +23,23 @@ export async function loadPropertyInspectorCatalog<T>(
 ): Promise<PropertyInspectorCatalogLoadResult<T>> {
   if (options.isRefresh) {
     const result = await options.refresh();
-    return { catalog: result.catalog, refreshFailed: !result.refreshed };
+    return propertyInspectorResult(result);
   }
 
   const cached = await options.loadCached();
   if (cached !== undefined) return { catalog: cached, refreshFailed: false };
 
   const result = await options.refresh();
-  return { catalog: result.catalog, refreshFailed: !result.refreshed };
+  return propertyInspectorResult(result);
+}
+
+function propertyInspectorResult<T>(
+  result: { catalog: T | undefined; refreshed: boolean; refreshFailure?: CatalogRefreshFailure }
+): PropertyInspectorCatalogLoadResult<T> {
+  const refreshFailed = !result.refreshed;
+  return {
+    catalog: result.catalog,
+    refreshFailed,
+    ...(refreshFailed && result.refreshFailure ? { refreshFailure: result.refreshFailure } : {})
+  };
 }

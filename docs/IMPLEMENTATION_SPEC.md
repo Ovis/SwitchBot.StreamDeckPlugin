@@ -77,7 +77,7 @@ Each entry records `lastSeenAt` and `deleted`. Refresh performs logical deletion
 
 Selectors normally hide deleted entries but retain a deleted entry when it is the action's current selection.
 
-An explicit refresh failure MUST be reported to the Property Inspector. The previously saved catalog may still be displayed, but it must not be presented as a successful refresh.
+An explicit refresh failure MUST be reported to the Property Inspector. The previously saved catalog may still be displayed, but it must not be presented as a successful refresh. HTTP 429 is reported as an API usage limit instead of the generic refresh failure.
 
 ## 6. Physical Control
 

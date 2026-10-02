@@ -1,6 +1,7 @@
 import streamDeck from "@elgato/streamdeck";
 import type { ExecutionResult } from "../execution/execution-result.js";
 import type { RequestExecutor } from "../execution/request-executor.js";
+import type { CatalogRefreshFailure } from "../protocol/property-inspector-protocol.js";
 import { deviceCatalogFromResponse, mergeDeviceCatalog, type DeviceCatalog } from "../settings/device-catalog.js";
 import type { DeviceCatalogStore } from "../settings/device-catalog-store.js";
 import { mergeSceneCatalog, sceneCatalogFromResponse, type SceneCatalog } from "../settings/scene-catalog.js";
@@ -9,6 +10,7 @@ import type { SceneCatalogStore } from "../settings/scene-catalog-store.js";
 export interface CatalogRefreshResult<T> {
   catalog: T | undefined;
   refreshed: boolean;
+  refreshFailure?: CatalogRefreshFailure;
 }
 
 export class CatalogRefreshService {
@@ -44,7 +46,11 @@ export class CatalogRefreshService {
     const result = await this.executor.execute({ method: "GET", path: "/v1.1/devices" });
     if (!result.success) {
       this.logFailure("Device catalog refresh", result);
-      return { catalog: await this.deviceCatalogStore.get(), refreshed: false };
+      return {
+        catalog: await this.deviceCatalogStore.get(),
+        refreshed: false,
+        ...this.refreshFailure(result)
+      };
     }
     const latest = deviceCatalogFromResponse(result.response.body, result.executedAt);
     if (!latest) {
@@ -83,7 +89,11 @@ export class CatalogRefreshService {
     const result = await this.executor.execute({ method: "GET", path: "/v1.1/scenes" });
     if (!result.success) {
       this.logFailure("Scene catalog refresh", result);
-      return { catalog: await this.sceneCatalogStore.get(), refreshed: false };
+      return {
+        catalog: await this.sceneCatalogStore.get(),
+        refreshed: false,
+        ...this.refreshFailure(result)
+      };
     }
     const latest = sceneCatalogFromResponse(result.response.body, result.executedAt);
     if (!latest) {
@@ -108,5 +118,11 @@ export class CatalogRefreshService {
       httpStatus: result.response?.httpStatus,
       switchBotStatus: result.response?.switchBot?.statusCode
     });
+  }
+
+  private refreshFailure(result: Extract<ExecutionResult, { success: false }>): { refreshFailure?: CatalogRefreshFailure } {
+    return result.response?.httpStatus === 429
+      ? { refreshFailure: "rate-limit" }
+      : {};
   }
 }

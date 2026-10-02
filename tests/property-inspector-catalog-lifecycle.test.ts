@@ -43,4 +43,13 @@ describe("Property Inspector catalog lifecycle", () => {
     });
     expect(result).toEqual({ catalog: undefined, refreshFailed: true });
   });
+
+  it("利用上限によるrefresh失敗理由をPIへ引き継ぐ", async () => {
+    const result = await loadPropertyInspectorCatalog({
+      isRefresh: true,
+      loadCached: async () => undefined,
+      refresh: async () => ({ catalog: { id: "saved" }, refreshed: false, refreshFailure: "rate-limit" })
+    });
+    expect(result).toEqual({ catalog: { id: "saved" }, refreshFailed: true, refreshFailure: "rate-limit" });
+  });
 });

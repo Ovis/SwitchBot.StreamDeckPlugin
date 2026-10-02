@@ -1,6 +1,7 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
+import { catalogRefreshStatusMessage } from "../shared/catalog-refresh-status.js";
 import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import { createPropertyInspectorSettingsStore } from "../shared/property-inspector-settings-store.js";
 import { normalizeGetStatusPropertyInspectorSettings } from "../shared/managed-settings-normalizers.js";
@@ -166,9 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Managed Settings Store は保存済みの選択値だけを復元する。
         const availableDeviceIds = new Set(message.items.map(item => item.value));
         applySettingsToUi(await settingsStore.reload(), availableDeviceIds);
-        queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
-          ? t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
-          : "";
+        queryRequired<HTMLElement>("#catalog-status").textContent = catalogRefreshStatusMessage(
+          message.refreshFailed,
+          message.refreshFailure,
+          t
+        );
       })();
     }
   });
