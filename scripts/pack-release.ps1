@@ -1,3 +1,55 @@
+<#
+.SYNOPSIS
+SwitchBot Stream Deckプラグインの配布ファイルをローカルで作成します。
+
+.DESCRIPTION
+指定したリリースタグからStream Deck内部バージョンを算出し、ビルド、全検証、
+パッケージ作成、アーカイブ内容検査を順番に実行します。
+
+生成物は既定で dist/SwitchBot-API-Call-<tag>.streamDeckPlugin に出力されます。
+ビルドやpackが一時変更するmanifestと生成アセットは、処理終了時に元へ戻します。
+
+.PARAMETER Tag
+作成するリリースのタグです。
+vMAJOR.MINOR.PATCH、または末尾に-alphaN、-betaN、-rcNを付けた形式を指定します。
+例: v1.1.0-beta2
+
+.PARAMETER OutputDirectory
+パッケージの出力先です。既定値はリポジトリ直下のdistです。
+
+.PARAMETER CleanInstall
+ビルド前にnpm ciを実行します。node_modulesが存在しない場合は、指定がなくても実行します。
+
+.PARAMETER SkipVerify
+npm run verifyを省略します。急ぎのローカル確認以外では指定しないでください。
+
+.PARAMETER Force
+同名のパッケージが既に存在する場合、正常な新パッケージの作成後に置き換えます。
+
+.EXAMPLE
+.\scripts\pack-release.ps1 -Tag v1.1.0-beta2
+
+ビルドと全検証を実行し、v1.1.0-beta2のパッケージをdistへ作成します。
+
+.EXAMPLE
+.\scripts\pack-release.ps1 -Tag v1.1.0-beta2 -Force
+
+既存のv1.1.0-beta2パッケージを、正常に作成・検査できた新しいファイルで置き換えます。
+
+.EXAMPLE
+.\scripts\pack-release.ps1 -Tag v1.1.0-rc1 -CleanInstall -OutputDirectory .\artifacts
+
+npm ciから実行し、v1.1.0-rc1のパッケージをartifactsへ作成します。
+
+.EXAMPLE
+.\scripts\pack-release.ps1 -Tag v1.1.0-beta2 -SkipVerify -Force
+
+全検証を省略してパッケージを再作成します。急ぎのローカル確認用です。
+
+.NOTES
+内部バージョンの4桁目はalphaが1..999、betaが1001..1999、rcが2001..2999、
+正式版が9999です。v1.1.0-beta2は1.1.0.1002になります。
+#>
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)]
