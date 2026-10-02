@@ -1,5 +1,6 @@
 node_modules/
 coverage/
+dist/
 *.log
 com.esheep.switchbot.sdPlugin/bin/
 com.esheep.switchbot.sdPlugin/logs/
