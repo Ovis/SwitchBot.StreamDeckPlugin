@@ -23,8 +23,6 @@
   <sdpi-item id="device-item" label="__MSG_device__">
     <sdpi-select
       id="device-select"
-      setting="deviceId"
-      label-setting="deviceLabel"
       datasource="getDevices"
       loading="__MSG_loadingDevices__"
       placeholder="__MSG_selectDevice__"
@@ -33,15 +31,15 @@
     </sdpi-select>
   </sdpi-item>
   <sdpi-item id="button-name-item" label="__MSG_buttonName__">
-    <sdpi-textfield setting="buttonName"></sdpi-textfield>
+    <sdpi-textfield id="button-name"></sdpi-textfield>
   </sdpi-item>
   <div id="catalog-status" aria-live="polite"></div>
   <div id="output-heading" class="section-heading" data-ja-text="出力">Output</div>
   <sdpi-item id="show-key-item" label="__MSG_showOnKey__">
-    <sdpi-checkbox id="show-status-on-key" setting="output.showStatusOnKey" default="true"></sdpi-checkbox>
+    <sdpi-checkbox id="show-status-on-key" default="true"></sdpi-checkbox>
   </sdpi-item>
   <sdpi-item id="refresh-interval-item" label="Refresh interval">
-    <sdpi-select id="refresh-interval" setting="output.refreshIntervalMinutes" default="0"></sdpi-select>
+    <sdpi-select id="refresh-interval" default="0"></sdpi-select>
   </sdpi-item>
   <div class="status-template-row">
     <label id="status-template-label" class="status-template-label" for="status-template">Template</label>
@@ -51,10 +49,10 @@
   <div id="status-fields-heading" class="template-help"></div>
   <div id="status-field-list" class="status-field-list"></div>
   <sdpi-item id="copy-json-item" label="__MSG_copyJson__">
-    <sdpi-checkbox setting="output.copyResponseToClipboard"></sdpi-checkbox>
+    <sdpi-checkbox id="copy-response"></sdpi-checkbox>
   </sdpi-item>
   <sdpi-item id="pretty-item" label="__MSG_prettyPrint__">
-    <sdpi-checkbox setting="output.prettyPrint" default="true"></sdpi-checkbox>
+    <sdpi-checkbox id="pretty-print" default="true"></sdpi-checkbox>
   </sdpi-item>
   <div id="execution-diagnostics" class="execution-diagnostics" hidden>
     <div id="execution-diagnostics-heading" class="section-heading">Latest execution result</div>

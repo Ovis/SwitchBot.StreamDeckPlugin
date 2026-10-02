@@ -1,21 +1,15 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
-import { queryRequired, valueOf, createSettingsPatchQueue } from "../shared/dom.js";
+import { checked, queryRequired, valueOf } from "../shared/dom.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
+import { createPropertyInspectorSettingsStore } from "../shared/property-inspector-settings-store.js";
+import { normalizePhysicalControlPropertyInspectorSettings } from "../shared/managed-settings-normalizers.js";
 import { parsePluginToPropertyInspectorMessage, type PhysicalControlDeviceItem, type PhysicalControlOperationItem } from "../../protocol/property-inspector-protocol.js";
 import { shouldResyncInitialSelection } from "./initial-selection-resync.js";
 
 function escapeHtml(value: string): string {
   const replacements: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
   return value.replace(/[&<>"']/g, character => replacements[character] ?? character);
-}
-
-function settingsRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
-  const record = value as Record<string, unknown>;
-  return typeof record.settings === "object" && record.settings !== null && !Array.isArray(record.settings)
-    ? record.settings as Record<string, unknown>
-    : record;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,12 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const skipUnlockConfirmation = queryRequired<SdpiValueElement>("#skip-unlock-confirmation");
   let devices = new Map<string, PhysicalControlDeviceItem>();
   let operations = new Map<string, PhysicalControlOperationItem>();
-  let suppress = false;
+  let suppress = true;
   let initialSelectionRetryDeviceId = "";
   let parameterPreviewResyncKey = "";
   let renderedParameterOperationId = "";
 
-  const patchSettings = createSettingsPatchQueue(streamDeckClient);
+  const settingsStore = createPropertyInspectorSettingsStore(streamDeckClient, normalizePhysicalControlPropertyInspectorSettings);
+  const initialization = settingsStore.initialize();
 
   function sendCatalog(
     isRefresh = false,
@@ -56,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (suppress) return;
       const selected = devices.get(valueOf(device));
       const previousOperationId = valueOf(operation);
-      await patchSettings(settings => {
+      await settingsStore.update(settings => {
         settings.version = 1;
         settings.deviceId = selected?.value ?? "";
         settings.deviceType = selected?.deviceType ?? "";
@@ -161,32 +156,44 @@ document.addEventListener("DOMContentLoaded", () => {
           ? validationMessage
           : "";
       });
-      void patchSettings(settings => { settings.operationParameters = parameters; });
-      // 入力欄自体は再生成せずpreviewだけを更新する。catalog応答で同じparameter UIを
-      // 作り直すと、入力中にフォーカスやキャレット位置が失われるためである。
-      sendCatalog(false, valueOf(device), valueOf(operation), parameters);
+      void (async () => {
+        await settingsStore.update(settings => { settings.operationParameters = parameters; });
+        // 入力欄自体は再生成せずpreviewだけを更新する。catalog応答で同じparameter UIを
+        // 作り直すと、入力中にフォーカスやキャレット位置が失われるためである。
+        sendCatalog(false, valueOf(device), valueOf(operation), parameters);
+      })();
     };
     fields.forEach(field => field.addEventListener("valuechange", synchronize));
   }
 
   operation.addEventListener("valuechange", () => {
     if (suppress) return;
-    void patchSettings(settings => {
-      settings.version = 1;
-      settings.operationId = valueOf(operation);
-      settings.operationParameters = {};
+    void (async () => {
+      await settingsStore.update(settings => {
+        settings.version = 1;
+        settings.operationId = valueOf(operation);
+        settings.operationParameters = {};
+      });
+      renderOperationParameters();
+      sendCatalog(false, valueOf(device), valueOf(operation), {});
+    })();
+  });
+
+  skipUnlockConfirmation.addEventListener("valuechange", () => {
+    if (suppress) return;
+    void settingsStore.update(settings => {
+      settings.skipUnlockConfirmation = checked(skipUnlockConfirmation);
     });
-    renderOperationParameters();
-    sendCatalog(false, valueOf(device), valueOf(operation), {});
   });
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
     if (message?.event !== "physicalControlCatalog") return;
     void (async () => {
+      await initialization;
       devices = new Map(message.devices.map(item => [item.value, item]));
       operations = new Map(message.operations.map(item => [item.value, item]));
-      const settings = settingsRecord(await streamDeckClient.getSettings());
+      const settings = await settingsStore.reload();
       const selectedDevice = typeof settings.deviceId === "string" ? settings.deviceId : "";
       const selectedOperation = typeof settings.operationId === "string" ? settings.operationId : "";
       const savedParameters = typeof settings.operationParameters === "object" && settings.operationParameters !== null
@@ -206,6 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
         device.value = message.devices.some(item => item.value === selectedDevice) ? selectedDevice : "";
         operation.value = message.operations.some(item => item.value === selectedOperation) ? selectedOperation : "";
+        skipUnlockConfirmation.value = settings.skipUnlockConfirmation;
         syncOperationOptions();
       } finally {
         suppress = false;
@@ -276,5 +284,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // locale確定後にも固定文言を再適用し、日本語環境で英語表示が残らないようにする。
   document.addEventListener("switchbot-locale-changed", applyLocalizedText);
   applyLocalizedText();
-  sendCatalog();
+  void initialization.then(settings => {
+    suppress = true;
+    skipUnlockConfirmation.value = settings.skipUnlockConfirmation;
+    suppress = false;
+    sendCatalog(false, settings.deviceId, settings.operationId, settings.operationParameters);
+  });
 });

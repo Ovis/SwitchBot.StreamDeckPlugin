@@ -1,34 +1,22 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
-import { checked, queryRequired, valueOf, createSettingsPatchQueue } from "../shared/dom.js";
+import { checked, queryRequired, valueOf } from "../shared/dom.js";
+import { createPropertyInspectorSettingsStore } from "../shared/property-inspector-settings-store.js";
+import { normalizeInfraredRemotePropertyInspectorSettings } from "../shared/managed-settings-normalizers.js";
 import {
-  InfraredCommandPropertyInspectorItem,
   InfraredRemotePropertyInspectorItem,
-  InfraredRemotesResultMessage,
   parsePluginToPropertyInspectorMessage
 } from "../../protocol/property-inspector-protocol.js";
+import type { InfraredRemoteSettingsV1 } from "../../settings/infrared-remote-settings.js";
 
-type InfraredCommand = InfraredCommandPropertyInspectorItem;
 type InfraredRemote = InfraredRemotePropertyInspectorItem;
-type InfraredPayload = Pick<InfraredRemotesResultMessage, "event" | "remotes" | "refreshFailed">;
 
 interface GeneratedBody {
   error?: string;
   command?: string;
   parameter?: string;
   commandType?: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-
-function settingsRecord(value: unknown): Record<string, unknown> {
-  if (!isRecord(value)) return {};
-  if (isRecord(value.settings)) return value.settings;
-  return value;
 }
 
 function escapeHtml(value: string): string {
@@ -47,6 +35,12 @@ document.addEventListener("DOMContentLoaded", () => {
   attachExecutionDiagnostics(streamDeckClient);
   const remote = queryRequired<SdpiValueElement>("#remote");
   const operation = queryRequired<SdpiValueElement>("#operation");
+  const customButton = queryRequired<SdpiValueElement>("#custom-button");
+  const channel = queryRequired<SdpiValueElement>("#channel");
+  const acTemperature = queryRequired<SdpiValueElement>("#ac-temperature");
+  const acMode = queryRequired<SdpiValueElement>("#ac-mode");
+  const acFan = queryRequired<SdpiValueElement>("#ac-fan");
+  const acPower = queryRequired<SdpiValueElement>("#ac-power");
   const customItem = queryRequired<HTMLElement>("#custom-item");
   const channelItem = queryRequired<HTMLElement>("#channel-item");
   const acFields = queryRequired<HTMLElement>("#ac-fields");
@@ -62,9 +56,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const typeValue = queryRequired<SdpiValueElement>("#type-value");
   const customTypeItem = queryRequired<HTMLElement>("#custom-type-item");
   const requestPreview = queryRequired<HTMLElement>("#request-preview");
+  const showOperationOnKey = queryRequired<SdpiValueElement>("#show-operation-on-key");
+  const copyResponse = queryRequired<SdpiValueElement>("#copy-response");
+  const prettyPrint = queryRequired<SdpiValueElement>("#pretty-print");
 
   let remotes = new Map<string, InfraredRemote>();
-  let suppressBodyChange = false;
+  let suppressBodyChange = true;
   let typeModeInitialized = false;
   let savedOperation = "";
 
@@ -78,9 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectedRemote = () => remotes.get(valueOf(remote));
   const selectedCommand = () => selectedRemote()?.commands?.find(item => item.value === valueOf(operation));
 
-  const patchSettings = createSettingsPatchQueue(streamDeckClient);
+  const settingsStore = createPropertyInspectorSettingsStore(streamDeckClient, normalizeInfraredRemotePropertyInspectorSettings);
+  const initialization = settingsStore.initialize();
 
-  function emptyOverrides(settings: Record<string, unknown>): void {
+  function emptyOverrides(settings: InfraredRemoteSettingsV1): void {
     settings.overrides = {
       command: { enabled: false, value: "" },
       parameter: { enabled: false, value: "" },
@@ -88,18 +86,20 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function clearOverridesAfterBodyChange(): void {
-    if (suppressBodyChange) return;
-
-    // Override群は独自settings更新経路で永続化するため、ここではUI値だけを同期する。
-    // setting属性によるSDPI Componentsの自動保存とは混在させない。
-    commandOverride.value = false;
-    parameterOverride.value = false;
-    typeOverride.value = false;
-    commandValue.value = "";
-    parameterValue.value = "";
-    typeValue.value = "";
-    typeModeInitialized = false;
+  function clearOverridesInUi(): void {
+    const previousSuppress = suppressBodyChange;
+    suppressBodyChange = true;
+    try {
+      commandOverride.value = false;
+      parameterOverride.value = false;
+      typeOverride.value = false;
+      commandValue.value = "";
+      parameterValue.value = "";
+      typeValue.value = "";
+      typeModeInitialized = false;
+    } finally {
+      suppressBodyChange = previousSuppress;
+    }
     updateUi();
   }
 
@@ -114,6 +114,36 @@ document.addEventListener("DOMContentLoaded", () => {
     operation.value = items.some(item => item.value === selectedOperation) ? selectedOperation : "";
   }
 
+  function applySettingsToUi(settings: InfraredRemoteSettingsV1, includeCatalogSelections: boolean): void {
+    suppressBodyChange = true;
+    try {
+      if (includeCatalogSelections) {
+        remote.value = remotes.has(settings.deviceId) ? settings.deviceId : "";
+        savedOperation = settings.operation;
+        setOperationOptions(remotes.get(settings.deviceId), settings.operation);
+      }
+      customButton.value = settings.customButtonName;
+      channel.value = settings.channel;
+      acTemperature.value = settings.airConditioner.temperature;
+      acMode.value = settings.airConditioner.mode;
+      acFan.value = settings.airConditioner.fanSpeed;
+      acPower.value = settings.airConditioner.powerState;
+      commandOverride.value = settings.overrides.command.enabled;
+      parameterOverride.value = settings.overrides.parameter.enabled;
+      typeOverride.value = settings.overrides.commandType.enabled;
+      commandValue.value = settings.overrides.command.value;
+      parameterValue.value = settings.overrides.parameter.value;
+      typeValue.value = settings.overrides.commandType.value;
+      showOperationOnKey.value = settings.output.showOperationOnKey;
+      copyResponse.value = settings.output.copyResponseToClipboard;
+      prettyPrint.value = settings.output.prettyPrint;
+      typeModeInitialized = false;
+    } finally {
+      suppressBodyChange = false;
+    }
+    updateUi();
+  }
+
   function generatedBody(): GeneratedBody {
     const info = selectedRemote();
     if (!info) {
@@ -124,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const command = selectedCommand();
 
     if (info.remoteType === "Others" || selectedOperation === "custom") {
-      const name = valueOf(queryRequired<SdpiValueElement>("#custom-button")).trim();
+      const name = valueOf(customButton).trim();
       if (!name) {
         return { error: window.SwitchBotI18n?.t("Enter a custom button name.", "カスタムボタン名を入力してください。") ?? "Enter a custom button name." };
       }
@@ -136,15 +166,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (command.parameterKind === "channel") {
-      const channel = valueOf(queryRequired<SdpiValueElement>("#channel")).trim();
-      if (!channel) {
+      const channelValue = valueOf(channel).trim();
+      if (!channelValue) {
         return { error: window.SwitchBotI18n?.t("Enter a channel.", "チャンネルを入力してください。") ?? "Enter a channel." };
       }
-      return { command: selectedOperation, parameter: channel, commandType: "command" };
+      return { command: selectedOperation, parameter: channelValue, commandType: "command" };
     }
 
     if (command.parameterKind === "air-conditioner") {
-      const temperature = valueOf(queryRequired<SdpiValueElement>("#ac-temperature")).trim();
+      const temperature = valueOf(acTemperature).trim();
       if (!temperature || !Number.isFinite(Number(temperature))) {
         return { error: window.SwitchBotI18n?.t("Enter a valid temperature.", "有効な温度を入力してください。") ?? "Enter a valid temperature." };
       }
@@ -152,9 +182,9 @@ document.addEventListener("DOMContentLoaded", () => {
         command: selectedOperation,
         parameter: [
           temperature,
-          valueOf(queryRequired<SdpiValueElement>("#ac-mode"), "2"),
-          valueOf(queryRequired<SdpiValueElement>("#ac-fan"), "1"),
-          valueOf(queryRequired<SdpiValueElement>("#ac-power"), "on")
+          valueOf(acMode, "2"),
+          valueOf(acFan, "1"),
+          valueOf(acPower, "on")
         ].join(","),
         commandType: "command"
       };
@@ -221,21 +251,26 @@ document.addEventListener("DOMContentLoaded", () => {
     setControlDisabled(parameterValue, !checked(parameterOverride));
     setControlDisabled(typeMode, !checked(typeOverride));
 
-    if (checked(typeOverride) && !typeModeInitialized) {
-      const savedType = valueOf(typeValue);
-      typeMode.value = ["command", "customize"].includes(savedType) ? savedType : "custom";
-      typeModeInitialized = true;
-    }
-    if (!checked(typeOverride)) typeModeInitialized = false;
-
     overrideActive.hidden = !(checked(commandOverride) || checked(parameterOverride) || checked(typeOverride));
 
     const generated = generatedBody();
-    if (!checked(commandOverride)) commandValue.value = generated.command ?? "";
-    if (!checked(parameterOverride)) parameterValue.value = generated.parameter ?? "";
-    if (!checked(typeOverride)) {
-      typeValue.value = generated.commandType ?? "";
-      typeMode.value = ["command", "customize"].includes(generated.commandType ?? "") ? generated.commandType ?? "" : "custom";
+    const previousSuppress = suppressBodyChange;
+    suppressBodyChange = true;
+    try {
+      if (checked(typeOverride) && !typeModeInitialized) {
+        const savedType = valueOf(typeValue);
+        typeMode.value = ["command", "customize"].includes(savedType) ? savedType : "custom";
+        typeModeInitialized = true;
+      }
+      if (!checked(typeOverride)) typeModeInitialized = false;
+      if (!checked(commandOverride)) commandValue.value = generated.command ?? "";
+      if (!checked(parameterOverride)) parameterValue.value = generated.parameter ?? "";
+      if (!checked(typeOverride)) {
+        typeValue.value = generated.commandType ?? "";
+        typeMode.value = ["command", "customize"].includes(generated.commandType ?? "") ? generated.commandType ?? "" : "custom";
+      }
+    } finally {
+      suppressBodyChange = previousSuppress;
     }
     customTypeItem.hidden = !checked(typeOverride) || valueOf(typeMode) !== "custom";
 
@@ -256,17 +291,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const field = kind === "command" ? commandValue : kind === "parameter" ? parameterValue : typeValue;
     const value = enabled ? generatedValue : "";
 
-    field.value = value;
-    if (kind === "type") {
-      typeModeInitialized = false;
-      typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
+    suppressBodyChange = true;
+    try {
+      field.value = value;
+      if (kind === "type") {
+        typeModeInitialized = false;
+        typeMode.value = ["command", "customize"].includes(generatedValue) ? generatedValue : "custom";
+      }
+    } finally {
+      suppressBodyChange = false;
     }
 
-    void patchSettings(settings => {
-      const overrides = isRecord(settings.overrides) ? settings.overrides : {};
+    void settingsStore.update(settings => {
       const key = kind === "type" ? "commandType" : kind;
-      overrides[key] = { enabled, value };
-      settings.overrides = overrides;
+      settings.overrides[key] = { enabled, value };
     });
     updateUi();
   }
@@ -282,20 +320,21 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const settings = settingsRecord(await streamDeckClient.getSettings());
-      const sameType = settings.remoteType === next.remoteType;
+      await initialization;
+      const currentSettings = settingsStore.current;
+      const sameType = currentSettings.remoteType === next.remoteType;
       suppressBodyChange = true;
       try {
-        const storedOperation = typeof settings.operation === "string" ? settings.operation : "";
-        const preservedOperation = sameType ? (savedOperation || storedOperation) : "";
+        const preservedOperation = sameType ? (savedOperation || currentSettings.operation) : "";
         savedOperation = preservedOperation;
         setOperationOptions(next, preservedOperation);
-        await patchSettings(current => {
+        const persisted = await settingsStore.update(current => {
           current.deviceId = valueOf(remote);
           current.remoteType = next.remoteType;
           current.operation = preservedOperation;
           emptyOverrides(current);
         });
+        applySettingsToUi(persisted, false);
       } finally {
         suppressBodyChange = false;
       }
@@ -309,36 +348,67 @@ document.addEventListener("DOMContentLoaded", () => {
       const selectedOperation = valueOf(operation);
       savedOperation = selectedOperation;
 
-      // 動的 select の自動保存と競合させず、ユーザー選択だけを明示保存する。
-      await patchSettings(settings => {
+      clearOverridesInUi();
+      const persisted = await settingsStore.update(settings => {
         settings.operation = selectedOperation;
         emptyOverrides(settings);
       });
-
-      clearOverridesAfterBodyChange();
-      updateUi();
+      applySettingsToUi(persisted, false);
     })();
   });
 
-  for (const id of ["custom-button", "channel", "ac-temperature", "ac-mode", "ac-fan", "ac-power"]) {
-    const element = queryRequired<SdpiValueElement>(`#${id}`);
+  const bodyFields: Array<[
+    SdpiValueElement,
+    (settings: InfraredRemoteSettingsV1, value: string) => void
+  ]> = [
+    [customButton, (settings, value) => { settings.customButtonName = value; }],
+    [channel, (settings, value) => { settings.channel = value; }],
+    [acTemperature, (settings, value) => { settings.airConditioner.temperature = value; }],
+    [acMode, (settings, value) => {
+      settings.airConditioner.mode = value as InfraredRemoteSettingsV1["airConditioner"]["mode"];
+    }],
+    [acFan, (settings, value) => {
+      settings.airConditioner.fanSpeed = value as InfraredRemoteSettingsV1["airConditioner"]["fanSpeed"];
+    }],
+    [acPower, (settings, value) => {
+      settings.airConditioner.powerState = value as InfraredRemoteSettingsV1["airConditioner"]["powerState"];
+    }]
+  ];
+  for (const [element, updateSetting] of bodyFields) {
     element.addEventListener("valuechange", () => {
-      clearOverridesAfterBodyChange();
-      updateUi();
+      if (suppressBodyChange) return;
+      void (async () => {
+        clearOverridesInUi();
+        const persisted = await settingsStore.update(settings => {
+          updateSetting(settings, valueOf(element));
+          emptyOverrides(settings);
+        });
+        applySettingsToUi(persisted, false);
+      })();
     });
     element.addEventListener("input", updateUi);
   }
 
-  commandOverride.addEventListener("valuechange", () => enableOverride("command", checked(commandOverride)));
-  parameterOverride.addEventListener("valuechange", () => enableOverride("parameter", checked(parameterOverride)));
-  typeOverride.addEventListener("valuechange", () => enableOverride("type", checked(typeOverride)));
+  commandOverride.addEventListener("valuechange", () => {
+    if (!suppressBodyChange) enableOverride("command", checked(commandOverride));
+  });
+  parameterOverride.addEventListener("valuechange", () => {
+    if (!suppressBodyChange) enableOverride("parameter", checked(parameterOverride));
+  });
+  typeOverride.addEventListener("valuechange", () => {
+    if (!suppressBodyChange) enableOverride("type", checked(typeOverride));
+  });
 
   typeMode.addEventListener("valuechange", () => {
-    if (!checked(typeOverride)) return;
+    if (suppressBodyChange || !checked(typeOverride)) return;
     const mode = valueOf(typeMode);
     if (mode !== "custom") {
-      // commandType の実値は setting を持つ textfield に集約し、通常保存経路へ任せる。
+      suppressBodyChange = true;
       typeValue.value = mode;
+      suppressBodyChange = false;
+      void settingsStore.update(settings => {
+        settings.overrides.commandType.value = mode;
+      });
     }
     updateUi();
   });
@@ -351,15 +421,32 @@ document.addEventListener("DOMContentLoaded", () => {
   for (const [field, key] of overrideFields) {
     field.addEventListener("input", updateUi);
     field.addEventListener("valuechange", () => {
-      void patchSettings(settings => {
-        const overrides = isRecord(settings.overrides) ? settings.overrides : {};
-        const current = isRecord(overrides[key]) ? overrides[key] : {};
-        overrides[key] = { ...current, value: valueOf(field) };
-        settings.overrides = overrides;
+      if (suppressBodyChange) return;
+      void settingsStore.update(settings => {
+        settings.overrides[key].value = valueOf(field);
       });
       updateUi();
     });
   }
+
+  showOperationOnKey.addEventListener("valuechange", () => {
+    if (suppressBodyChange) return;
+    void settingsStore.update(settings => {
+      settings.output.showOperationOnKey = checked(showOperationOnKey);
+    });
+  });
+  copyResponse.addEventListener("valuechange", () => {
+    if (suppressBodyChange) return;
+    void settingsStore.update(settings => {
+      settings.output.copyResponseToClipboard = checked(copyResponse);
+    });
+  });
+  prettyPrint.addEventListener("valuechange", () => {
+    if (suppressBodyChange) return;
+    void settingsStore.update(settings => {
+      settings.output.prettyPrint = checked(prettyPrint);
+    });
+  });
 
   streamDeckClient.sendToPropertyInspector.subscribe(event => {
     const message = parsePluginToPropertyInspectorMessage(event.payload);
@@ -367,29 +454,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!payload) return;
 
     void (async () => {
+      await initialization;
       remotes = new Map(payload.remotes.map(item => [item.value, item]));
-      const settings = settingsRecord(await streamDeckClient.getSettings());
-      const deviceId = typeof settings.deviceId === "string" ? settings.deviceId : "";
-      const info = remotes.get(deviceId);
-
-      suppressBodyChange = true;
-      try {
-        savedOperation = typeof settings.operation === "string" ? settings.operation : "";
-        setOperationOptions(info, savedOperation);
-
-        const overrides = isRecord(settings.overrides) ? settings.overrides : {};
-        const command = isRecord(overrides.command) ? overrides.command : {};
-        const parameter = isRecord(overrides.parameter) ? overrides.parameter : {};
-        const commandType = isRecord(overrides.commandType) ? overrides.commandType : {};
-        commandOverride.value = command.enabled === true;
-        parameterOverride.value = parameter.enabled === true;
-        typeOverride.value = commandType.enabled === true;
-        commandValue.value = typeof command.value === "string" ? command.value : "";
-        parameterValue.value = typeof parameter.value === "string" ? parameter.value : "";
-        typeValue.value = typeof commandType.value === "string" ? commandType.value : "";
-      } finally {
-        suppressBodyChange = false;
-      }
+      const placeholder = window.SwitchBotI18n?.t("Select a device", "デバイスを選択") ?? "Select a device";
+      remote.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` + payload.remotes.map(item =>
+        `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`
+      ).join("");
+      const settings = await settingsStore.reload();
+      applySettingsToUi(settings, true);
 
       catalogStatus.textContent = payload.refreshFailed
         ? window.SwitchBotI18n?.t(
@@ -397,11 +469,10 @@ document.addEventListener("DOMContentLoaded", () => {
             "更新に失敗しました。保存済みの一覧を表示しています。"
           ) ?? "Refresh failed. Showing the saved catalog."
         : "";
-      updateUi();
     })();
   });
 
-  updateUi();
+  void initialization.then(settings => applySettingsToUi(settings, false));
   document.addEventListener("switchbot-locale-changed", () => {
     applyInfraredLocale();
     updateUi();
