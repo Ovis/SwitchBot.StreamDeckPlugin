@@ -94,7 +94,8 @@ export class InfraredRemoteAction extends AuthenticatedAction {
       event: "getInfraredRemotes",
       items: remotes.map(({ label, value }) => ({ label, value })),
       remotes,
-      refreshFailed: result.refreshFailed
+      refreshFailed: result.refreshFailed,
+      ...(result.refreshFailure ? { refreshFailure: result.refreshFailure } : {})
     };
     await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);
   }

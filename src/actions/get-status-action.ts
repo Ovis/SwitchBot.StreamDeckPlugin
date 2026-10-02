@@ -131,7 +131,8 @@ export class GetStatusAction extends AuthenticatedAction {
           label: localizeDeviceLabel(device.deviceName, device.deviceType, device.deviceId, device.deleted, this.locale),
           value: device.deviceId
         })),
-        refreshFailed: result.refreshFailed
+        refreshFailed: result.refreshFailed,
+        ...(result.refreshFailure ? { refreshFailure: result.refreshFailure } : {})
       };
       await this.sendToPropertyInspectorIfCurrent(ev.action.id, message);
       return;

@@ -77,7 +77,7 @@ Each entry records `lastSeenAt` and `deleted`. Refresh performs logical deletion
 
 Selectors normally hide deleted entries but retain a deleted entry when it is the action's current selection.
 
-An explicit refresh failure MUST be reported to the Property Inspector. The previously saved catalog may still be displayed, but it must not be presented as a successful refresh.
+An explicit refresh failure MUST be reported to the Property Inspector. The previously saved catalog may still be displayed, but it must not be presented as a successful refresh. HTTP 429 is reported as an API usage limit instead of the generic refresh failure.
 
 ## 6. Physical Control
 
@@ -94,7 +94,7 @@ Physical Control:
 - validates number, RGB, and select parameters before request construction;
 - preserves JSON object parameters as objects on the HTTP wire;
 - uses the same command builder for Property Inspector preview and actual execution;
-- serializes Property Inspector read-modify-write settings updates to prevent stale updates from overwriting newer user input;
+- persists Property Inspector settings through the shared Managed Settings Store so stale updates cannot overwrite newer user input;
 - queues key presses per action instance with a bounded FIFO;
 - requires a second key press for operations marked as requiring confirmation.
 
@@ -163,6 +163,12 @@ English and Japanese are supported. The locale is taken from Stream Deck registr
 
 Temporary diagnostic console logging MUST NOT be shipped in the release PI code.
 
+Physical Control, Infrared Remote, and Get Status use the shared Managed Settings Store as their only Property Inspector-side Action settings writer. Opening or rendering one of these Property Inspectors loads and normalizes settings without saving them. Only explicit user operations call `setSettings`, and those updates are serialized against the latest confirmed Store state. Programmatic UI rendering is suppressed from persistence.
+
+For `sdpi-select` elements that use `datasource`, option rendering and refresh state remain owned by SDPI Components. Managed Property Inspector code may restore the selected value, but MUST NOT mutate the element's light-DOM options because that mutation triggers another datasource refresh.
+
+API Request remains in Simple Mode and uses only the SDPI Components `setting` lifecycle. A Property Inspector MUST NOT mix Simple Mode automatic persistence with Managed Settings Store persistence.
+
 ## 12. Security
 
 - API origin is fixed.
@@ -186,7 +192,7 @@ CI runs:
 8. Stream Deck validation
 9. package dry-run
 
-Unit coverage includes authentication, path validation, settings normalization, request execution/error classification, catalogs, endpoint resolution/body policy, output, clipboard behavior, localization, security boundaries, global-settings update serialization, and catalog refresh success/failure behavior.
+Unit coverage includes authentication, path validation, settings normalization, Managed Settings Store serialization and failure recovery, Property Inspector persistence architecture guards, request execution/error classification, catalogs, endpoint resolution/body policy, output, clipboard behavior, localization, security boundaries, global-settings update serialization, and catalog refresh success/failure behavior.
 
 Real Stream Deck UI rendering, real SwitchBot credentials, OS clipboard integration, and hardware behavior remain manual acceptance tests.
 

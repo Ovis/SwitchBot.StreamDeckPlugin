@@ -11,6 +11,8 @@ interface ProtocolJsonObject {
   [key: string]: ProtocolJsonValue;
 }
 
+export type CatalogRefreshFailure = "rate-limit";
+
 export interface PropertyInspectorSelectItem extends ProtocolJsonObject {
   label: string;
   value: string;
@@ -136,12 +138,14 @@ export interface DevicesResultMessage extends ProtocolJsonObject {
   items: PropertyInspectorSelectItem[];
   commandTemplates?: Record<string, string>;
   refreshFailed?: boolean;
+  refreshFailure?: CatalogRefreshFailure;
 }
 
 export interface ScenesResultMessage extends ProtocolJsonObject {
   event: "getScenes";
   items: PropertyInspectorSelectItem[];
   refreshFailed?: boolean;
+  refreshFailure?: CatalogRefreshFailure;
 }
 
 export interface ObservedStatusFieldsMessage extends ProtocolJsonObject {
@@ -194,6 +198,7 @@ export interface PhysicalControlCatalogMessage extends ProtocolJsonObject {
   operations: PhysicalControlOperationItem[];
   selectedDeviceId: string;
   refreshFailed?: boolean;
+  refreshFailure?: CatalogRefreshFailure;
   configurationInvalid?: boolean;
 }
 
@@ -202,6 +207,7 @@ export interface InfraredRemotesResultMessage extends ProtocolJsonObject {
   items: PropertyInspectorSelectItem[];
   remotes: InfraredRemotePropertyInspectorItem[];
   refreshFailed?: boolean;
+  refreshFailure?: CatalogRefreshFailure;
 }
 
 export type PluginToPropertyInspectorMessage =
@@ -292,13 +298,23 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
     if (!Array.isArray(value.items)) return undefined;
     const items = value.items.map(protocolSelectItem).filter(protocolDefined);
     const refreshFailed = typeof value.refreshFailed === "boolean" ? value.refreshFailed : undefined;
+    const refreshFailure = protocolCatalogRefreshFailure(value.refreshFailure);
     if (value.event === "getScenes") {
-      return { event: "getScenes", items, ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+      return {
+        event: "getScenes", items,
+        ...(refreshFailed !== undefined ? { refreshFailed } : {}),
+        ...(refreshFailure ? { refreshFailure } : {})
+      };
     }
     const commandTemplates = protocolRecord(value.commandTemplates)
       ? Object.fromEntries(Object.entries(value.commandTemplates).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
       : undefined;
-    return { event: "getDevices", items, ...(commandTemplates ? { commandTemplates } : {}), ...(refreshFailed !== undefined ? { refreshFailed } : {}) };
+    return {
+      event: "getDevices", items,
+      ...(commandTemplates ? { commandTemplates } : {}),
+      ...(refreshFailed !== undefined ? { refreshFailed } : {}),
+      ...(refreshFailure ? { refreshFailure } : {})
+    };
   }
 
   if (value.event === "observedStatusFields") {
@@ -317,12 +333,14 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
     if (!Array.isArray(value.devices) || !Array.isArray(value.operations) || typeof value.selectedDeviceId !== "string") return undefined;
     const devices = value.devices.map(protocolPhysicalControlDevice).filter(protocolDefined);
     const operations = value.operations.map(protocolPhysicalControlOperation).filter(protocolDefined);
+    const refreshFailure = protocolCatalogRefreshFailure(value.refreshFailure);
     return {
       event: "physicalControlCatalog",
       devices,
       operations,
       selectedDeviceId: value.selectedDeviceId,
       ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}),
+      ...(refreshFailure ? { refreshFailure } : {}),
       ...(typeof value.configurationInvalid === "boolean" ? { configurationInvalid: value.configurationInvalid } : {})
     };
   }
@@ -330,11 +348,13 @@ export function parsePluginToPropertyInspectorMessage(value: unknown): PluginToP
   if (value.event === "getInfraredRemotes") {
     if (!Array.isArray(value.items) || !Array.isArray(value.remotes)) return undefined;
     const remotes = value.remotes.map(protocolInfraredRemote).filter(protocolDefined);
+    const refreshFailure = protocolCatalogRefreshFailure(value.refreshFailure);
     return {
       event: "getInfraredRemotes",
       items: value.items.map(protocolSelectItem).filter(protocolDefined),
       remotes,
-      ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {})
+      ...(typeof value.refreshFailed === "boolean" ? { refreshFailed: value.refreshFailed } : {}),
+      ...(refreshFailure ? { refreshFailure } : {})
     };
   }
 
@@ -423,6 +443,10 @@ function protocolErrorCategory(value: unknown): PropertyInspectorErrorCategory |
   if (value === "configuration" || value === "authentication" || value === "network" || value === "http"
     || value === "switchbot" || value === "response" || value === "internal") return value;
   return undefined;
+}
+
+function protocolCatalogRefreshFailure(value: unknown): CatalogRefreshFailure | undefined {
+  return value === "rate-limit" ? value : undefined;
 }
 
 function protocolDefined<T>(value: T | undefined): value is T {

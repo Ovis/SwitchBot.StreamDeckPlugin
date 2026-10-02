@@ -1,8 +1,12 @@
 import "../shared/localization.js";
 import "../shared/authentication.js";
 import { attachExecutionDiagnostics } from "../shared/execution-diagnostics.js";
-import { checked, createSettingsPatchQueue, queryRequired, valueOf } from "../shared/dom.js";
+import { catalogRefreshStatusMessage } from "../shared/catalog-refresh-status.js";
+import { checked, queryRequired, valueOf } from "../shared/dom.js";
+import { createPropertyInspectorSettingsStore } from "../shared/property-inspector-settings-store.js";
+import { normalizeGetStatusPropertyInspectorSettings } from "../shared/managed-settings-normalizers.js";
 import { parsePluginToPropertyInspectorMessage } from "../../protocol/property-inspector-protocol.js";
+import type { GetStatusSettingsV1 } from "../../settings/get-status-settings.js";
 
 interface GetStatusGlobalSettings {
   observedStatusFields?: Record<string, string[]>;
@@ -10,12 +14,17 @@ interface GetStatusGlobalSettings {
 
 document.addEventListener("DOMContentLoaded", () => {
   const { streamDeckClient } = SDPIComponents;
-  const patchSettings = createSettingsPatchQueue(streamDeckClient);
+  const settingsStore = createPropertyInspectorSettingsStore(streamDeckClient, normalizeGetStatusPropertyInspectorSettings);
+  const initialization = settingsStore.initialize();
   const textarea = queryRequired<HTMLTextAreaElement>("#status-template");
   const deviceSelect = queryRequired<SdpiValueElement>("#device-select");
+  const buttonName = queryRequired<SdpiValueElement>("#button-name");
   const showStatusOnKey = queryRequired<SdpiValueElement>("#show-status-on-key");
   const refreshInterval = queryRequired<SdpiValueElement>("#refresh-interval");
+  const copyResponse = queryRequired<SdpiValueElement>("#copy-response");
+  const prettyPrint = queryRequired<SdpiValueElement>("#pretty-print");
   let observedFields: Record<string, string[]> = {};
+  let suppressSettingsChange = true;
 
   attachExecutionDiagnostics(streamDeckClient);
 
@@ -36,8 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
     // sdpi-selectを維持してStream Deck標準テーマを使用する。
     // locale確定後にoption自体を再構築し、Shadow DOM側の表示にも翻訳済みラベルを反映させる。
-    refreshInterval.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
-    refreshInterval.value = current;
+    const previousSuppress = suppressSettingsChange;
+    suppressSettingsChange = true;
+    try {
+      refreshInterval.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+      refreshInterval.value = current;
+    } finally {
+      suppressSettingsChange = previousSuppress;
+    }
   }
 
   function localizeUi(): void {
@@ -99,34 +114,31 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function saveTemplate(value: string): Promise<void> {
-    await patchSettings(settings => {
-      const output = typeof settings.output === "object" && settings.output !== null && !Array.isArray(settings.output)
-        ? { ...(settings.output as Record<string, unknown>) }
-        : {};
-      output.statusTemplate = value;
-      settings.output = output;
+    await settingsStore.update(settings => {
+      settings.output.statusTemplate = value;
     });
   }
 
-  async function loadOutputSettings(): Promise<void> {
-    const value = await streamDeckClient.getSettings();
-    const record = typeof value === "object" && value !== null && !Array.isArray(value)
-      ? value as Record<string, unknown>
-      : {};
-    const source = typeof record.settings === "object" && record.settings !== null && !Array.isArray(record.settings)
-      ? record.settings as Record<string, unknown>
-      : record;
-    const output = typeof source.output === "object" && source.output !== null && !Array.isArray(source.output)
-      ? source.output as Record<string, unknown>
-      : {};
-
-    textarea.value = typeof output.statusTemplate === "string" ? output.statusTemplate : "";
-    const interval = output.refreshIntervalMinutes;
-    refreshInterval.value = typeof interval === "number" || typeof interval === "string" ? String(interval) : "0";
-
-    const show = typeof output.showStatusOnKey === "boolean" ? output.showStatusOnKey : true;
-    if (show) refreshInterval.removeAttribute("disabled");
-    else refreshInterval.setAttribute("disabled", "");
+  function applySettingsToUi(
+    settings: GetStatusSettingsV1,
+    availableDeviceIds?: ReadonlySet<string>
+  ): void {
+    suppressSettingsChange = true;
+    try {
+      if (availableDeviceIds) {
+        deviceSelect.value = availableDeviceIds.has(settings.deviceId) ? settings.deviceId : "";
+      }
+      buttonName.value = settings.buttonName;
+      showStatusOnKey.value = settings.output.showStatusOnKey;
+      refreshInterval.value = String(settings.output.refreshIntervalMinutes);
+      textarea.value = settings.output.statusTemplate;
+      copyResponse.value = settings.output.copyResponseToClipboard;
+      prettyPrint.value = settings.output.prettyPrint;
+    } finally {
+      suppressSettingsChange = false;
+    }
+    updateRefreshIntervalAvailability();
+    renderFields();
   }
 
   async function loadObservedFields(): Promise<void> {
@@ -148,17 +160,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (message.event === "getDevices") {
-      queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
-        ? t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
-        : "";
+      void (async () => {
+        await initialization;
+        // datasource の選択肢は SDPI Components が応答から描画する。
+        // light DOM を書き換えると MutationObserver が再取得を開始し続けるため、
+        // Managed Settings Store は保存済みの選択値だけを復元する。
+        const availableDeviceIds = new Set(message.items.map(item => item.value));
+        applySettingsToUi(await settingsStore.reload(), availableDeviceIds);
+        queryRequired<HTMLElement>("#catalog-status").textContent = catalogRefreshStatusMessage(
+          message.refreshFailed,
+          message.refreshFailure,
+          t
+        );
+      })();
     }
   });
 
-  deviceSelect.addEventListener("change", renderFields);
-  showStatusOnKey.addEventListener("valuechange", updateRefreshIntervalAvailability);
-  textarea.addEventListener("change", () => void saveTemplate(textarea.value));
+  deviceSelect.addEventListener("valuechange", () => {
+    if (suppressSettingsChange) return;
+    void settingsStore.update(settings => { settings.deviceId = selectedDeviceId(); });
+    renderFields();
+  });
+  buttonName.addEventListener("valuechange", () => {
+    if (suppressSettingsChange) return;
+    void settingsStore.update(settings => { settings.buttonName = valueOf(buttonName); });
+  });
+  showStatusOnKey.addEventListener("valuechange", () => {
+    if (suppressSettingsChange) return;
+    updateRefreshIntervalAvailability();
+    void settingsStore.update(settings => {
+      settings.output.showStatusOnKey = checked(showStatusOnKey);
+    });
+  });
+  refreshInterval.addEventListener("valuechange", () => {
+    if (suppressSettingsChange) return;
+    void settingsStore.update(settings => {
+      settings.output.refreshIntervalMinutes = Number(valueOf(refreshInterval)) as GetStatusSettingsV1["output"]["refreshIntervalMinutes"];
+    });
+  });
+  copyResponse.addEventListener("valuechange", () => {
+    if (suppressSettingsChange) return;
+    void settingsStore.update(settings => {
+      settings.output.copyResponseToClipboard = checked(copyResponse);
+    });
+  });
+  prettyPrint.addEventListener("valuechange", () => {
+    if (suppressSettingsChange) return;
+    void settingsStore.update(settings => {
+      settings.output.prettyPrint = checked(prettyPrint);
+    });
+  });
+  textarea.addEventListener("change", () => {
+    if (!suppressSettingsChange) void saveTemplate(textarea.value);
+  });
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
-  void loadOutputSettings();
+  void initialization.then(settings => applySettingsToUi(settings));
   void loadObservedFields();
 });

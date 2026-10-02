@@ -61,6 +61,30 @@ describe("Property Inspector protocol", () => {
       });
     });
 
+    it("カタログ更新の利用上限理由だけを検証して返す", () => {
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "getDevices",
+        items: [],
+        refreshFailed: true,
+        refreshFailure: "rate-limit"
+      })).toEqual({
+        event: "getDevices",
+        items: [],
+        refreshFailed: true,
+        refreshFailure: "rate-limit"
+      });
+      expect(parsePluginToPropertyInspectorMessage({
+        event: "getScenes",
+        items: [],
+        refreshFailed: true,
+        refreshFailure: "future-reason"
+      })).toEqual({
+        event: "getScenes",
+        items: [],
+        refreshFailed: true
+      });
+    });
+
     it("Physical Control catalogのdeviceTypeを検証する", () => {
       expect(parsePluginToPropertyInspectorMessage({
         event: "physicalControlCatalog",

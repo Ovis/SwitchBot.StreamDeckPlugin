@@ -73,6 +73,20 @@ describe("infrared remote commands", () => {
     });
   });
 
+  it("reports the missing operation before a missing command type when only command is overridden", () => {
+    const settings = normalizeInfraredRemoteSettings({
+      deviceId: "A",
+      remoteType: "Light",
+      operation: "",
+      overrides: {
+        command: { enabled: true, value: "turnOn" }
+      }
+    });
+    const result = buildInfraredRequest(settings);
+    expect(result.error).toBe("No operation is selected.");
+    expect(result.request).toBeUndefined();
+  });
+
   it("requires command and commandType after overrides are applied", () => {
     const settings = normalizeInfraredRemoteSettings({
       deviceId: "A",
