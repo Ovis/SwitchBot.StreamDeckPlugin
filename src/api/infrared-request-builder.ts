@@ -19,7 +19,7 @@ export function buildInfraredRequest(settings: InfraredRemoteSettingsV1): Infrar
   const commandType = settings.overrides.commandType.enabled ? settings.overrides.commandType.value : generated.commandType;
 
   if (!command) return { error: generated.error ?? "Command is required." };
-  if (!commandType) return { error: "Command type is required." };
+  if (!commandType) return { error: generated.error ?? "Command type is required." };
 
   const body = { command, parameter, commandType };
   return {
@@ -48,7 +48,7 @@ function buildGeneratedBody(settings: InfraredRemoteSettingsV1): {
   }
 
   if (!settings.operation) {
-    return { command: "", parameter: "default", commandType: "command", error: "Select an operation." };
+    return { command: "", parameter: "default", commandType: "", error: "No operation is selected." };
   }
 
   const definition = infraredCommandsForRemoteType(settings.remoteType).find(item => item.id === settings.operation);

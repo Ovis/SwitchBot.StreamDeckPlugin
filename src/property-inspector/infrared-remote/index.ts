@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!selectedOperation || !command) {
-      return { error: window.SwitchBotI18n?.t("Select an operation.", "操作を選択してください。") ?? "Select an operation." };
+      return { error: window.SwitchBotI18n?.t("No operation is selected.", "操作が未選択です。") ?? "No operation is selected." };
     }
 
     if (command.parameterKind === "channel") {
@@ -209,7 +209,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (!commandType) {
       return {
-        error: window.SwitchBotI18n?.t("Command type is required.", "Command type は必須です。")
+        error: generated.error
+          ?? window.SwitchBotI18n?.t("Command type is required.", "Command type は必須です。")
           ?? "Command type is required."
       };
     }
