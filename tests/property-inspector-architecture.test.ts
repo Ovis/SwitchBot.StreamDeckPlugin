@@ -19,6 +19,14 @@ describe("Property Inspector persistence architecture", () => {
     expect(source).not.toContain("createSettingsPatchQueue");
   });
 
+  it.each([
+    ["infrared-remote", "remote"],
+    ["get-status", "deviceSelect"]
+  ])("%s datasource selectの選択肢はSDPI Componentsだけが描画する", (page, variableName) => {
+    const source = fs.readFileSync(path.join(propertyInspectorRoot, page, "index.ts"), "utf8");
+    expect(source).not.toMatch(new RegExp(`\\b${variableName}\\.(?:innerHTML|replaceChildren)\\b`));
+  });
+
   it("API Request Simple ModeはSDPI Componentsだけをwriterにする", () => {
     const html = fs.readFileSync(path.join(propertyInspectorRoot, "api-request/index.html"), "utf8");
     const source = fs.readFileSync(path.join(propertyInspectorRoot, "api-request/index.ts"), "utf8");

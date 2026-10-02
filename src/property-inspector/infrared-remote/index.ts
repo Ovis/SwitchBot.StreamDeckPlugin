@@ -456,10 +456,9 @@ document.addEventListener("DOMContentLoaded", () => {
     void (async () => {
       await initialization;
       remotes = new Map(payload.remotes.map(item => [item.value, item]));
-      const placeholder = window.SwitchBotI18n?.t("Select a device", "デバイスを選択") ?? "Select a device";
-      remote.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` + payload.remotes.map(item =>
-        `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`
-      ).join("");
+      // datasource の選択肢は SDPI Components が応答から描画する。
+      // light DOM の option を更新すると監視処理が再取得を繰り返すため、
+      // ここではコマンド情報と保存済みの選択値だけを反映する。
       const settings = await settingsStore.reload();
       applySettingsToUi(settings, true);
 

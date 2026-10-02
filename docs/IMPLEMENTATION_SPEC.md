@@ -165,6 +165,8 @@ Temporary diagnostic console logging MUST NOT be shipped in the release PI code.
 
 Physical Control, Infrared Remote, and Get Status use the shared Managed Settings Store as their only Property Inspector-side Action settings writer. Opening or rendering one of these Property Inspectors loads and normalizes settings without saving them. Only explicit user operations call `setSettings`, and those updates are serialized against the latest confirmed Store state. Programmatic UI rendering is suppressed from persistence.
 
+For `sdpi-select` elements that use `datasource`, option rendering and refresh state remain owned by SDPI Components. Managed Property Inspector code may restore the selected value, but MUST NOT mutate the element's light-DOM options because that mutation triggers another datasource refresh.
+
 API Request remains in Simple Mode and uses only the SDPI Components `setting` lifecycle. A Property Inspector MUST NOT mix Simple Mode automatic persistence with Managed Settings Store persistence.
 
 ## 12. Security

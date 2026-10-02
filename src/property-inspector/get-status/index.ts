@@ -118,13 +118,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function applySettingsToUi(settings: GetStatusSettingsV1, includeDevice: boolean): void {
+  function applySettingsToUi(
+    settings: GetStatusSettingsV1,
+    availableDeviceIds?: ReadonlySet<string>
+  ): void {
     suppressSettingsChange = true;
     try {
-      if (includeDevice) {
-        const hasDevice = [...deviceSelect.querySelectorAll("option")]
-          .some(option => option.value === settings.deviceId);
-        deviceSelect.value = hasDevice ? settings.deviceId : "";
+      if (availableDeviceIds) {
+        deviceSelect.value = availableDeviceIds.has(settings.deviceId) ? settings.deviceId : "";
       }
       buttonName.value = settings.buttonName;
       showStatusOnKey.value = settings.output.showStatusOnKey;
@@ -160,11 +161,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (message.event === "getDevices") {
       void (async () => {
         await initialization;
-        const placeholder = t("Select a device", "デバイスを選択");
-        deviceSelect.innerHTML = `<option value="">${placeholder}</option>` + message.items.map(item =>
-          `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`
-        ).join("");
-        applySettingsToUi(await settingsStore.reload(), true);
+        // datasource の選択肢は SDPI Components が応答から描画する。
+        // light DOM を書き換えると MutationObserver が再取得を開始し続けるため、
+        // Managed Settings Store は保存済みの選択値だけを復元する。
+        const availableDeviceIds = new Set(message.items.map(item => item.value));
+        applySettingsToUi(await settingsStore.reload(), availableDeviceIds);
         queryRequired<HTMLElement>("#catalog-status").textContent = message.refreshFailed
           ? t("Refresh failed. Showing the saved catalog.", "更新に失敗しました。保存済みの一覧を表示しています。")
           : "";
@@ -211,11 +212,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   localizeUi();
   document.addEventListener("switchbot-locale-changed", localizeUi);
-  void initialization.then(settings => applySettingsToUi(settings, false));
+  void initialization.then(settings => applySettingsToUi(settings));
   void loadObservedFields();
 });
-
-function escapeHtml(value: string): string {
-  const replacements: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-  return value.replace(/[&<>"']/g, character => replacements[character] ?? character);
-}
